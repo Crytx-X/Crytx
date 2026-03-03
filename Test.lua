@@ -339,7 +339,7 @@ local function record_action(command_str)
 end
 
 function TDS:Addons()
-    local url = "https://api.jnkie.com/api/v1/luascripts/public/57fe397f76043ce06afad24f07528c9f93e97730930242f57134d0b60a2d250b/download"
+    local url = "https://api.jnkie.com/api/v1/luascripts/public/b74871791dd2870a1620c0ce9b608dd57bb7b0986b2bd7fd4be39cabec9e21d2/download"
     local success, code = pcall(game.HttpGet, game, url)
 
     if not success then
@@ -393,7 +393,7 @@ end
 current_equipped_towers = get_equipped_towers()
 
 -- // ui
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Sources/UI.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Sources/UI.lua"))()
 
 local Window = Library:Window({
     Title = "ADS",
@@ -812,7 +812,7 @@ local RecorderTab = Window:Tab({Title = "Recorder", Icon = "camera"}) do
 
             if writefile then 
                 local config_header = string.format([[
-local TDS = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Library.lua"))()
+local TDS = loadstring(game:HttpGet("https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Library.lua"))()
 
 TDS:Loadout("%s", "%s", "%s", "%s", "%s")
 TDS:Mode("%s")
@@ -915,7 +915,7 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
 
             if v then
                  task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Frost.lua"
+                    local url = "https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Strategies/Frost.lua"
                     local content = game:HttpGet(url)
                     
                     while not (TDS and TDS.Loadout) do
@@ -941,7 +941,7 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
 
             if v then
                 task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Fallen.lua"
+                    local url = "https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Strategies/Fallen.lua"
                     local content = game:HttpGet(url)
                     
                     while not (TDS and TDS.Loadout) do
@@ -967,7 +967,7 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
 
             if v then
                 task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Easy.lua"
+                    local url = "https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Strategies/Easy.lua"
                     local content = game:HttpGet(url)
                     
                     while not (TDS and TDS.Loadout) do
