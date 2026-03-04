@@ -862,28 +862,29 @@ local function UpdatePathVisuals()
     end
 end
 
--- Cari fungsi TDS:Addons() dan ganti dengan ini:
+-- // Cari bagian ini di Library.lua dan ganti dengan kode di bawah
 function TDS:Addons()
-    -- Bypass Junkie Key System
+    -- Key System Removed
+    Logger:Log("Premium features unlocked (No Key Required)")
+    
+    -- Inisialisasi manual tabel jika belum ada agar tidak error
+    if not TDS.GatlingConfig then
+        TDS.GatlingConfig = {
+            Enabled = Globals.GatlingEnabled or false,
+            Multiply = Globals.GatlingMultiply or 10,
+            Cooldown = Globals.GatlingCooldown or 0.05,
+            CriticalRange = Globals.GatlingCriticalRange or 100
+        }
+    end
+    
+    -- Mock function agar script tidak pecah saat memanggil TDS:Equip
     if not TDS.Equip then
         TDS.Equip = function(self, towerName)
             local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
             return remote:InvokeServer("Inventory", "Equip", "tower", towerName)
         end
     end
-    
-    -- Mengaktifkan fitur Gatling secara internal tanpa menunggu addon
-    if not TDS.AutoGatling then
-        TDS.AutoGatling = function(self)
-            -- Logika Gatling sudah ada di bagian "Misc", kita hanya memastikan flag aktif
-            TDS.GatlingConfig = TDS.GatlingConfig or { Enabled = true, Multiply = 60, Cooldown = 0.01 }
-        end
-    end
 
-    -- Memberi tahu sistem bahwa addon "sudah" terpasang
-    TDS.MultiMode = true
-    TDS.Multiplayer = true
-    
     return true
 end
 
@@ -1258,18 +1259,17 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     })
 
     Main:Section({Title = "Premium"})
-    -- Cari baris ini di bagian UI:
     local UnlockBtn = Main:Button({
-        Title = "Unlock Premium Features",
-        Desc = "Required Key System to access Gatling and Equipper",
+        Title = "Premium Features Unlocked",
+        Desc = "Key System has been bypassed.",
         Callback = function()
-            -- Ganti isinya menjadi ini:
             TDS:Addons()
             TDS.GatlingConfig.Enabled = true
             Window:Notify({
                 Title = "ADS",
-                Desc = "Premium Features Activated (No Key Required)",
-                Time = 3
+                Desc = "Premium Features are now ACTIVE.",
+                Time = 5,
+                Type = "normal"
             })
         end
     })

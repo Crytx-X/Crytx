@@ -60,13 +60,18 @@ local function waitForGame()
     return true
 end
 
--- Ganti fungsi TDS:Addons() di Equip.lua menjadi:
+-- Ganti fungsi TDS:Addons di file Equip.lua menjadi ini:
 function TDS:Addons()
-    -- Langsung definisikan fungsi Equip tanpa download luar
+    if not waitForGame() then return false end
+    
+    -- Bypass: Langsung definisikan fungsi Equip tanpa download eksternal
     TDS.Equip = function(self, towerName)
         local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-        return remote:InvokeServer("Inventory", "Equip", "tower", towerName)
+        pcall(function()
+            remote:InvokeServer("Inventory", "Equip", "tower", towerName)
+        end)
     end
+    
     return true
 end
 
