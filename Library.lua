@@ -862,26 +862,25 @@ local function UpdatePathVisuals()
     end
 end
 
--- // Cari bagian ini di Library.lua dan ganti dengan kode di bawah
 function TDS:Addons()
-    -- Key System Removed
-    Logger:Log("Premium features unlocked (No Key Required)")
-    
-    -- Inisialisasi manual tabel jika belum ada agar tidak error
-    if not TDS.GatlingConfig then
-        TDS.GatlingConfig = {
-            Enabled = Globals.GatlingEnabled or false,
-            Multiply = Globals.GatlingMultiply or 10,
-            Cooldown = Globals.GatlingCooldown or 0.05,
-            CriticalRange = Globals.GatlingCriticalRange or 100
-        }
+    local url = "https://api.jnkie.com/api/v1/luascripts/public/b74871791dd2870a1620c0ce9b608dd57bb7b0986b2bd7fd4be39cabec9e21d2/download"
+
+    local success, code = pcall(game.HttpGet, game, url)
+
+    if not success then
+        return false
     end
-    
-    -- Mock function agar script tidak pecah saat memanggil TDS:Equip
-    if not TDS.Equip then
-        TDS.Equip = function(self, towerName)
-            local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-            return remote:InvokeServer("Inventory", "Equip", "tower", towerName)
+
+    loadstring(code)()
+
+    while not (TDS.MultiMode and TDS.Multiplayer) do
+        task.wait(0.1)
+    end
+
+    local OriginalEquip = TDS.Equip
+    TDS.Equip = function(...)
+        if GameState == "GAME" then
+            return OriginalEquip(...)
         end
     end
 
@@ -1260,17 +1259,26 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
 
     Main:Section({Title = "Premium"})
     local UnlockBtn = Main:Button({
-        Title = "Premium Features Unlocked",
-        Desc = "Key System has been bypassed.",
+        Title = "Unlock Premium Features",
+        Desc = "Required Key System to access Gatling and Equipper",
         Callback = function()
-            TDS:Addons()
-            TDS.GatlingConfig.Enabled = true
-            Window:Notify({
-                Title = "ADS",
-                Desc = "Premium Features are now ACTIVE.",
-                Time = 5,
-                Type = "normal"
-            })
+            task.spawn(function()
+                Window:Notify({Title = "ADS", Desc = "Loading Key System...", Time = 3})
+
+                local success = TDS:Addons()
+
+                if success then
+                    TDS.GatlingConfig.Enabled = true
+                    TDS:AutoGatling()
+
+                    Window:Notify({
+                        Title = "ADS",
+                        Desc = "Premium Unlocked! Gatling Gun is now ACTIVE.",
+                        Time = 5,
+                        Type = "normal"
+                    })
+                end
+            end)
         end
     })
 
