@@ -62,20 +62,6 @@ end
 
 function TDS:Addons()
     if not waitForGame() then return false end
-
-    local ok, code = pcall(game.HttpGet, game,
-        "https://api.junkie-development.de/api/v1/luascripts/public/b74871791dd2870a1620c0ce9b608dd57bb7b0986b2bd7fd4be39cabec9e21d2/download"
-    )
-    if not ok then return false end
-
-    loadstring(code)()
-
-    local start = os.clock()
-    repeat
-        if os.clock() - start > 8 then return false end
-        task.wait()
-    until TDS.Equip
-
     return true
 end
 
@@ -108,24 +94,17 @@ title.TextSize = 20
 title.Parent = frame
 
 local textbox = Instance.new("TextBox")
-textbox.PlaceholderText = "Loading Key System..."
+textbox.PlaceholderText = "Type tower name..."
 textbox.Size = UDim2.new(1, -20, 0, 30)
 textbox.Position = UDim2.new(0, 10, 0, 40)
 textbox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 textbox.TextColor3 = Color3.fromRGB(230, 230, 230)
 textbox.Font = Enum.Font.SourceSans
 textbox.TextSize = 18
-textbox.TextEditable = false
+textbox.TextEditable = true
 textbox.Text = ""
 textbox.Parent = frame
 Instance.new("UICorner", textbox).CornerRadius = UDim.new(0, 4)
-
-task.spawn(function()
-    if TDS:Addons() then
-        textbox.PlaceholderText = "Type tower name..."
-        textbox.TextEditable = true
-    end
-end)
 
 textbox.FocusLost:Connect(function(enterPressed)
     if not enterPressed or not TDS.Equip then return end
