@@ -61,7 +61,6 @@ local function waitForGame()
 end
 
 function TDS:Addons()
-    if not waitForGame() then return false end
     return true
 end
 
@@ -94,17 +93,24 @@ title.TextSize = 20
 title.Parent = frame
 
 local textbox = Instance.new("TextBox")
-textbox.PlaceholderText = "Type tower name..."
+textbox.PlaceholderText = "Loading Key System..."
 textbox.Size = UDim2.new(1, -20, 0, 30)
 textbox.Position = UDim2.new(0, 10, 0, 40)
 textbox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 textbox.TextColor3 = Color3.fromRGB(230, 230, 230)
 textbox.Font = Enum.Font.SourceSans
 textbox.TextSize = 18
-textbox.TextEditable = true
+textbox.TextEditable = false
 textbox.Text = ""
 textbox.Parent = frame
 Instance.new("UICorner", textbox).CornerRadius = UDim.new(0, 4)
+
+task.spawn(function()
+    if TDS:Addons() then
+        textbox.PlaceholderText = "Type tower name..."
+        textbox.TextEditable = true
+    end
+end)
 
 textbox.FocusLost:Connect(function(enterPressed)
     if not enterPressed or not TDS.Equip then return end
