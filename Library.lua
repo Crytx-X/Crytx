@@ -862,21 +862,27 @@ local function UpdatePathVisuals()
     end
 end
 
+-- Cari fungsi TDS:Addons() dan ganti dengan ini:
 function TDS:Addons()
-    -- Bypass Key System: Mendefinisikan fungsi Equip secara manual
+    -- Bypass Junkie Key System
     if not TDS.Equip then
         TDS.Equip = function(self, towerName)
-            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteFunction")
-            if remote then
-                -- Remote standard TDS untuk equip tower
-                return remote:InvokeServer("Inventory", "Equip", "tower", towerName)
-            end
+            local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+            return remote:InvokeServer("Inventory", "Equip", "tower", towerName)
+        end
+    end
+    
+    -- Mengaktifkan fitur Gatling secara internal tanpa menunggu addon
+    if not TDS.AutoGatling then
+        TDS.AutoGatling = function(self)
+            -- Logika Gatling sudah ada di bagian "Misc", kita hanya memastikan flag aktif
+            TDS.GatlingConfig = TDS.GatlingConfig or { Enabled = true, Multiply = 60, Cooldown = 0.01 }
         end
     end
 
-    -- Menipu sistem agar menganggap addon sudah terload
-    if not TDS.MultiMode then TDS.MultiMode = true end
-    if not TDS.Multiplayer then TDS.Multiplayer = true end
+    -- Memberi tahu sistem bahwa addon "sudah" terpasang
+    TDS.MultiMode = true
+    TDS.Multiplayer = true
     
     return true
 end
@@ -1252,27 +1258,19 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     })
 
     Main:Section({Title = "Premium"})
+    -- Cari baris ini di bagian UI:
     local UnlockBtn = Main:Button({
         Title = "Unlock Premium Features",
         Desc = "Required Key System to access Gatling and Equipper",
         Callback = function()
-            task.spawn(function()
-                Window:Notify({Title = "ADS", Desc = "Loading Key System...", Time = 3})
-
-                local success = TDS:Addons()
-
-                if success then
-                    TDS.GatlingConfig.Enabled = true
-                    TDS:AutoGatling()
-
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Premium Unlocked! Gatling Gun is now ACTIVE.",
-                        Time = 5,
-                        Type = "normal"
-                    })
-                end
-            end)
+            -- Ganti isinya menjadi ini:
+            TDS:Addons()
+            TDS.GatlingConfig.Enabled = true
+            Window:Notify({
+                Title = "ADS",
+                Desc = "Premium Features Activated (No Key Required)",
+                Time = 3
+            })
         end
     })
 

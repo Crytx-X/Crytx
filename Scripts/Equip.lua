@@ -60,19 +60,13 @@ local function waitForGame()
     return true
 end
 
+-- Ganti fungsi TDS:Addons() di Equip.lua menjadi:
 function TDS:Addons()
-    if not waitForGame() then return false end
-
-    -- Bypass: Langsung buat fungsi Equip tanpa download dari API Junkie
-    if not TDS.Equip then
-        TDS.Equip = function(self, towerName)
-            local remote = game:GetService("ReplicatedStorage"):FindFirstChild("RemoteFunction")
-            if remote then
-                return remote:InvokeServer("Inventory", "Equip", "tower", towerName)
-            end
-        end
+    -- Langsung definisikan fungsi Equip tanpa download luar
+    TDS.Equip = function(self, towerName)
+        local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+        return remote:InvokeServer("Inventory", "Equip", "tower", towerName)
     end
-
     return true
 end
 
