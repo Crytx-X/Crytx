@@ -863,11 +863,9 @@ local function UpdatePathVisuals()
 end
 
 function TDS:Addons()
-    -- 1. Beritahu script bahwa fitur "Premium/Multiplayer" sudah aktif
     TDS.MultiMode = true
     TDS.Multiplayer = true
 
-    -- 2. Buat konfigurasi untuk Gatling Gun (Sesuai yang diminta oleh UI)
     TDS.GatlingConfig = {
         Enabled = false,
         Multiply = 10,
@@ -875,27 +873,48 @@ function TDS:Addons()
         CriticalRange = 100
     }
 
-    -- 3. Rekonstruksi fungsi AutoGatling (Logic asli Gatling Override sudah ada di tombol UI, jadi ini hanya inisiasi)
-    function TDS:AutoGatling()
-        -- Biarkan kosong, karena saat kamu pencet "Apply Gatling" di UI, 
-        -- script otomatis meng-override module _fireGun milik TDS.
-        return true
-    end
+    function TDS:AutoGatling() return true end
 
-    -- 4. Rekonstruksi fungsi Equip
-    -- Ini adalah metode standar TDS untuk meng-equip tower via RemoteFunction
-    local remote_func = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-    local OriginalEquip = function(self, towerName)
-        local ok, res = pcall(function()
-            return remote_func:InvokeServer("Inventory", "Equip", "tower", towerName)
+    -- REKONSTRUKSI IN-GAME EQUIPPER
+    TDS.Equip = function(self, towerName)
+        local rs = game:GetService("ReplicatedStorage")
+        local players = game:GetService("Players")
+        local localPlayer = players.LocalPlayer
+        local http = game:GetService("HttpService")
+
+        -- 1. Coba cara normal (Untuk di Lobby)
+        pcall(function()
+            rs:WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "tower", towerName)
         end)
-        return ok
-    end
 
-    TDS.Equip = function(self, ...)
-        -- Pembuat script aslinya punya cara rahasia untuk equip in-game.
-        -- Jika ini dijalankan di Lobby, fungsi normal akan bekerja 100%.
-        return OriginalEquip(self, ...)
+        -- 2. Coba cara Manipulasi Lokal (Untuk In-Game)
+        local stateReps = rs:FindFirstChild("StateReplicators")
+        if stateReps then
+            for _, folder in ipairs(stateReps:GetChildren()) do
+                if folder.Name == "PlayerReplicator" and folder:GetAttribute("UserId") == localPlayer.UserId then
+                    local currentEquipped = folder:GetAttribute("EquippedTowers")
+                    if currentEquipped then
+                        pcall(function()
+                            -- Ubah data JSON bawaan TDS
+                            local loadout = http:JSONDecode(currentEquipped)
+                            
+                            -- Cek apakah tower sudah ada di loadout
+                            local alreadyHas = false
+                            for _, t in ipairs(loadout) do
+                                if t == towerName then alreadyHas = true end
+                            end
+
+                            -- Jika belum ada, ganti tower di slot ke-5 (terakhir)
+                            if not alreadyHas then
+                                loadout[5] = towerName
+                                folder:SetAttribute("EquippedTowers", http:JSONEncode(loadout))
+                            end
+                        end)
+                    end
+                end
+            end
+        end
+        return true
     end
 
     return true

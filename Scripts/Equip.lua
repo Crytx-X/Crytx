@@ -62,14 +62,40 @@ end
 
 function TDS:Addons()
     if not waitForGame() then return false end
-    
-    local remote_func = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+
     TDS.Equip = function(self, towerName)
+        local rs = game:GetService("ReplicatedStorage")
+        local localPlayer = game:GetService("Players").LocalPlayer
+        local http = game:GetService("HttpService")
+
         pcall(function()
-            remote_func:InvokeServer("Inventory", "Equip", "tower", towerName)
+            rs:WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "tower", towerName)
         end)
+
+        local stateReps = rs:FindFirstChild("StateReplicators")
+        if stateReps then
+            for _, folder in ipairs(stateReps:GetChildren()) do
+                if folder.Name == "PlayerReplicator" and folder:GetAttribute("UserId") == localPlayer.UserId then
+                    local currentEquipped = folder:GetAttribute("EquippedTowers")
+                    if currentEquipped then
+                        pcall(function()
+                            local loadout = http:JSONDecode(currentEquipped)
+                            local alreadyHas = false
+                            for _, t in ipairs(loadout) do
+                                if t == towerName then alreadyHas = true end
+                            end
+                            if not alreadyHas then
+                                loadout[5] = towerName
+                                folder:SetAttribute("EquippedTowers", http:JSONEncode(loadout))
+                            end
+                        end)
+                    end
+                end
+            end
+        end
+        return true
     end
-    
+
     return true
 end
 
