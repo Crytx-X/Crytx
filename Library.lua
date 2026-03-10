@@ -1715,7 +1715,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatling",
+        Title = "Enable Auto Gatling (Test)",
         Value = false,
         Callback = function(state)
             Globals.AutoGatling = state
@@ -1723,7 +1723,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if state then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Auto Gatling Enabled",
+                    Desc = "Auto Gatling Test Enabled",
                     Time = 3
                 })
 
@@ -1736,41 +1736,33 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                     while Globals.AutoGatling do
 
+                        local target = nil
                         local npcs = workspace:FindFirstChild("NPCs")
 
                         if npcs then
                             for _, enemy in pairs(npcs:GetChildren()) do
-
                                 local hitbox = enemy:FindFirstChild("Hitbox")
 
                                 if hitbox then
-
-                                    local pos = hitbox.Position
-
-                                    for i = 1, Globals.AutoMultiply do
-                                        remote:FireServer(
-                                            pos,
-                                            workspace:GetAttribute("Sync"),
-                                            workspace:GetServerTimeNow()
-                                        )
-                                    end
-
-                                    task.wait(Globals.AutoCooldown)
+                                    target = hitbox
+                                    break
                                 end
                             end
                         end
 
-                        task.wait()
-                    end
+                        if target then
+                            remote:FireServer(
+                                target.Position,
+                                workspace:GetAttribute("Sync"),
+                                workspace:GetServerTimeNow()
+                            )
+                        end
 
+                        task.wait(Globals.AutoCooldown or 0.05)
+
+                    end
                 end)
 
-            else
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Auto Gatling Disabled",
-                    Time = 3
-                })
             end
         end
     })
