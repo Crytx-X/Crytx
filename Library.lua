@@ -2045,7 +2045,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-    Misc:Section({Title = "Gatling Gun"})
+Misc:Section({Title = "Gatling Gun"})
     Misc:Textbox({
         Title = "Cooldown:",
         Desc = "",
@@ -2072,6 +2072,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
+    -- Variable untuk menyimpan fungsi original Gatling Gun
+    local OriginalFireGun = nil
+
     Misc:Button({
         Title = "Apply Gatling",
         Callback = function()
@@ -2085,6 +2088,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                 local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
                 local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+
+                -- Simpan fungsi original sebelum ditimpa (hanya jika belum disimpan)
+                if not OriginalFireGun then
+                    OriginalFireGun = gganim._fireGun
+                end
 
                 gganim._fireGun = function(self)
                     local cam = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
@@ -2102,6 +2110,33 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     Desc = "Your executor is not supported, please use a different one!",
                     Time = 3,
                     Type = "normal"
+                })
+            end
+        end
+    })
+
+    Misc:Button({
+        Title = "Reset Gatling",
+        Callback = function()
+            if OriginalFireGun then
+                local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+                
+                -- Kembalikan ke fungsi original
+                gganim._fireGun = OriginalFireGun
+                OriginalFireGun = nil -- Kosongkan cache
+                
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Successfully reset Gatling Gun to normal!",
+                    Time = 3,
+                    Type = "normal"
+                })
+            else
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Gatling Gun is already normal!",
+                    Time = 3,
+                    Type = "error"
                 })
             end
         end
