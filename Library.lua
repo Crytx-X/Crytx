@@ -199,6 +199,10 @@ local DefaultSettings = {
     AutoCooldown = 0.01,
     AutoMultiply = 60,
     AutoGatling = false,
+    TargetChamsEnabled = false,
+    TargetChamsType = "Highlight",
+    CurrentTarget = nil,
+    CurrentHighlight = nil,
     PickupMethod = "Pathfinding",
     StreamerMode = false,
     HideUsername = false,
@@ -1689,6 +1693,29 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
+    Misc:Section({Title = "Target Visual"})
+    Misc:Toggle({
+        Title = "Enable Target Visual",
+        Value = false,
+        Callback = function(state)
+            Globals.TargetChamsEnabled = state
+            
+            if not state and Globals.CurrentHighlight then
+                Globals.CurrentHighlight:Destroy()
+                Globals.CurrentHighlight = nil
+            end
+        end
+    })
+
+    Misc:Dropdown({
+        Title = "Target Visual Type",
+        Values = {"Highlight"},
+        Value = "Highlight",
+        Callback = function(value)
+            Globals.TargetChamsType = value
+        end
+    })
+
     Misc:Section({Title = "Auto Gatling Gun"})
     Misc:Textbox({
         Title = "Auto Cooldown:",
@@ -1745,6 +1772,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                                 if hitbox then
                                     target = hitbox
+                                    
+                                    Globals.CurrentTarget = enemy
+                                    ApplyTargetChams(enemy)
+                                    
                                     break
                                 end
                             end
@@ -2130,6 +2161,28 @@ local function CheckResOk(data)
     if type(data) == "userdata" then return true end
 
     return false
+end
+
+local function ApplyTargetChams(enemy)
+
+	if not Globals.TargetChamsEnabled then return end
+	if not enemy then return end
+
+	if Globals.CurrentHighlight then
+		Globals.CurrentHighlight:Destroy()
+	end
+
+	if Globals.TargetChamsType == "Highlight" then
+
+		local highlight = Instance.new("Highlight")
+		highlight.FillColor = Color3.fromRGB(255,0,0)
+		highlight.OutlineColor = Color3.fromRGB(255,255,255)
+		highlight.FillTransparency = 0.3
+		highlight.Parent = enemy
+
+		Globals.CurrentHighlight = highlight
+
+	end
 end
 
 -- // scrap ui for match data
