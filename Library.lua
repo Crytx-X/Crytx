@@ -313,47 +313,6 @@ local function SetSetting(name, value)
     end
 end
 
-local function ApplyTargetTracer(enemy)
-
-	if not Globals.TargetChamsEnabled then return end
-	if not enemy then return end
-
-	if Globals.CurrentTracer then
-		Globals.CurrentTracer:Destroy()
-        Globals.CurrentTracer = nil
-	end
-
-	local barrel = workspace:FindFirstChild("Towers")
-		and workspace.Towers:FindFirstChild("Default")
-		and workspace.Towers.Default:FindFirstChild("Weapon")
-		and workspace.Towers.Default.Weapon:FindFirstChild("Main")
-		and workspace.Towers.Default.Weapon.Main:FindFirstChild("Barrel")
-
-	if not barrel then return end
-
-	local hitbox = enemy:FindFirstChild("Hitbox")
-	if not hitbox then return end
-
-	local beam = Instance.new("Beam")
-
-	local att0 = Instance.new("Attachment")
-	local att1 = Instance.new("Attachment")
-
-	att0.Parent = barrel
-	att1.Parent = hitbox
-
-	beam.Attachment0 = att0
-	beam.Attachment1 = att1
-	beam.Width0 = 0.15
-	beam.Width1 = 0.15
-	beam.FaceCamera = true
-	beam.Color = ColorSequence.new(Color3.fromRGB(255,0,0))
-
-	beam.Parent = barrel
-
-	Globals.CurrentTracer = beam
-end
-
 local function ApplyTargetChams(enemy)
 
 	if not Globals.TargetChamsEnabled then return end
@@ -377,7 +336,6 @@ local function ApplyTargetChams(enemy)
 end
 
 Globals.CurrentTarget = nil
-Globals.CurrentTracer = nil
 Globals.CurrentHighlight = nil
 
 local function Apply3dRendering()
@@ -1762,7 +1720,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Dropdown({
         Title = "Target Visual Type",
         Desc = "",
-        List = {"Highlight","Tracer"},
+        List = {"Highlight"},
         Value = Globals.TargetChamsType or "Highlight",
         Callback = function(choice)
 
@@ -1848,12 +1806,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     target = hitbox
 
                                     Globals.CurrentTarget = enemy
-
-                                    if Globals.TargetChamsType == "Highlight" then
-                                        ApplyTargetChams(enemy)
-                                    elseif Globals.TargetChamsType == "Tracer" then
-                                        ApplyTargetTracer(enemy)
-                                    end
+                                    ApplyTargetChams(enemy)
 
                                     break
                                 end
