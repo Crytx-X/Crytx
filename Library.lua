@@ -1278,33 +1278,25 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
 
                     while Globals.AutoGatling do
 
-                        local npcFolder = workspace:FindFirstChild("NPCs")
+                        local npcs = workspace:FindFirstChild("NPCs")
+                        local enemy = npcs and npcs:FindFirstChildWhichIsA("Model")
 
-                        if npcFolder then
-                            for _,enemy in pairs(npcFolder:GetChildren()) do
+                        if enemy and enemy:FindFirstChild("Hitbox") then
 
-                                local hitbox = enemy:FindFirstChild("Hitbox")
+                            local pos = enemy.Hitbox.Position
 
-                                if hitbox then
-
-                                    local pos = hitbox.Position
-
-                                    for i = 1, Globals.AutoMultiply do
-                                        fireRemote:FireServer(
-                                            pos,
-                                            workspace:GetAttribute("Sync"),
-                                            workspace:GetServerTimeNow()
-                                        )
-                                    end
-
-                                    task.wait(Globals.AutoCooldown)
-
-                                end
-
+                            for i = 1, Globals.AutoMultiply do
+                                fireRemote:FireServer(
+                                    pos,
+                                    workspace:GetAttribute("Sync"),
+                                    workspace:GetServerTimeNow()
+                                )
                             end
+
                         end
 
-                        task.wait()
+                        task.wait(Globals.AutoCooldown)
+
                     end
 
                 end)
