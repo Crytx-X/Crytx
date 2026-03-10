@@ -1730,7 +1730,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 selected = "Highlight"
             end
 
-            Globals.TargetChamsType = selected
+            SetSetting("TargetChamsType", selected)
 
         end
     })
@@ -1739,7 +1739,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Title = "Enable Target Visual",
         Value = false,
         Callback = function(state)
-            Globals.TargetChamsEnabled = state
+            SetSetting("TargetChamsEnabled", state)
 
             if not state and Globals.CurrentHighlight then
                 Globals.CurrentHighlight:Destroy()
@@ -1751,25 +1751,35 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Section({Title = "Auto Gatling Gun"})
     Misc:Textbox({
         Title = "Auto Cooldown:",
+        Desc = "",
         Placeholder = "0.01",
-        Value = Globals.AutoCooldown,
+        Value = tostring(Globals.AutoCooldown or 0.01),
         ClearTextOnFocus = true,
         Callback = function(value)
-            if tonumber(value) then
-                Globals.AutoCooldown = tonumber(value)
+
+            local number = tonumber(value)
+
+            if number and number > 0 then
+                SetSetting("AutoCooldown", number)
             end
+
         end
     })
 
     Misc:Textbox({
         Title = "Auto Multiply:",
-        Placeholder = "60",
-        Value = Globals.AutoMultiply,
+        Desc = "",
+        Placeholder = "10",
+        Value = tostring(Globals.AutoMultiply or 10),
         ClearTextOnFocus = true,
         Callback = function(value)
-            if tonumber(value) then
-                Globals.AutoMultiply = tonumber(value)
+
+            local number = tonumber(value)
+
+            if number and number > 0 then
+                SetSetting("AutoMultiply", number)
             end
+
         end
     })
 
@@ -1777,7 +1787,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Title = "Enable Auto Gatling (Test)",
         Value = false,
         Callback = function(state)
-            Globals.AutoGatling = state
+            SetSetting("AutoGatling", state)
 
             if state then
                 Window:Notify({
