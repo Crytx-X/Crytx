@@ -1253,8 +1253,8 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Misc:Section({Title = "Auto Gatling Gun"})
-    Misc:Toggle({
+    Main:Section({Title = "Auto Gatling Gun"})
+    Main:Toggle({
         Title = "Enable Auto Gatling",
         Default = false,
         Callback = function(state)
@@ -1322,7 +1322,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Misc:Textbox({
+    Main:Textbox({
         Title = "Auto Cooldown:",
         Placeholder = "0.05",
         Value = Globals.AutoCooldown,
@@ -1334,7 +1334,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Misc:Textbox({
+    Main:Textbox({
         Title = "Auto Multiply:",
         Placeholder = "20",
         Value = Globals.AutoMultiply,
