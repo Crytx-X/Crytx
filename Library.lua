@@ -1888,7 +1888,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatling",
+        Title = "Enable Auto Gatlinggg",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
@@ -1967,32 +1967,44 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                         end
 
+                        -- // FUNGSI CEK DARAH MUSUH
+                        local function IsEnemyAlive(enemy)
+                            if not enemy or not enemy.Parent or not enemy:FindFirstChild("Hitbox") then return false end
+                            
+                            -- Cek darah melalui Attribute (TDS biasa menggunakan ini)
+                            local healthAttr = enemy:GetAttribute("Health")
+                            if type(healthAttr) == "number" and healthAttr <= 0 then return false end
+                            
+                            -- Cek darah melalui Humanoid (Untuk jaga-jaga)
+                            local humanoid = enemy:FindFirstChildOfClass("Humanoid")
+                            if humanoid and humanoid.Health <= 0 then return false end
+                            
+                            return true
+                        end
+
                         -- // LOGIKA MENCARI TARGET
                         local target = nil
                         local npcs = workspace:FindFirstChild("NPCs")
 
-                        if npcs then
-                            for _, enemy in ipairs(npcs:GetChildren()) do
-                                local hitbox = enemy:FindFirstChild("Hitbox")
+                        -- 1. Cek apakah target yang sedang di-lock masih hidup
+                        if Globals.CurrentTarget and IsEnemyAlive(Globals.CurrentTarget) then
+                            target = Globals.CurrentTarget:FindFirstChild("Hitbox")
+                        else
+                            -- 2. Jika mati/hilang, hapus visual merah (Chams) dan cari musuh baru
+                            if Globals.CurrentHighlight then
+                                Globals.CurrentHighlight:Destroy()
+                                Globals.CurrentHighlight = nil
+                            end
+                            Globals.CurrentTarget = nil
 
-                                if hitbox then
-                                    -- Deteksi apakah musuh sudah mati berdasarkan sistem bawaan TDS
-                                    local isDead = enemy:GetAttribute("Dead") == true or 
-                                                enemy:GetAttribute("IsDead") == true or 
-                                                enemy:GetAttribute("Dying") == true or
-                                                (enemy:GetAttribute("Health") ~= nil and enemy:GetAttribute("Health") <= 0)
-
-                                    -- Jika musuh belum mati / Valid
-                                    if not isDead then
-                                        target = hitbox
-                                        
-                                        -- Terapkan Visual Chams (Hanya jika musuh berganti agar FPS tidak drop)
-                                        if Globals.CurrentTarget ~= enemy then
-                                            Globals.CurrentTarget = enemy
-                                            ApplyTargetChams(enemy)
-                                        end
-                                        
-                                        break -- Kunci musuh ini dan tembak
+                            if npcs then
+                                for _, enemy in ipairs(npcs:GetChildren()) do
+                                    -- Hanya lock musuh yang masih HIDUP (darah > 0)
+                                    if IsEnemyAlive(enemy) then
+                                        target = enemy:FindFirstChild("Hitbox")
+                                        Globals.CurrentTarget = enemy
+                                        ApplyTargetChams(enemy)
+                                        break
                                     end
                                 end
                             end
