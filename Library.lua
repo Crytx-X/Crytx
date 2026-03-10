@@ -257,9 +257,9 @@ TDS = {
     PlacedTowers = {},
     ActiveStrat = true,
     GatlingConfig = {
-        Enabled = false,
-        Multiply = 10,
-        Cooldown = 0.05
+        Enabled = Globals.GatlingEnabled,
+        Multiply = Globals.GatlingMultiply,
+        Cooldown = Globals.GatlingCooldown
     },
     MatchmakingMap = {
         ["Hardcore"] = "hardcore",
@@ -314,6 +314,44 @@ local function SetSetting(name, value)
         Globals[name] = value
         SaveSettings()
     end
+end
+
+local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
+local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+
+local old_fire = gganim._fireGun
+
+local function getEnemyPos()
+    local folder = workspace:FindFirstChild("NPCs")
+    if not folder then return nil end
+
+    for _,v in pairs(folder:GetChildren()) do
+        if v:FindFirstChild("Hitbox") then
+            return v.Hitbox.Position
+        end
+    end
+end
+
+local function hookGatling()
+    gganim._fireGun = function(self)
+
+        if not TDS.GatlingConfig.Enabled then
+            return old_fire(self)
+        end
+
+        local pos = getEnemyPos()
+        if not pos then return end
+
+        for i = 1, TDS.GatlingConfig.Multiply do
+            ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+        end
+
+        self:Wait(TDS.GatlingConfig.Cooldown)
+    end
+end
+
+local function unhookGatling()
+    gganim._fireGun = old_fire
 end
 
 local function Apply3dRendering()
@@ -1253,23 +1291,26 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Main:Section({Title = "Gatling Gun Auto-Aim"})
+    Main:Section({Title = "Gatling Gun"})
     Main:Toggle({
-        Title = "Enable Auto Gatling",
-        Desc = "Otomatis mengunci dan menembak musuh",
+        Title = "Auto Gatling Enabled",
         Value = Globals.GatlingEnabled,
         Callback = function(state)
             SetSetting("GatlingEnabled", state)
             TDS.GatlingConfig.Enabled = state
+
+            if state then
+                hookGatling()
+            else
+                unhookGatling()
+            end
         end
     })
 
     Main:Slider({
         Title = "Gatling Multiply",
-        Desc = "Jumlah peluru dalam 1x tembakan (Hati-hati Crash/Lag)",
         Min = 1,
         Max = 50,
-        Rounding = 0,
         Value = Globals.GatlingMultiply,
         Callback = function(val)
             SetSetting("GatlingMultiply", val)
@@ -1279,10 +1320,8 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
 
     Main:Slider({
         Title = "Gatling Cooldown",
-        Desc = "Jeda waktu per tembakan (Detik)",
         Min = 0.01,
         Max = 1,
-        Rounding = 2,
         Value = Globals.GatlingCooldown,
         Callback = function(val)
             SetSetting("GatlingCooldown", val)
@@ -3212,67 +3251,6 @@ local function StartAutoMercenary()
     end)
 end
 
-local auto_gatling_running = false
-
-local function start_auto_gatling()
-    if auto_gatling_running or not Globals.GatlingEnabled then return end
-    auto_gatling_running = true
-
-    task.spawn(function()
-        -- Mencari Remote Event Gatling Gun
-        local rs = game:GetService("ReplicatedStorage")
-        local fire_remote = rs:WaitForChild("Network", 5)
-        if fire_remote then
-            fire_remote = fire_remote:WaitForChild("GatlingGun", 5)
-            if fire_remote then
-                fire_remote = fire_remote:WaitForChild("RE:Fire", 5)
-            end
-        end
-
-        while Globals.GatlingEnabled do
-            -- Pastikan kita sedang berada di dalam match (GAME)
-            local game_state = identify_game_state() -- Atau cukup panggil GameState jika sudah global
-            
-            if fire_remote and game_state == "GAME" then
-                local target_pos = nil
-                local npcs = workspace:FindFirstChild("NPCs")
-
-                -- 1. Cari Musuh di workspace.NPCs
-                if npcs then
-                    for _, npc in ipairs(npcs:GetChildren()) do
-                        local hitbox = npc:FindFirstChild("Hitbox")
-                        -- Jika musuh memiliki hitbox (berarti masih hidup/valid)
-                        if hitbox then
-                            target_pos = hitbox.Position
-                            break -- Kunci ke musuh pertama yang terdeteksi
-                        end
-                    end
-                end
-
-                -- 2. Tembak Musuh jika ditemukan
-                if target_pos then
-                    local sync = workspace:GetAttribute("Sync") or 0
-                    local server_time = workspace:GetServerTimeNow()
-                    local multiply = tonumber(Globals.GatlingMultiply) or 10
-
-                    -- Eksekusi tembakan sebanyak jumlah Multiply
-                    for i = 1, multiply do
-                        pcall(function()
-                            fire_remote:FireServer(target_pos, sync, server_time)
-                        end)
-                    end
-                end
-            end
-
-            -- 3. Tunggu sesuai Cooldown sebelum mencari dan menembak lagi
-            local cooldown = tonumber(Globals.GatlingCooldown) or 0.05
-            task.wait(cooldown)
-        end
-
-        auto_gatling_running = false
-    end)
-end
-
 local function StartAutoMilitary()
     if not Globals.AutoMilitary then return end
 
@@ -3365,10 +3343,6 @@ task.spawn(function()
 
         if Globals.AutoSkip and not AutoSkipRunning then
             StartAutoSkip()
-        end
-
-        if Globals.GatlingEnabled and not auto_gatling_running then
-            start_auto_gatling()
         end
 
         if Globals.TimeScaleEnabled and not TimeScaleRunning then
