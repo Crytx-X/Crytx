@@ -1730,16 +1730,17 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 selected = "Highlight"
             end
 
-            SetSetting("TargetChamsType", selected)
-
+            Globals.TargetChamsType = selected
+            SetSetting("TargetChamsType", selected) -- [PERBAIKAN: Menyimpan ke Config]
         end
     })
 
     Misc:Toggle({
         Title = "Enable Target Visual",
-        Value = false,
+        Value = Globals.TargetChamsEnabled, -- [PERBAIKAN: Membaca dari config, bukan hardcode false]
         Callback = function(state)
-            SetSetting("TargetChamsEnabled", state)
+            Globals.TargetChamsEnabled = state
+            SetSetting("TargetChamsEnabled", state) -- [PERBAIKAN: Menyimpan ke Config]
 
             if not state and Globals.CurrentHighlight then
                 Globals.CurrentHighlight:Destroy()
@@ -1751,43 +1752,36 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Section({Title = "Auto Gatling Gun"})
     Misc:Textbox({
         Title = "Auto Cooldown:",
-        Desc = "",
         Placeholder = "0.01",
-        Value = tostring(Globals.AutoCooldown or 0.01),
+        Value = Globals.AutoCooldown,
         ClearTextOnFocus = true,
         Callback = function(value)
-
-            local number = tonumber(value)
-
-            if number and number > 0 then
-                SetSetting("AutoCooldown", number)
+            if tonumber(value) then
+                Globals.AutoCooldown = tonumber(value)
+                SetSetting("AutoCooldown", tonumber(value)) -- [PERBAIKAN: Menyimpan ke Config]
             end
-
         end
     })
 
     Misc:Textbox({
         Title = "Auto Multiply:",
-        Desc = "",
-        Placeholder = "10",
-        Value = tostring(Globals.AutoMultiply or 10),
+        Placeholder = "60",
+        Value = Globals.AutoMultiply,
         ClearTextOnFocus = true,
         Callback = function(value)
-
-            local number = tonumber(value)
-
-            if number and number > 0 then
-                SetSetting("AutoMultiply", number)
+            if tonumber(value) then
+                Globals.AutoMultiply = tonumber(value)
+                SetSetting("AutoMultiply", tonumber(value)) -- [PERBAIKAN: Menyimpan ke Config]
             end
-
         end
     })
 
     Misc:Toggle({
         Title = "Enable Auto Gatling (Test)",
-        Value = false,
+        Value = Globals.AutoGatling, -- [PERBAIKAN: Membaca dari config, bukan hardcode false]
         Callback = function(state)
-            SetSetting("AutoGatling", state)
+            Globals.AutoGatling = state
+            SetSetting("AutoGatling", state) -- [PERBAIKAN: Menyimpan ke Config]
 
             if state then
                 Window:Notify({
@@ -1797,14 +1791,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 })
 
                 task.spawn(function()
-
                     local remote = game:GetService("ReplicatedStorage")
                         :WaitForChild("Network")
                         :WaitForChild("GatlingGun")
                         :WaitForChild("RE:Fire")
 
                     while Globals.AutoGatling do
-
                         local target = nil
                         local npcs = workspace:FindFirstChild("NPCs")
 
@@ -1834,10 +1826,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
 
                         task.wait(Globals.AutoCooldown or 0.05)
-
                     end
                 end)
-
             end
         end
     })
