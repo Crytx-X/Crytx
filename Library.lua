@@ -314,15 +314,12 @@ local function SetSetting(name, value)
     end
 end
 
--- // VISUAL TRACER FUNCTION
+-- // VISUAL TRACER LOGIC
 local function CreateTracer(targetPos)
-    if not Globals.TargetChamsEnabled then return end
-    if Globals.TargetChamsType ~= "Tracer" and Globals.TargetChamsType ~= "Both" then return end
-
     local startPos = nil
     local towersFolder = workspace:FindFirstChild("Towers")
     
-    -- Coba cari posisi Barrel player Gatling Gun
+    -- Mencari posisi Barrel dari Gatling Gun punya player
     if towersFolder then
         for _, tower in pairs(towersFolder:GetChildren()) do
             local rep = tower:FindFirstChild("TowerReplicator")
@@ -336,52 +333,61 @@ local function CreateTracer(targetPos)
         end
     end
 
-    -- Fallback 1: Default workspace tower
-    if not startPos then
-        local defTower = towersFolder and towersFolder:FindFirstChild("Default")
-        if defTower and defTower:FindFirstChild("Weapon") and defTower.Weapon:FindFirstChild("Main") and defTower.Weapon.Main:FindFirstChild("Barrel") then
-            startPos = defTower.Weapon.Main.Barrel.Position
-        end
-    end
+    if not startPos then return end
 
-    -- Fallback 2: Player Character
-    if not startPos then
-        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if hrp then startPos = hrp.Position else return end
-    end
-
-    -- Tambah spread peluru acak
-    local spread = Vector3.new(
-        math.random(-15, 15) / 10,
-        math.random(-15, 15) / 10,
-        math.random(-15, 15) / 10
-    )
-    local finalTarget = targetPos + spread
-
-    -- Buat tracer bullet
+    -- Buat visual peluru
     local tracer = Instance.new("Part")
-    tracer.Name = "TracerBullet"
+    tracer.Name = "GatlingTracer"
     tracer.Anchored = true
     tracer.CanCollide = false
+    tracer.CastShadow = false
     tracer.Material = Enum.Material.Neon
-    tracer.Color = Color3.fromRGB(255, 220, 50) 
-    tracer.Size = Vector3.new(0.15, 0.15, 4)
-    tracer.CFrame = CFrame.lookAt(startPos, finalTarget)
-    tracer.Parent = workspace
+    tracer.Color = Color3.fromRGB(255, 200, 50) 
+    tracer.Size = Vector3.new(0.2, 0.2, 5) -- Peluru panjang dan tipis
+    
+    tracer.CFrame = CFrame.lookAt(startPos, targetPos)
+    tracer.Parent = workspace.Terrain
 
-    -- Tween animasi peluru terbang
-    local distance = (finalTarget - startPos).Magnitude
-    local speed = 350 -- Studs per detik
+    local distance = (targetPos - startPos).Magnitude
+    local speed = 100 -- Speed dikurangi jadi slow & lurus
     local duration = distance / speed
 
+    -- Tween untuk animasi terbang dari barrel ke enemy
     local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
     local tween = TweenService:Create(tracer, tweenInfo, {
-        CFrame = CFrame.lookAt(finalTarget, finalTarget + (finalTarget - startPos).Unit)
+        CFrame = CFrame.lookAt(targetPos, targetPos + (targetPos - startPos).Unit)
     })
 
     tween:Play()
     tween.Completed:Connect(function()
         tracer:Destroy()
+    end)
+end
+
+-- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire (Agar muncul hanya saat tereksekusi)
+if hookmetamethod then
+    local lastTracerTime = 0
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
+            local p = self.Parent
+            if p and p.Name == "GatlingGun" then
+                if Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
+                    local args = {...}
+                    local targetPos = args[1]
+                    if typeof(targetPos) == "Vector3" then
+                        local now = os.clock()
+                        -- Limit 30 peluru visual per detik agar tidak lag jika multiply tinggi
+                        if now - lastTracerTime >= 0.03 then 
+                            lastTracerTime = now
+                            task.spawn(CreateTracer, targetPos)
+                        end
+                    end
+                end
+            end
+        end
+        return oldNamecall(self, ...)
     end)
 end
 
@@ -872,10 +878,13 @@ local function UpdatePathVisuals()
     end
 end
 
+-- === DUMMY ADDONS FUNCTION ===
 function TDS:Addons()
+    -- Fitur Premium / Key System Bypassed!
     return true
 end
 
+-- === NATIVE EQUIP AND UNEQUIP ===
 function TDS:Equip(tower_name)
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
     local success, err = pcall(function()
@@ -1264,6 +1273,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
 
     Main:Section({Title = "Equipper"})
     
+    -- Kotak Equip Tower
     Main:Textbox({
         Title = "Equip:",
         Desc = "Type a tower name to equip",
@@ -1305,6 +1315,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
+    -- Kotak Unequip Tower
     Main:Textbox({
         Title = "Unequip:",
         Desc = "Type a tower name to unequip",
@@ -1790,10 +1801,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Section({Title = "Target Visual"})
     Misc:Dropdown({
         Title = "Target Visual Type",
-        Desc = "",
+        Desc = "Choose your preferred target visual",
         List = {"Highlight", "Tracer", "Both"},
         Value = Globals.TargetChamsType or "Highlight",
         Callback = function(choice)
+
             local selected = type(choice) == "table" and choice[1] or choice
 
             if not selected or selected == "" then
@@ -1807,10 +1819,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Toggle({
         Title = "Enable Target Visual",
-        Value = Globals.TargetChamsEnabled,
+        Value = Globals.TargetChamsEnabled, 
         Callback = function(state)
             Globals.TargetChamsEnabled = state
-            SetSetting("TargetChamsEnabled", state)
+            SetSetting("TargetChamsEnabled", state) 
 
             if not state and Globals.CurrentHighlight then
                 Globals.CurrentHighlight:Destroy()
@@ -1851,7 +1863,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
-            SetSetting("AutoGatling", state)
+            SetSetting("AutoGatling", state) 
 
             if state then
                 Window:Notify({
@@ -1887,21 +1899,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         if target then
                             for i = 1, Globals.AutoMultiply do
-                                remote:FireServer(
-                                    target.Position,
-                                    workspace:GetAttribute("Sync"),
-                                    workspace:GetServerTimeNow()
-                                )
-                            end
-                            
-                            -- Panggil tracer secara asinkron agar tidak melambatkan DPS
-                            if Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
-                                task.spawn(function()
-                                    local visualCount = math.min(Globals.AutoMultiply, 15) -- Cap visual tracers to avoid lag
-                                    for i = 1, visualCount do
-                                        CreateTracer(target.Position)
-                                        task.wait(0.02)
-                                    end
+                                pcall(function()
+                                    remote:FireServer(
+                                        target.Position,
+                                        workspace:GetAttribute("Sync"),
+                                        workspace:GetServerTimeNow()
+                                    )
                                 end)
                             end
                         end
