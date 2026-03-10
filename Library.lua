@@ -11,6 +11,7 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PathfindingService = game:GetService("PathfindingService")
 local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
 local RemoteFunc = ReplicatedStorage:WaitForChild("RemoteFunction")
 local RemoteEvent = ReplicatedStorage:WaitForChild("RemoteEvent")
 local PlayersService = game:GetService("Players")
@@ -152,7 +153,7 @@ local AutoMercenaryBaseRunning = false
 local AutoMilitaryBaseRunning = false
 local SellFarmsRunning = false
 
-local MaxPathDistance = 300 -- default
+local MaxPathDistance = 300 
 local MilMarker = nil
 local MercMarker = nil
 
@@ -313,17 +314,93 @@ local function SetSetting(name, value)
     end
 end
 
-local function ApplyTargetChams(enemy)
+-- // VISUAL TRACER FUNCTION
+local function CreateTracer(targetPos)
+    if not Globals.TargetChamsEnabled then return end
+    if Globals.TargetChamsType ~= "Tracer" and Globals.TargetChamsType ~= "Both" then return end
 
-	if not Globals.TargetChamsEnabled then return end
+    local startPos = nil
+    local towersFolder = workspace:FindFirstChild("Towers")
+    
+    -- Coba cari posisi Barrel player Gatling Gun
+    if towersFolder then
+        for _, tower in pairs(towersFolder:GetChildren()) do
+            local rep = tower:FindFirstChild("TowerReplicator")
+            if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                local weapon = tower:FindFirstChild("Weapon")
+                if weapon and weapon:FindFirstChild("Main") and weapon.Main:FindFirstChild("Barrel") then
+                    startPos = weapon.Main.Barrel.Position
+                    break
+                end
+            end
+        end
+    end
+
+    -- Fallback 1: Default workspace tower
+    if not startPos then
+        local defTower = towersFolder and towersFolder:FindFirstChild("Default")
+        if defTower and defTower:FindFirstChild("Weapon") and defTower.Weapon:FindFirstChild("Main") and defTower.Weapon.Main:FindFirstChild("Barrel") then
+            startPos = defTower.Weapon.Main.Barrel.Position
+        end
+    end
+
+    -- Fallback 2: Player Character
+    if not startPos then
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then startPos = hrp.Position else return end
+    end
+
+    -- Tambah spread peluru acak
+    local spread = Vector3.new(
+        math.random(-15, 15) / 10,
+        math.random(-15, 15) / 10,
+        math.random(-15, 15) / 10
+    )
+    local finalTarget = targetPos + spread
+
+    -- Buat tracer bullet
+    local tracer = Instance.new("Part")
+    tracer.Name = "TracerBullet"
+    tracer.Anchored = true
+    tracer.CanCollide = false
+    tracer.Material = Enum.Material.Neon
+    tracer.Color = Color3.fromRGB(255, 220, 50) 
+    tracer.Size = Vector3.new(0.15, 0.15, 4)
+    tracer.CFrame = CFrame.lookAt(startPos, finalTarget)
+    tracer.Parent = workspace
+
+    -- Tween animasi peluru terbang
+    local distance = (finalTarget - startPos).Magnitude
+    local speed = 350 -- Studs per detik
+    local duration = distance / speed
+
+    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(tracer, tweenInfo, {
+        CFrame = CFrame.lookAt(finalTarget, finalTarget + (finalTarget - startPos).Unit)
+    })
+
+    tween:Play()
+    tween.Completed:Connect(function()
+        tracer:Destroy()
+    end)
+end
+
+local function ApplyTargetChams(enemy)
+	if not Globals.TargetChamsEnabled then 
+        if Globals.CurrentHighlight then
+            Globals.CurrentHighlight:Destroy()
+            Globals.CurrentHighlight = nil
+        end
+        return 
+    end
 	if not enemy then return end
 
 	if Globals.CurrentHighlight then
 		Globals.CurrentHighlight:Destroy()
+        Globals.CurrentHighlight = nil
 	end
 
-	if Globals.TargetChamsType == "Highlight" then
-
+	if Globals.TargetChamsType == "Highlight" or Globals.TargetChamsType == "Both" then
 		local highlight = Instance.new("Highlight")
 		highlight.FillColor = Color3.fromRGB(255,0,0)
 		highlight.OutlineColor = Color3.fromRGB(255,255,255)
@@ -331,7 +408,6 @@ local function ApplyTargetChams(enemy)
 		highlight.Parent = enemy
 
 		Globals.CurrentHighlight = highlight
-
 	end
 end
 
@@ -796,13 +872,10 @@ local function UpdatePathVisuals()
     end
 end
 
--- === DUMMY ADDONS FUNCTION ===
 function TDS:Addons()
-    -- Fitur Premium / Key System Bypassed!
     return true
 end
 
--- === NATIVE EQUIP AND UNEQUIP ===
 function TDS:Equip(tower_name)
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
     local success, err = pcall(function()
@@ -1191,7 +1264,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
 
     Main:Section({Title = "Equipper"})
     
-    -- Kotak Equip Tower
     Main:Textbox({
         Title = "Equip:",
         Desc = "Type a tower name to equip",
@@ -1233,7 +1305,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    -- Kotak Unequip Tower
     Main:Textbox({
         Title = "Unequip:",
         Desc = "Type a tower name to unequip",
@@ -1720,10 +1791,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Dropdown({
         Title = "Target Visual Type",
         Desc = "",
-        List = {"Highlight"},
+        List = {"Highlight", "Tracer", "Both"},
         Value = Globals.TargetChamsType or "Highlight",
         Callback = function(choice)
-
             local selected = type(choice) == "table" and choice[1] or choice
 
             if not selected or selected == "" then
@@ -1731,16 +1801,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             end
 
             Globals.TargetChamsType = selected
-            SetSetting("TargetChamsType", selected) -- [PERBAIKAN: Menyimpan ke Config]
+            SetSetting("TargetChamsType", selected)
         end
     })
 
     Misc:Toggle({
         Title = "Enable Target Visual",
-        Value = Globals.TargetChamsEnabled, -- [PERBAIKAN: Membaca dari config, bukan hardcode false]
+        Value = Globals.TargetChamsEnabled,
         Callback = function(state)
             Globals.TargetChamsEnabled = state
-            SetSetting("TargetChamsEnabled", state) -- [PERBAIKAN: Menyimpan ke Config]
+            SetSetting("TargetChamsEnabled", state)
 
             if not state and Globals.CurrentHighlight then
                 Globals.CurrentHighlight:Destroy()
@@ -1758,7 +1828,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Callback = function(value)
             if tonumber(value) then
                 Globals.AutoCooldown = tonumber(value)
-                SetSetting("AutoCooldown", tonumber(value)) -- [PERBAIKAN: Menyimpan ke Config]
+                SetSetting("AutoCooldown", tonumber(value)) 
             end
         end
     })
@@ -1771,17 +1841,17 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Callback = function(value)
             if tonumber(value) then
                 Globals.AutoMultiply = tonumber(value)
-                SetSetting("AutoMultiply", tonumber(value)) -- [PERBAIKAN: Menyimpan ke Config]
+                SetSetting("AutoMultiply", tonumber(value)) 
             end
         end
     })
 
     Misc:Toggle({
         Title = "Enable Auto Gatling (Test)",
-        Value = Globals.AutoGatling, -- [PERBAIKAN: Membaca dari config, bukan hardcode false]
+        Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
-            SetSetting("AutoGatling", state) -- [PERBAIKAN: Menyimpan ke Config]
+            SetSetting("AutoGatling", state)
 
             if state then
                 Window:Notify({
@@ -1822,6 +1892,17 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     workspace:GetAttribute("Sync"),
                                     workspace:GetServerTimeNow()
                                 )
+                            end
+                            
+                            -- Panggil tracer secara asinkron agar tidak melambatkan DPS
+                            if Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
+                                task.spawn(function()
+                                    local visualCount = math.min(Globals.AutoMultiply, 15) -- Cap visual tracers to avoid lag
+                                    for i = 1, visualCount do
+                                        CreateTracer(target.Position)
+                                        task.wait(0.02)
+                                    end
+                                end)
                             end
                         end
 
