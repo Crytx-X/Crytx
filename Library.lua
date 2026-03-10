@@ -1870,6 +1870,30 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             Globals.AutoGatling = state
             SetSetting("AutoGatling", state) 
 
+            -- // Fungsi bantuan dengan parameter true/false
+            local function FireFPSAbility(isEnabled)
+                pcall(function()
+                    local towersFolder = workspace:FindFirstChild("Towers")
+                    local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
+                    
+                    if defaultTroop then
+                        local args = {
+                            "Troops",
+                            "Abilities",
+                            "Activate",
+                            {
+                                Troop = defaultTroop,
+                                Name = "FPS",
+                                Data = {
+                                    enabled = isEnabled -- Memakai parameter dari fungsi
+                                }
+                            }
+                        }
+                        game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
+                    end
+                end)
+            end
+
             if state then
                 Window:Notify({
                     Title = "ADS",
@@ -1904,6 +1928,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         if target then
                             for i = 1, Globals.AutoMultiply do
+                                -- 1. Jalanin kode FPS sebelum nembak (enabled = true)
+                                FireFPSAbility(true)
+
+                                -- 2. Jalanin RE:Fire (Tembakan Gatling)
                                 pcall(function()
                                     remote:FireServer(
                                         target.Position,
@@ -1924,6 +1952,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     Globals.CurrentHighlight = nil
                 end
                 Globals.CurrentTarget = nil
+                
+                -- Jalanin kode FPS saat toggle di-offkan (enabled = false)
+                FireFPSAbility(false)
             end
         end
     })
