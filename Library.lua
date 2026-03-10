@@ -1888,11 +1888,31 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatlingsss",
+        Title = "Enable Auto Gatling",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
             SetSetting("AutoGatling", state) 
+
+            -- // Fungsi bantuan untuk mengecek apakah musuh masih hidup
+            local function IsAlive(enemy)
+                if not enemy or not enemy.Parent then return false end
+                
+                -- Cek dari Attributes (Paling umum di TDS modern)
+                local attrHealth = enemy:GetAttribute("Health")
+                if attrHealth ~= nil then
+                    return attrHealth > 0
+                end
+                
+                -- Cek dari Value Object (Jika menggunakan sistem lama)
+                local valHealth = enemy:FindFirstChild("Health")
+                if valHealth and (valHealth:IsA("NumberValue") or valHealth:IsA("IntValue")) then
+                    return valHealth.Value > 0
+                end
+                
+                -- Jika tidak ada penanda health yang terbaca, asumsikan hidup selama ada di workspace
+                return true
+            end
 
             -- // Fungsi bantuan untuk mengirim status FPS
             local function FireFPSAbility(isEnabled)
@@ -1967,29 +1987,43 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                         end
 
-                        -- // LOGIKA MENCARI TARGET
-                        local target = nil
+                        -- // LOGIKA MENCARI & LOCK TARGET
                         local npcs = workspace:FindFirstChild("NPCs")
+                        local targetHitbox = nil
 
-                        if npcs then
-                            for _, enemy in pairs(npcs:GetChildren()) do
-                                local hitbox = enemy:FindFirstChild("Hitbox")
+                        -- Cek apakah target yang sedang di-lock masih hidup
+                        if Globals.CurrentTarget and IsAlive(Globals.CurrentTarget) and Globals.CurrentTarget.Parent == npcs then
+                            targetHitbox = Globals.CurrentTarget:FindFirstChild("Hitbox")
+                        else
+                            -- Jika target sudah mati / hilang, hapus highlight lamanya
+                            Globals.CurrentTarget = nil
+                            if Globals.CurrentHighlight then
+                                Globals.CurrentHighlight:Destroy()
+                                Globals.CurrentHighlight = nil
+                            end
 
-                                if hitbox then
-                                    target = hitbox
-                                    Globals.CurrentTarget = enemy
-                                    ApplyTargetChams(enemy)
-                                    break
+                            -- Cari target baru yang masih hidup
+                            if npcs then
+                                for _, enemy in pairs(npcs:GetChildren()) do
+                                    if IsAlive(enemy) then
+                                        local hitbox = enemy:FindFirstChild("Hitbox")
+                                        if hitbox then
+                                            Globals.CurrentTarget = enemy
+                                            targetHitbox = hitbox
+                                            ApplyTargetChams(enemy)
+                                            break
+                                        end
+                                    end
                                 end
                             end
                         end
 
-                        -- // LOGIKA NEMBAK (Hanya jalan jika ada target dan Ammo > 0)
-                        if target then
+                        -- // LOGIKA NEMBAK (Hanya jalan jika ada targetHitbox dan Ammo > 0)
+                        if targetHitbox then
                             for i = 1, Globals.AutoMultiply do
                                 pcall(function()
                                     fireRemote:FireServer(
-                                        target.Position,
+                                        targetHitbox.Position,
                                         workspace:GetAttribute("Sync"),
                                         workspace:GetServerTimeNow()
                                     )
