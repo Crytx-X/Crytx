@@ -196,8 +196,8 @@ local DefaultSettings = {
     WebhookURL = "",
     Cooldown = 0.01,
     Multiply = 60,
-    AutoCooldown = 0.05,
-    AutoMultiply = 20,
+    AutoCooldown = 0.01,
+    AutoMultiply = 60,
     AutoGatling = false,
     PickupMethod = "Pathfinding",
     StreamerMode = false,
@@ -256,11 +256,6 @@ local ItemNames = {
 TDS = {
     PlacedTowers = {},
     ActiveStrat = true,
-    GatlingConfig = {
-        Enabled = false,
-        Multiply = 10,
-        Cooldown = 0.05
-    },
     MatchmakingMap = {
         ["Hardcore"] = "hardcore",
         ["Pizza Party"] = "halloween",
@@ -1253,97 +1248,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Main:Section({Title = "Auto Gatling Gun"})
-    Main:Toggle({
-        Title = "Enable Auto Gatling",
-        Default = false,
-        Callback = function(state)
-
-            Globals.AutoGatling = state
-
-            if state then
-
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Auto Gatling Enabled",
-                    Time = 3
-                })
-
-                task.spawn(function()
-
-                    local fireRemote = game:GetService("ReplicatedStorage")
-                    :WaitForChild("Network")
-                    :WaitForChild("GatlingGun")
-                    :WaitForChild("RE:Fire")
-
-                    while Globals.AutoGatling do
-
-                        local target
-
-                        for _,v in pairs(workspace.NPCs:GetDescendants()) do
-                            if v.Name == "Hitbox" then
-                                target = v
-                                break
-                            end
-                        end
-
-                        if target then
-
-                            local pos = target.Position
-
-                            for i = 1, Globals.AutoMultiply do
-                                fireRemote:FireServer(
-                                    pos,
-                                    workspace:GetAttribute("Sync"),
-                                    workspace:GetServerTimeNow()
-                                )
-                            end
-
-                        end
-
-                        task.wait(Globals.AutoCooldown)
-
-                    end
-
-                end)
-
-            else
-
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Auto Gatling Disabled",
-                    Time = 3
-                })
-
-            end
-
-        end
-    })
-
-    Main:Textbox({
-        Title = "Auto Cooldown:",
-        Placeholder = "0.05",
-        Value = Globals.AutoCooldown,
-        ClearTextOnFocus = true,
-        Callback = function(value)
-            if value ~= 0 then
-                Globals.AutoCooldown = tonumber(value)
-            end
-        end
-    })
-
-    Main:Textbox({
-        Title = "Auto Multiply:",
-        Placeholder = "20",
-        Value = Globals.AutoMultiply,
-        ClearTextOnFocus = true,
-        Callback = function(value)
-            if value ~= 0 then
-                Globals.AutoMultiply = tonumber(value)
-            end
-        end
-    })
-
     Main:Section({Title = "Stats"})
     local CoinsLabel = Main:Label({Title = "Coins: 0", Desc = ""})
     local GemsLabel = Main:Label({Title = "Gems: 0", Desc = ""})
@@ -1782,6 +1686,92 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Value = Globals.ClaimRewards,
         Callback = function(v)
             SetSetting("ClaimRewards", v)
+        end
+    })
+
+    Misc:Section({Title = "Auto Gatling Gun"})
+    Misc:Textbox({
+        Title = "Auto Cooldown:",
+        Placeholder = "0.01",
+        Value = Globals.AutoCooldown,
+        ClearTextOnFocus = true,
+        Callback = function(value)
+            if tonumber(value) then
+                Globals.AutoCooldown = tonumber(value)
+            end
+        end
+    })
+
+    Misc:Textbox({
+        Title = "Auto Multiply:",
+        Placeholder = "60",
+        Value = Globals.AutoMultiply,
+        ClearTextOnFocus = true,
+        Callback = function(value)
+            if tonumber(value) then
+                Globals.AutoMultiply = tonumber(value)
+            end
+        end
+    })
+
+    Misc:Toggle({
+        Title = "Enable Auto Gatling",
+        Value = false,
+        Callback = function(state)
+            Globals.AutoGatling = state
+
+            if state then
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Auto Gatling Enabled",
+                    Time = 3
+                })
+
+                task.spawn(function()
+
+                    local remote = game:GetService("ReplicatedStorage")
+                        :WaitForChild("Network")
+                        :WaitForChild("GatlingGun")
+                        :WaitForChild("RE:Fire")
+
+                    while Globals.AutoGatling do
+
+                        local npcs = workspace:FindFirstChild("NPCs")
+
+                        if npcs then
+                            for _, enemy in pairs(npcs:GetChildren()) do
+
+                                local hitbox = enemy:FindFirstChild("Hitbox")
+
+                                if hitbox then
+
+                                    local pos = hitbox.Position
+
+                                    for i = 1, Globals.AutoMultiply do
+                                        remote:FireServer(
+                                            pos,
+                                            workspace:GetAttribute("Sync"),
+                                            workspace:GetServerTimeNow()
+                                        )
+                                    end
+
+                                    task.wait(Globals.AutoCooldown)
+                                end
+                            end
+                        end
+
+                        task.wait()
+                    end
+
+                end)
+
+            else
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Auto Gatling Disabled",
+                    Time = 3
+                })
+            end
         end
     })
 
