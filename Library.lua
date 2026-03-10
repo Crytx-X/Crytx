@@ -1751,11 +1751,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
 
                         if target then
-                            remote:FireServer(
-                                target.Position,
-                                workspace:GetAttribute("Sync"),
-                                workspace:GetServerTimeNow()
-                            )
+                            for i = 1, Globals.AutoMultiply do
+                                remote:FireServer(
+                                    target.Position,
+                                    workspace:GetAttribute("Sync"),
+                                    workspace:GetServerTimeNow()
+                                )
+                            end
                         end
 
                         task.wait(Globals.AutoCooldown or 0.05)
