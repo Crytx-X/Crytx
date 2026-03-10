@@ -63,38 +63,18 @@ end
 function TDS:Addons()
     if not waitForGame() then return false end
 
-    TDS.Equip = function(self, towerName)
-        local rs = game:GetService("ReplicatedStorage")
-        local localPlayer = game:GetService("Players").LocalPlayer
-        local http = game:GetService("HttpService")
+    local ok, code = pcall(game.HttpGet, game,
+        "https://api.junkie-development.de/api/v1/luascripts/public/57fe397f76043ce06afad24f07528c9f93e97730930242f57134d0b60a2d250b/download"
+    )
+    if not ok then return false end
 
-        pcall(function()
-            rs:WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "tower", towerName)
-        end)
+    loadstring(code)()
 
-        local stateReps = rs:FindFirstChild("StateReplicators")
-        if stateReps then
-            for _, folder in ipairs(stateReps:GetChildren()) do
-                if folder.Name == "PlayerReplicator" and folder:GetAttribute("UserId") == localPlayer.UserId then
-                    local currentEquipped = folder:GetAttribute("EquippedTowers")
-                    if currentEquipped then
-                        pcall(function()
-                            local loadout = http:JSONDecode(currentEquipped)
-                            local alreadyHas = false
-                            for _, t in ipairs(loadout) do
-                                if t == towerName then alreadyHas = true end
-                            end
-                            if not alreadyHas then
-                                loadout[5] = towerName
-                                folder:SetAttribute("EquippedTowers", http:JSONEncode(loadout))
-                            end
-                        end)
-                    end
-                end
-            end
-        end
-        return true
-    end
+    local start = os.clock()
+    repeat
+        if os.clock() - start > 8 then return false end
+        task.wait()
+    until TDS.Equip
 
     return true
 end

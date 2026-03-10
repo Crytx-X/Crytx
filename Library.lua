@@ -863,58 +863,25 @@ local function UpdatePathVisuals()
 end
 
 function TDS:Addons()
-    TDS.MultiMode = true
-    TDS.Multiplayer = true
+    local url = "https://api.jnkie.com/api/v1/luascripts/public/57fe397f76043ce06afad24f07528c9f93e97730930242f57134d0b60a2d250b/download"
 
-    TDS.GatlingConfig = {
-        Enabled = false,
-        Multiply = 10,
-        Cooldown = 0.05,
-        CriticalRange = 100
-    }
+    local success, code = pcall(game.HttpGet, game, url)
 
-    function TDS:AutoGatling() return true end
+    if not success then
+        return false
+    end
 
-    -- REKONSTRUKSI IN-GAME EQUIPPER
-    TDS.Equip = function(self, towerName)
-        local rs = game:GetService("ReplicatedStorage")
-        local players = game:GetService("Players")
-        local localPlayer = players.LocalPlayer
-        local http = game:GetService("HttpService")
+    loadstring(code)()
 
-        -- 1. Coba cara normal (Untuk di Lobby)
-        pcall(function()
-            rs:WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "tower", towerName)
-        end)
+    while not (TDS.MultiMode and TDS.Multiplayer) do
+        task.wait(0.1)
+    end
 
-        -- 2. Coba cara Manipulasi Lokal (Untuk In-Game)
-        local stateReps = rs:FindFirstChild("StateReplicators")
-        if stateReps then
-            for _, folder in ipairs(stateReps:GetChildren()) do
-                if folder.Name == "PlayerReplicator" and folder:GetAttribute("UserId") == localPlayer.UserId then
-                    local currentEquipped = folder:GetAttribute("EquippedTowers")
-                    if currentEquipped then
-                        pcall(function()
-                            -- Ubah data JSON bawaan TDS
-                            local loadout = http:JSONDecode(currentEquipped)
-                            
-                            -- Cek apakah tower sudah ada di loadout
-                            local alreadyHas = false
-                            for _, t in ipairs(loadout) do
-                                if t == towerName then alreadyHas = true end
-                            end
-
-                            -- Jika belum ada, ganti tower di slot ke-5 (terakhir)
-                            if not alreadyHas then
-                                loadout[5] = towerName
-                                folder:SetAttribute("EquippedTowers", http:JSONEncode(loadout))
-                            end
-                        end)
-                    end
-                end
-            end
+    local OriginalEquip = TDS.Equip
+    TDS.Equip = function(...)
+        if GameState == "GAME" then
+            return OriginalEquip(...)
         end
-        return true
     end
 
     return true
