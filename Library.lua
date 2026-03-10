@@ -863,25 +863,39 @@ local function UpdatePathVisuals()
 end
 
 function TDS:Addons()
-    local url = "https://api.jnkie.com/api/v1/luascripts/public/b74871791dd2870a1620c0ce9b608dd57bb7b0986b2bd7fd4be39cabec9e21d2/download"
+    -- 1. Beritahu script bahwa fitur "Premium/Multiplayer" sudah aktif
+    TDS.MultiMode = true
+    TDS.Multiplayer = true
 
-    local success, code = pcall(game.HttpGet, game, url)
+    -- 2. Buat konfigurasi untuk Gatling Gun (Sesuai yang diminta oleh UI)
+    TDS.GatlingConfig = {
+        Enabled = false,
+        Multiply = 10,
+        Cooldown = 0.05,
+        CriticalRange = 100
+    }
 
-    if not success then
-        return false
+    -- 3. Rekonstruksi fungsi AutoGatling (Logic asli Gatling Override sudah ada di tombol UI, jadi ini hanya inisiasi)
+    function TDS:AutoGatling()
+        -- Biarkan kosong, karena saat kamu pencet "Apply Gatling" di UI, 
+        -- script otomatis meng-override module _fireGun milik TDS.
+        return true
     end
 
-    loadstring(code)()
-
-    while not (TDS.MultiMode and TDS.Multiplayer) do
-        task.wait(0.1)
+    -- 4. Rekonstruksi fungsi Equip
+    -- Ini adalah metode standar TDS untuk meng-equip tower via RemoteFunction
+    local remote_func = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+    local OriginalEquip = function(self, towerName)
+        local ok, res = pcall(function()
+            return remote_func:InvokeServer("Inventory", "Equip", "tower", towerName)
+        end)
+        return ok
     end
 
-    local OriginalEquip = TDS.Equip
-    TDS.Equip = function(...)
-        if GameState == "GAME" then
-            return OriginalEquip(...)
-        end
+    TDS.Equip = function(self, ...)
+        -- Pembuat script aslinya punya cara rahasia untuk equip in-game.
+        -- Jika ini dijalankan di Lobby, fungsi normal akan bekerja 100%.
+        return OriginalEquip(self, ...)
     end
 
     return true

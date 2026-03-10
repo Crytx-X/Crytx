@@ -62,20 +62,14 @@ end
 
 function TDS:Addons()
     if not waitForGame() then return false end
-
-    local ok, code = pcall(game.HttpGet, game,
-        "https://api.junkie-development.de/api/v1/luascripts/public/b74871791dd2870a1620c0ce9b608dd57bb7b0986b2bd7fd4be39cabec9e21d2/download"
-    )
-    if not ok then return false end
-
-    loadstring(code)()
-
-    local start = os.clock()
-    repeat
-        if os.clock() - start > 8 then return false end
-        task.wait()
-    until TDS.Equip
-
+    
+    local remote_func = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+    TDS.Equip = function(self, towerName)
+        pcall(function()
+            remote_func:InvokeServer("Inventory", "Equip", "tower", towerName)
+        end)
+    end
+    
     return true
 end
 
