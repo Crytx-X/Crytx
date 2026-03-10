@@ -1888,7 +1888,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatling",
+        Title = "Enable Auto Gatlingsss",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
@@ -1908,9 +1908,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             {
                                 Troop = defaultTroop,
                                 Name = "FPS",
-                                Data = {
-                                    enabled = isEnabled
-                                }
+                                Data = { enabled = isEnabled }
                             }
                         }
                         game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
@@ -1921,11 +1919,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if state then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Auto Gatling Test Enabled",
+                    Desc = "Auto Gatling Enabled (Store Health Check)",
                     Time = 3
                 })
 
-                -- 1. Jalankan FPS menjadi 'true' HANYA SATU KALI SAAT DINYALAKAN
+                -- Jalankan FPS menjadi 'true' HANYA SATU KALI
                 FireFPSAbility(true)
 
                 task.spawn(function()
@@ -1934,11 +1932,79 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     local fireRemote = gatlingNetwork:WaitForChild("RE:Fire")
                     local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
 
+                    -- // FUNGSI MENCARI STORE (Menggunakan petunjuk React mu)
+                    local TDS_Store = nil
+                    local function FindTDSStore()
+                        if TDS_Store then return TDS_Store end
+                        local rs = game:GetService("ReplicatedStorage")
+                        
+                        -- 1. Mengambil store dari module useStore
+                        pcall(function()
+                            local useStoreHook = require(rs.Client.Interfaces.Hooks.useStore)
+                            if type(useStoreHook) == "function" then
+                                for i = 1, 20 do
+                                    local upval = debug.getupvalue(useStoreHook, i)
+                                    if type(upval) == "table" and type(upval.getState) == "function" then
+                                        local st = upval:getState()
+                                        if st and st.EnemiesStore then 
+                                            TDS_Store = upval 
+                                            return 
+                                        end
+                                    end
+                                end
+                            end
+                        end)
+                        
+                        -- 2. Fallback mencari via Garbage Collector jika cara di atas gagal
+                        if not TDS_Store and getgc then
+                            for _, v in pairs(getgc(true)) do
+                                if type(v) == "table" and type(rawget(v, "getState")) == "function" then
+                                    local st = v:getState()
+                                    if st and st.EnemiesStore then 
+                                        TDS_Store = v 
+                                        break 
+                                    end
+                                end
+                            end
+                        end
+                        return TDS_Store
+                    end
+
+                    -- // FUNGSI CEK DARAH DARI ENEMIES STORE
+                    local function IsEnemyAlive(enemy)
+                        if not enemy or not enemy.Parent or not enemy:FindFirstChild("Hitbox") then return false end
+                        
+                        local store = FindTDSStore()
+                        if store then
+                            local state = store:getState()
+                            if state and state.EnemiesStore then
+                                -- ID musuh biasanya adalah Name dari model di workspace.NPCs
+                                local enemyData = state.EnemiesStore[enemy.Name]
+                                
+                                -- Jika tidak ketemu langsung, cari berdasarkan id di dalam data
+                                if not enemyData then
+                                    for _, data in pairs(state.EnemiesStore) do
+                                        if tostring(data.id) == enemy.Name or tostring(data.name) == enemy.Name then
+                                            enemyData = data
+                                            break
+                                        end
+                                    end
+                                end
+
+                                -- Jika musuh tidak ada di store, berarti sudah mati/hilang
+                                if not enemyData then return false end
+                                
+                                -- Jika ada di store, pastikan health > 0
+                                return (enemyData.health or 0) > 0
+                            end
+                        end
+                        return true -- Fallback jika store gagal diload
+                    end
+
                     while Globals.AutoGatling do
                         local myGatlingRep = nil
                         local towersFolder = workspace:FindFirstChild("Towers")
                         
-                        -- Cari Gatling Gun milik player untuk dicek amunisinya
                         if towersFolder then
                             for _, tower in pairs(towersFolder:GetChildren()) do
                                 local rep = tower:FindFirstChild("TowerReplicator")
@@ -1954,37 +2020,43 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             local currentAmmo = myGatlingRep:GetAttribute("Ammo")
                             local isReloading = myGatlingRep:GetAttribute("Reloading")
 
-                            -- Jika peluru 0 atau sedang dalam proses reload
                             if (currentAmmo ~= nil and currentAmmo <= 0) or isReloading then
-                                -- Jika belum status reloading, panggil remote Reload
                                 if not isReloading then
                                     pcall(function() reloadRemote:FireServer() end)
                                 end
-                                
-                                -- Skip penembakan dan tunggu sebentar sampai reload selesai
                                 task.wait(0.1)
                                 continue 
                             end
                         end
 
-                        -- // LOGIKA MENCARI TARGET
+                        -- // LOGIKA MENCARI & LOCK TARGET
                         local target = nil
                         local npcs = workspace:FindFirstChild("NPCs")
 
-                        if npcs then
-                            for _, enemy in pairs(npcs:GetChildren()) do
-                                local hitbox = enemy:FindFirstChild("Hitbox")
+                        -- 1. Cek apakah target yang sedang di-lock MASIH HIDUP di Store
+                        if Globals.CurrentTarget and IsEnemyAlive(Globals.CurrentTarget) then
+                            target = Globals.CurrentTarget:FindFirstChild("Hitbox")
+                        else
+                            -- 2. Jika musuh sudah mati/darah 0, HAPUS LOCK dan cari musuh baru
+                            if Globals.CurrentHighlight then
+                                Globals.CurrentHighlight:Destroy()
+                                Globals.CurrentHighlight = nil
+                            end
+                            Globals.CurrentTarget = nil
 
-                                if hitbox then
-                                    target = hitbox
-                                    Globals.CurrentTarget = enemy
-                                    ApplyTargetChams(enemy)
-                                    break
+                            if npcs then
+                                for _, enemy in ipairs(npcs:GetChildren()) do
+                                    if IsEnemyAlive(enemy) then
+                                        target = enemy:FindFirstChild("Hitbox")
+                                        Globals.CurrentTarget = enemy
+                                        ApplyTargetChams(enemy)
+                                        break
+                                    end
                                 end
                             end
                         end
 
-                        -- // LOGIKA NEMBAK (Hanya jalan jika ada target dan Ammo > 0)
+                        -- // LOGIKA NEMBAK
                         if target then
                             for i = 1, Globals.AutoMultiply do
                                 pcall(function()
@@ -2001,14 +2073,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     end
                 end)
             else
-                -- CLEANUP HIGHLIGHT SAAT MATIKAN AUTO GATLING
+                -- CLEANUP SAAT DIMATIKAN
                 if Globals.CurrentHighlight then
                     Globals.CurrentHighlight:Destroy()
                     Globals.CurrentHighlight = nil
                 end
                 Globals.CurrentTarget = nil
                 
-                -- Jalankan FPS menjadi 'false' saat toggle dimatikan
                 FireFPSAbility(false)
             end
         end
