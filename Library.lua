@@ -1278,12 +1278,18 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
 
                     while Globals.AutoGatling do
 
-                        local npcs = workspace:FindFirstChild("NPCs")
-                        local enemy = npcs and npcs:FindFirstChildWhichIsA("Model")
+                        local target
 
-                        if enemy and enemy:FindFirstChild("Hitbox") then
+                        for _,v in pairs(workspace.NPCs:GetDescendants()) do
+                            if v.Name == "Hitbox" then
+                                target = v
+                                break
+                            end
+                        end
 
-                            local pos = enemy.Hitbox.Position
+                        if target then
+
+                            local pos = target.Position
 
                             for i = 1, Globals.AutoMultiply do
                                 fireRemote:FireServer(
