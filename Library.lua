@@ -183,9 +183,6 @@ local DefaultSettings = {
     SellFarms = false,
     AutoMercenary = false,
     AutoMilitary = false,
-    GatlingEnabled = false,
-    GatlingMultiply = 10,
-    GatlingCooldown = 0.05,
     Frost = false,
     Fallen = false,
     Easy = false,
@@ -199,6 +196,9 @@ local DefaultSettings = {
     WebhookURL = "",
     Cooldown = 0.01,
     Multiply = 60,
+    AutoCooldown = 0.05,
+    AutoMultiply = 20,
+    AutoGatling = false,
     PickupMethod = "Pathfinding",
     StreamerMode = false,
     HideUsername = false,
@@ -1253,35 +1253,96 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Main:Section({Title = "Gatling Gun"})
-    Main:Toggle({
-        Title = "Auto Gatling Enabled",
-        Value = Globals.GatlingEnabled,
+    Misc:Section({Title = "Auto Gatling Gun"})
+    Misc:Toggle({
+        Title = "Enable Auto Gatling",
+        Default = false,
         Callback = function(state)
-            SetSetting("GatlingEnabled", state)
-            TDS.GatlingConfig.Enabled = state
+
+            Globals.AutoGatling = state
+
+            if state then
+
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Auto Gatling Enabled",
+                    Time = 3
+                })
+
+                task.spawn(function()
+
+                    local fireRemote = game:GetService("ReplicatedStorage")
+                    :WaitForChild("Network")
+                    :WaitForChild("GatlingGun")
+                    :WaitForChild("RE:Fire")
+
+                    while Globals.AutoGatling do
+
+                        local npcFolder = workspace:FindFirstChild("NPCs")
+
+                        if npcFolder then
+                            for _,enemy in pairs(npcFolder:GetChildren()) do
+
+                                local hitbox = enemy:FindFirstChild("Hitbox")
+
+                                if hitbox then
+
+                                    local pos = hitbox.Position
+
+                                    for i = 1, Globals.AutoMultiply do
+                                        fireRemote:FireServer(
+                                            pos,
+                                            workspace:GetAttribute("Sync"),
+                                            workspace:GetServerTimeNow()
+                                        )
+                                    end
+
+                                    task.wait(Globals.AutoCooldown)
+
+                                end
+
+                            end
+                        end
+
+                        task.wait()
+                    end
+
+                end)
+
+            else
+
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Auto Gatling Disabled",
+                    Time = 3
+                })
+
+            end
+
         end
     })
 
-    Main:Slider({
-        Title = "Gatling Multiply",
-        Min = 1,
-        Max = 50,
-        Value = Globals.GatlingMultiply,
-        Callback = function(val)
-            SetSetting("GatlingMultiply", val)
-            TDS.GatlingConfig.Multiply = val
+    Misc:Textbox({
+        Title = "Auto Cooldown:",
+        Placeholder = "0.05",
+        Value = Globals.AutoCooldown,
+        ClearTextOnFocus = true,
+        Callback = function(value)
+            if value ~= 0 then
+                Globals.AutoCooldown = tonumber(value)
+            end
         end
     })
 
-    Main:Slider({
-        Title = "Gatling Cooldown",
-        Min = 0.01,
-        Max = 1,
-        Value = Globals.GatlingCooldown,
-        Callback = function(val)
-            SetSetting("GatlingCooldown", val)
-            TDS.GatlingConfig.Cooldown = val
+    Misc:Textbox({
+        Title = "Auto Multiply:",
+        Placeholder = "20",
+        Value = Globals.AutoMultiply,
+        ClearTextOnFocus = true,
+        Callback = function(value)
+            if value ~= 0 then
+                Globals.AutoMultiply = tonumber(value)
+            end
         end
     })
 
