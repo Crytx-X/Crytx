@@ -364,22 +364,22 @@ local function CreateTracer(targetPos)
     end)
 end
 
--- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire
+-- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire DAN MEMBLOKIR FPS (false) JADI true
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         local method = getnamecallmethod()
+        
+        -- // 1. Mencegat Tracer Peluru (RE:Fire)
         if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
             local p = self.Parent
             if p and p.Name == "GatlingGun" then
-                -- HANYA JALAN JIKA AUTO GATLING MENYALA DAN TARGET VISUAL AKTIF
                 if Globals.AutoGatling and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
                     local args = {...}
                     local targetPos = args[1]
                     if typeof(targetPos) == "Vector3" then
                         local now = os.clock()
-                        -- Limit 30 peluru visual per detik agar tidak lag jika multiply tinggi
                         if now - lastTracerTime >= 0.03 then 
                             lastTracerTime = now
                             task.spawn(CreateTracer, targetPos)
@@ -388,6 +388,30 @@ if hookmetamethod then
                 end
             end
         end
+
+        -- // 2. Mencegat Remote Function (Mencegah FPS dimatikan)
+        if method == "InvokeServer" and typeof(self) == "Instance" and self.Name == "RemoteFunction" then
+            local args = {...}
+            if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
+                local payload = args[4]
+                if type(payload) == "table" and payload.Name == "FPS" then
+                    -- Jika ada yang mencoba mengirim enabled = false
+                    if payload.Data and payload.Data.enabled == false then
+                        -- Dan jika Toggle Auto Gatling kita masih Aktif (ON)
+                        if Globals.AutoGatling then
+                            -- Kita timpa args-nya menjadi true tanpa perlu ngespam
+                            args[4] = {
+                                Troop = payload.Troop,
+                                Name = payload.Name,
+                                Data = { enabled = true }
+                            }
+                            return oldNamecall(self, unpack(args))
+                        end
+                    end
+                end
+            end
+        end
+
         return oldNamecall(self, ...)
     end)
 end
@@ -1864,13 +1888,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatlings",
+        Title = "Enable Auto Gatling",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
             SetSetting("AutoGatling", state) 
 
-            -- // Fungsi bantuan dengan parameter true/false
+            -- // Fungsi bantuan untuk mengirim status FPS
             local function FireFPSAbility(isEnabled)
                 pcall(function()
                     local towersFolder = workspace:FindFirstChild("Towers")
@@ -1885,7 +1909,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 Troop = defaultTroop,
                                 Name = "FPS",
                                 Data = {
-                                    enabled = isEnabled -- Memakai parameter dari fungsi
+                                    enabled = isEnabled
                                 }
                             }
                         }
@@ -1900,6 +1924,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     Desc = "Auto Gatling Test Enabled",
                     Time = 3
                 })
+
+                -- 1. Jalankan FPS menjadi 'true' HANYA SATU KALI SAAT DINYALAKAN
+                FireFPSAbility(true)
 
                 task.spawn(function()
                     local remote = game:GetService("ReplicatedStorage")
@@ -1917,10 +1944,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                                 if hitbox then
                                     target = hitbox
-
                                     Globals.CurrentTarget = enemy
                                     ApplyTargetChams(enemy)
-
                                     break
                                 end
                             end
@@ -1928,10 +1953,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         if target then
                             for i = 1, Globals.AutoMultiply do
-                                -- 1. Jalanin kode FPS sebelum nembak (enabled = true)
-                                FireFPSAbility(true)
-
-                                -- 2. Jalanin RE:Fire (Tembakan Gatling)
+                                -- Hanya Spam tembakan Gatling Gun (Tidak spam FPS Ability)
                                 pcall(function()
                                     remote:FireServer(
                                         target.Position,
@@ -1953,7 +1975,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 end
                 Globals.CurrentTarget = nil
                 
-                -- Jalanin kode FPS saat toggle di-offkan (enabled = false)
+                -- Jalankan FPS menjadi 'false' saat toggle dimatikan 
+                -- (Karena Globals.AutoGatling sudah di-set false, Hook tidak akan memblokirnya)
                 FireFPSAbility(false)
             end
         end
