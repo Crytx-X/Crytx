@@ -1719,10 +1719,19 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Section({Title = "Target Visual"})
     Misc:Dropdown({
         Title = "Target Visual Type",
-        Values = {"Highlight","Test"},
-        Value = "Highlight",
-        Callback = function(value)
-            Globals.TargetChamsType = value
+        Desc = "",
+        List = {"Highlight"},
+        Value = Globals.TargetChamsType or "Highlight",
+        Callback = function(choice)
+
+            local selected = type(choice) == "table" and choice[1] or choice
+
+            if not selected or selected == "" then
+                selected = "Highlight"
+            end
+
+            Globals.TargetChamsType = selected
+
         end
     })
 
