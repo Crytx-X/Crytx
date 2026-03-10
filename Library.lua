@@ -1,10 +1,3 @@
-Penyebab mengapa Equipper di `Library.lua` tidak berfungsi sedangkan kode yang Anda berikan berfungsi adalah karena **sistem Auto-Correct/Deteksi Nama Tower (`resolveTower`)**.
-
-Di kode `Library.lua` sebelumnya, jika Anda mengetik "accel" di UI, ia akan mengirimkan kata "accel" ke server, dan server menolaknya karena nama aslinya adalah "Accelerator". Sedangkan pada kode yang Anda berikan, terdapat fungsi pintar yang memperbaiki ketikan Anda menjadi nama tower yang persis (Capslock & Spasi sesuai).
-
-Saya telah memasukkan fungsi pintar tersebut ke dalam UI `Library.lua`. Berikut adalah kode **`Library.lua` FULL** yang sudah diperbaiki 100%. Silakan **Copy Paste / Replace** seluruh isi file `Library.lua` Anda di GitHub dengan kode di bawah ini:
-
-```lua
 local Globals = getgenv()
 
 if not game:IsLoaded() then game.Loaded:Wait() end
