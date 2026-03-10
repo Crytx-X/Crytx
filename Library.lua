@@ -318,45 +318,41 @@ end
 
 local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
 
-local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
-
-local old_fire = gganim._fireGun
+local NPCFolder = workspace:WaitForChild("NPCs")
 
 local function GetEnemy()
-    local npcs = workspace:FindFirstChild("NPCs")
-    if not npcs then return end
-
-    for _,v in pairs(npcs:GetChildren()) do
-        if v:FindFirstChild("Hitbox") then
-            return v.Hitbox.Position
+    for _,v in ipairs(NPCFolder:GetChildren()) do
+        local hitbox = v:FindFirstChild("Hitbox")
+        if hitbox then
+            return hitbox.Position
         end
     end
 end
 
 task.spawn(function()
-    while task.wait() do
+    while true do
+        
         if TDS.GatlingConfig.Enabled then
+            
             local pos = GetEnemy()
+
             if pos then
+                local sync = workspace:GetAttribute("Sync")
+                local time = workspace:GetServerTimeNow()
+
                 for i = 1, TDS.GatlingConfig.Multiply do
-                    ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+                    ggchannel:fireServer("Fire", pos, sync, time)
                 end
             end
+
             task.wait(TDS.GatlingConfig.Cooldown)
+
+        else
+            task.wait(0.3)
         end
+        
     end
 end)
-
-local function getEnemyPos()
-    local folder = workspace:FindFirstChild("NPCs")
-    if not folder then return nil end
-
-    for _,v in pairs(folder:GetChildren()) do
-        if v:FindFirstChild("Hitbox") then
-            return v.Hitbox.Position
-        end
-    end
-end
 
 local function hookGatling()
     gganim._fireGun = function(self)
