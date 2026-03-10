@@ -1888,31 +1888,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatlingssss",
+        Title = "Enable Auto Gatlingsss",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
             SetSetting("AutoGatling", state) 
-
-            -- // Fungsi untuk mengecek apakah musuh benar-benar masih hidup
-            local function IsAlive(enemy)
-                if not enemy or not enemy.Parent then return false end
-                
-                -- Mengambil atribut Health dan Shield berdasarkan script UI asli game
-                local health = enemy:GetAttribute("Health") or 0
-                local shield = enemy:GetAttribute("Shield") or 0
-                
-                -- Support legacy (jika TDS menggunakan ObjectValue lama)
-                if health == 0 and shield == 0 then
-                    local valHealth = enemy:FindFirstChild("Health")
-                    if valHealth and (valHealth:IsA("NumberValue") or valHealth:IsA("IntValue")) then
-                        health = valHealth.Value
-                    end
-                end
-                
-                -- Musuh dianggap hidup jika total HP + Shield lebih dari 0
-                return (health + shield) > 0
-            end
 
             -- // Fungsi bantuan untuk mengirim status FPS
             local function FireFPSAbility(isEnabled)
@@ -1958,7 +1938,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local myGatlingRep = nil
                         local towersFolder = workspace:FindFirstChild("Towers")
                         
-                        -- Cari Gatling Gun milik player untuk cek Ammo
+                        -- Cari Gatling Gun milik player untuk dicek amunisinya
                         if towersFolder then
                             for _, tower in pairs(towersFolder:GetChildren()) do
                                 local rep = tower:FindFirstChild("TowerReplicator")
@@ -1974,58 +1954,46 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             local currentAmmo = myGatlingRep:GetAttribute("Ammo")
                             local isReloading = myGatlingRep:GetAttribute("Reloading")
 
+                            -- Jika peluru 0 atau sedang dalam proses reload
                             if (currentAmmo ~= nil and currentAmmo <= 0) or isReloading then
+                                -- Jika belum status reloading, panggil remote Reload
                                 if not isReloading then
                                     pcall(function() reloadRemote:FireServer() end)
                                 end
+                                
+                                -- Skip penembakan dan tunggu sebentar sampai reload selesai
                                 task.wait(0.1)
-                                continue -- Tunggu sampai peluru terisi, jangan lanjut nembak
+                                continue 
                             end
                         end
 
-                        -- // LOGIKA MENCARI & LOCK TARGET STRICT
-                        -- Evaluasi target yang sedang dilock
-                        local targetValid = false
-                        if Globals.CurrentTarget and IsAlive(Globals.CurrentTarget) then
-                            if Globals.CurrentTarget:FindFirstChild("Hitbox") then
-                                targetValid = true
-                            end
-                        end
+                        -- // LOGIKA MENCARI TARGET
+                        local target = nil
+                        local npcs = workspace:FindFirstChild("NPCs")
 
-                        -- Jika target lama sudah mati/validasi gagal, cari yang baru
-                        if not targetValid then
-                            Globals.CurrentTarget = nil
-                            if Globals.CurrentHighlight then
-                                Globals.CurrentHighlight:Destroy()
-                                Globals.CurrentHighlight = nil
-                            end
+                        if npcs then
+                            for _, enemy in pairs(npcs:GetChildren()) do
+                                local hitbox = enemy:FindFirstChild("Hitbox")
 
-                            local npcs = workspace:FindFirstChild("NPCs")
-                            if npcs then
-                                -- Pakai ipairs agar mengambil musuh paling awal yang spawn
-                                for _, enemy in ipairs(npcs:GetChildren()) do
-                                    if IsAlive(enemy) and enemy:FindFirstChild("Hitbox") then
-                                        Globals.CurrentTarget = enemy
-                                        ApplyTargetChams(enemy)
-                                        break
-                                    end
+                                if hitbox then
+                                    target = hitbox
+                                    Globals.CurrentTarget = enemy
+                                    ApplyTargetChams(enemy)
+                                    break
                                 end
                             end
                         end
 
-                        -- // LOGIKA NEMBAK
-                        if Globals.CurrentTarget then
-                            local targetHitbox = Globals.CurrentTarget:FindFirstChild("Hitbox")
-                            if targetHitbox then
-                                for i = 1, Globals.AutoMultiply do
-                                    pcall(function()
-                                        fireRemote:FireServer(
-                                            targetHitbox.Position,
-                                            workspace:GetAttribute("Sync"),
-                                            workspace:GetServerTimeNow()
-                                        )
-                                    end)
-                                end
+                        -- // LOGIKA NEMBAK (Hanya jalan jika ada target dan Ammo > 0)
+                        if target then
+                            for i = 1, Globals.AutoMultiply do
+                                pcall(function()
+                                    fireRemote:FireServer(
+                                        target.Position,
+                                        workspace:GetAttribute("Sync"),
+                                        workspace:GetServerTimeNow()
+                                    )
+                                end)
                             end
                         end
 
