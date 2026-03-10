@@ -1972,14 +1972,28 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local npcs = workspace:FindFirstChild("NPCs")
 
                         if npcs then
-                            for _, enemy in pairs(npcs:GetChildren()) do
+                            for _, enemy in ipairs(npcs:GetChildren()) do
                                 local hitbox = enemy:FindFirstChild("Hitbox")
 
                                 if hitbox then
-                                    target = hitbox
-                                    Globals.CurrentTarget = enemy
-                                    ApplyTargetChams(enemy)
-                                    break
+                                    -- Deteksi apakah musuh sudah mati berdasarkan sistem bawaan TDS
+                                    local isDead = enemy:GetAttribute("Dead") == true or 
+                                                enemy:GetAttribute("IsDead") == true or 
+                                                enemy:GetAttribute("Dying") == true or
+                                                (enemy:GetAttribute("Health") ~= nil and enemy:GetAttribute("Health") <= 0)
+
+                                    -- Jika musuh belum mati / Valid
+                                    if not isDead then
+                                        target = hitbox
+                                        
+                                        -- Terapkan Visual Chams (Hanya jika musuh berganti agar FPS tidak drop)
+                                        if Globals.CurrentTarget ~= enemy then
+                                            Globals.CurrentTarget = enemy
+                                            ApplyTargetChams(enemy)
+                                        end
+                                        
+                                        break -- Kunci musuh ini dan tembak
+                                    end
                                 end
                             end
                         end
