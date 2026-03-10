@@ -151,7 +151,6 @@ local TimeScaleNoTicketsWarned = false
 local AutoMercenaryBaseRunning = false
 local AutoMilitaryBaseRunning = false
 local SellFarmsRunning = false
-local AutoGatlingRunning = false
 
 local MaxPathDistance = 300 -- default
 local MilMarker = nil
@@ -1172,6 +1171,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
 
     Main:Section({Title = "Equipper"})
     
+    -- Kotak Equip Tower
     Main:Textbox({
         Title = "Equip:",
         Desc = "Type a tower name to equip",
@@ -1213,6 +1213,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
+    -- Kotak Unequip Tower
     Main:Textbox({
         Title = "Unequip:",
         Desc = "Type a tower name to unequip",
@@ -1255,12 +1256,110 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     })
 
     Main:Section({Title = "Gatling Gun"})
+    
+    local OriginalFireGun = nil
+
     Main:Toggle({
         Title = "Auto Gatling Enabled",
         Value = Globals.GatlingEnabled,
         Callback = function(state)
             SetSetting("GatlingEnabled", state)
             TDS.GatlingConfig.Enabled = state
+            
+            -- Memastikan kita berada di dalam Game, bukan di Lobby
+            if GameState ~= "GAME" then
+                if state then
+                    Window:Notify({
+                        Title = "ADS",
+                        Desc = "You must be in-game to activate Gatling Gun!",
+                        Time = 3,
+                        Type = "error"
+                    })
+                end
+                return
+            end
+
+            local gganim_success, gganim = pcall(function()
+                return require(game:GetService("ReplicatedStorage").Content.Tower["Gatling Gun"].Animator)
+            end)
+            
+            local ggchannel_success, ggchannel = pcall(function()
+                return require(game:GetService("ReplicatedStorage").Resources.Universal.NewNetwork).Channel("GatlingGun")
+            end)
+
+            if not (gganim_success and ggchannel_success) then
+                Window:Notify({Title = "ADS", Desc = "Gatling modules not found!", Time = 3, Type = "error"})
+                return
+            end
+
+            -- Simpan fungsi asli agar bisa dinormalkan kembali jika toggle dimatikan
+            if not OriginalFireGun then
+                OriginalFireGun = gganim._fireGun
+            end
+
+            if state then
+                -- Modifikasi sistem tembak Gatling (Bypassed)
+                gganim._fireGun = function(self)
+                    local cam = require(game:GetService("ReplicatedStorage").Content.Tower["Gatling Gun"].Animator.CameraController)
+                    
+                    -- Default target (posisi mouse/kamera)
+                    local finalTarget = cam.result and cam.result.Position or cam.position
+                    
+                    -- Logika Auto-Aim (Aimbot) mencari zombie
+                    local bestTargetPos = nil
+                    local maxDist = -1
+                    local critTargetPos = nil
+                    local maxCritDist = -1
+
+                    local npcs = workspace:FindFirstChild("NPCs")
+                    if npcs then
+                        for _, npc in ipairs(npcs:GetChildren()) do
+                            local hrp = npc:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                local health = npc:GetAttribute("Health")
+                                if health and health > 0 then
+                                    local dist = npc:GetAttribute("Distance") or 0
+                                    local distToExit = (MaxPathDistance or 300) - dist
+                                    
+                                    if distToExit <= (Globals.GatlingCriticalRange or 100) then
+                                        if dist > maxCritDist then
+                                            maxCritDist = dist
+                                            critTargetPos = hrp.Position
+                                        end
+                                    else
+                                        if dist > maxDist then
+                                            maxDist = dist
+                                            bestTargetPos = hrp.Position
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+
+                    -- Jika musuh ditemukan, arahkan peluru ke musuh (Aimbot)
+                    if critTargetPos or bestTargetPos then
+                        finalTarget = critTargetPos or bestTargetPos
+                    end
+
+                    -- Tembak peluru sebanyak (Multiply)
+                    for i = 1, (Globals.GatlingMultiply or 10) do
+                        pcall(function()
+                            ggchannel:fireServer("Fire", finalTarget, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+                        end)
+                    end
+
+                    -- Waktu jeda tembakan (Cooldown)
+                    self:Wait(Globals.GatlingCooldown or 0.05)
+                end
+                Window:Notify({Title = "ADS", Desc = "Auto Gatling & Aimbot Activated!", Time = 3, Type = "normal"})
+            else
+                -- Jika dimatikan, kembalikan ke sistem tembak normal
+                if OriginalFireGun then
+                    gganim._fireGun = OriginalFireGun
+                end
+                Window:Notify({Title = "ADS", Desc = "Auto Gatling Deactivated!", Time = 3, Type = "normal"})
+            end
         end
     })
 
@@ -1736,6 +1835,68 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Value = Globals.ClaimRewards,
         Callback = function(v)
             SetSetting("ClaimRewards", v)
+        end
+    })
+
+    Misc:Section({Title = "Gatling Gun"})
+    Misc:Textbox({
+        Title = "Cooldown:",
+        Desc = "",
+        Placeholder = "0.01",
+        Value = Globals.Cooldown,
+        ClearTextOnFocus = true,
+        Callback = function(value)
+            if value ~= 0 then
+                SetSetting("Cooldown", value)
+            end
+        end
+    })
+
+    Misc:Textbox({
+        Title = "Multiply:",
+        Desc = "",
+        Placeholder = "60",
+        Value = Globals.Multiply,
+        ClearTextOnFocus = true,
+        Callback = function(value)
+            if value ~= 0 then
+                SetSetting("Multiply", value)
+            end
+        end
+    })
+
+    Misc:Button({
+        Title = "Apply Gatling",
+        Callback = function()
+            if hookmetamethod then
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Successfully applied Gatling Gun Settings",
+                    Time = 3,
+                    Type = "normal"
+                })
+
+                local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
+                local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+
+                gganim._fireGun = function(self)
+                    local cam = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
+                    local pos = cam.result and cam.result.Position or cam.position
+
+                    for i = 1, Globals.Multiply do
+                        ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+                    end
+
+                    self:Wait(Globals.Cooldown)
+                end
+            else
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Your executor is not supported, please use a different one!",
+                    Time = 3,
+                    Type = "normal"
+                })
+            end
         end
     })
 
@@ -3242,70 +3403,6 @@ local function StartSellFarm()
     end)
 end
 
-local function StartAutoGatling()
-    if AutoGatlingRunning or not Globals.GatlingEnabled then return end
-    AutoGatlingRunning = true
-
-    task.spawn(function()
-        local ggchannel = nil
-
-        while Globals.GatlingEnabled do
-            if GameState == "GAME" then
-                if not ggchannel then
-                    pcall(function()
-                        ggchannel = require(game:GetService("ReplicatedStorage").Resources.Universal.NewNetwork).Channel("GatlingGun")
-                    end)
-                end
-
-                if ggchannel then
-                    local bestTargetPos = nil
-                    local maxDist = -1
-                    local critTargetPos = nil
-                    local maxCritDist = -1
-
-                    local npcs = workspace:FindFirstChild("NPCs")
-                    if npcs then
-                        for _, npc in ipairs(npcs:GetChildren()) do
-                            local hrp = npc:FindFirstChild("HumanoidRootPart")
-                            if hrp then
-                                local health = npc:GetAttribute("Health")
-                                if health and health > 0 then
-                                    local dist = npc:GetAttribute("Distance") or 0
-                                    local distToExit = (MaxPathDistance or 300) - dist
-                                    
-                                    if distToExit <= (Globals.GatlingCriticalRange or 100) then
-                                        if dist > maxCritDist then
-                                            maxCritDist = dist
-                                            critTargetPos = hrp.Position
-                                        end
-                                    else
-                                        if dist > maxDist then
-                                            maxDist = dist
-                                            bestTargetPos = hrp.Position
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-
-                    local finalTarget = critTargetPos or bestTargetPos
-
-                    if finalTarget then
-                        for i = 1, (Globals.GatlingMultiply or 10) do
-                            pcall(function()
-                                ggchannel:fireServer("Fire", finalTarget, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
-                            end)
-                        end
-                    end
-                end
-            end
-            task.wait(Globals.GatlingCooldown or 0.05)
-        end
-        AutoGatlingRunning = false
-    end)
-end
-
 task.spawn(function()
     while true do
         if Globals.AutoPickups and not AutoPickupsRunning then
@@ -3342,10 +3439,6 @@ task.spawn(function()
 
         if Globals.SellFarms and not SellFarmsRunning then
             StartSellFarm()
-        end
-
-        if Globals.GatlingEnabled and not AutoGatlingRunning then
-            StartAutoGatling()
         end
 
         if Globals.AntiLag and not AntiLagRunning then
