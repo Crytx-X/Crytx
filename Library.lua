@@ -1864,7 +1864,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatlings",
+        Title = "Enable Auto Gatling",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
@@ -1873,30 +1873,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if state then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Auto Gatling Enabled",
+                    Desc = "Auto Gatling Test Enabled",
                     Time = 3
                 })
-
-                -- AKTIFKAN FPS MODE PADA TOWER DEFAULT SEBELUM MULAI
-                task.spawn(function()
-                    pcall(function()
-                        local args = {
-                            "Troops",
-                            "Abilities",
-                            "Activate",
-                            {
-                                Troop = workspace:WaitForChild("Towers", 5):WaitForChild("Default", 5),
-                                Name = "FPS",
-                                Data = {
-                                    enabled = true
-                                }
-                            }
-                        }
-                        if args[4].Troop then
-                            game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
-                        end
-                    end)
-                end)
 
                 task.spawn(function()
                     local remote = game:GetService("ReplicatedStorage")
@@ -1939,27 +1918,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     end
                 end)
             else
-                -- MATIKAN FPS MODE SAAT AUTO GATLING OFF
-                task.spawn(function()
-                    pcall(function()
-                        local args = {
-                            "Troops",
-                            "Abilities",
-                            "Activate",
-                            {
-                                Troop = workspace:WaitForChild("Towers", 5):WaitForChild("Default", 5),
-                                Name = "FPS",
-                                Data = {
-                                    enabled = false
-                                }
-                            }
-                        }
-                        if args[4].Troop then
-                            game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
-                        end
-                    end)
-                end)
-
                 -- CLEANUP HIGHLIGHT SAAT MATIKAN AUTO GATLING
                 if Globals.CurrentHighlight then
                     Globals.CurrentHighlight:Destroy()
