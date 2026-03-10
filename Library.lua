@@ -1254,77 +1254,35 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     })
 
     Main:Section({Title = "Gatling Gun"})
-
-    local GatlingLoop = false
-
     Main:Toggle({
-    Title = "Auto Gatling Enabled",
-    Value = Globals.GatlingEnabled,
-    Callback = function(state)
-        SetSetting("GatlingEnabled", state)
-        TDS.GatlingConfig.Enabled = state
-        GatlingLoop = state
-
-        if state then
-            task.spawn(function()
-
-                local ggchannel = game:GetService("ReplicatedStorage")
-                    :WaitForChild("Network")
-                    :WaitForChild("GatlingGun")
-                    :WaitForChild("RE:Fire")
-
-                while GatlingLoop do
-
-                    local npcs = workspace:FindFirstChild("NPCs")
-                    local target = nil
-
-                    if npcs then
-                        for _,enemy in pairs(npcs:GetChildren()) do
-                            local hitbox = enemy:FindFirstChild("Hitbox")
-                            if hitbox then
-                                target = hitbox
-                                break -- hanya ambil 1 enemy
-                            end
-                        end
-                    end
-
-                    if target then
-                        for i = 1, Globals.GatlingMultiply do
-                            ggchannel:FireServer(
-                                target.Position,
-                                workspace:GetAttribute("Sync"),
-                                workspace:GetServerTimeNow()
-                            )
-                        end
-                    end
-
-                    task.wait(Globals.GatlingCooldown)
-                end
-            end)
+        Title = "Auto Gatling Enabled",
+        Value = Globals.GatlingEnabled,
+        Callback = function(state)
+            SetSetting("GatlingEnabled", state)
+            TDS.GatlingConfig.Enabled = state
         end
-    end
     })
 
     Main:Slider({
-    Title = "Gatling Multiply",
-    Min = 1,
-    Max = 50,
-    Value = Globals.GatlingMultiply,
-    Callback = function(val)
-        SetSetting("GatlingMultiply", val)
-        TDS.GatlingConfig.Multiply = val
-    end
+        Title = "Gatling Multiply",
+        Min = 1,
+        Max = 50,
+        Value = Globals.GatlingMultiply,
+        Callback = function(val)
+            SetSetting("GatlingMultiply", val)
+            TDS.GatlingConfig.Multiply = val
+        end
     })
 
     Main:Slider({
-    Title = "Gatling Cooldown",
-    Min = 0.01,
-    Max = 1,
-    Value = Globals.GatlingCooldown,
-    Callback = function(val)
-        SetSetting("GatlingCooldown", val)
-        TDS.GatlingConfig.Cooldown = val
-    end
+        Title = "Gatling Cooldown",
+        Min = 0.01,
+        Max = 1,
+        Value = Globals.GatlingCooldown,
+        Callback = function(val)
+            SetSetting("GatlingCooldown", val)
+            TDS.GatlingConfig.Cooldown = val
+        end
     })
 
     Main:Section({Title = "Stats"})
