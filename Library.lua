@@ -253,13 +253,15 @@ local ItemNames = {
     ["139414922355803"] = "Present Clusters(s)"
 }
 
+local NPCFolder = workspace:WaitForChild("NPCs")
+
 TDS = {
     PlacedTowers = {},
     ActiveStrat = true,
     GatlingConfig = {
-        Enabled = Globals.GatlingEnabled,
-        Multiply = Globals.GatlingMultiply,
-        Cooldown = Globals.GatlingCooldown
+        Enabled = false,
+        Multiply = Globals.GatlingMultiply or 1,
+        Cooldown = Globals.GatlingCooldown or 0.05
     },
     MatchmakingMap = {
         ["Hardcore"] = "hardcore",
@@ -318,63 +320,44 @@ end
 
 local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
 
-local NPCFolder = workspace:WaitForChild("NPCs")
+local function getEnemyPos()
+    local closest
+    local dist = math.huge
 
-local function GetEnemy()
-    for _,v in ipairs(NPCFolder:GetChildren()) do
-        local hitbox = v:FindFirstChild("Hitbox")
+    for _,npc in pairs(NPCFolder:GetChildren()) do
+        local hitbox = npc:FindFirstChild("Hitbox")
         if hitbox then
-            return hitbox.Position
+            local d = (hitbox.Position - workspace.CurrentCamera.CFrame.Position).Magnitude
+            if d < dist then
+                dist = d
+                closest = hitbox
+            end
         end
     end
+
+    return closest and closest.Position
 end
 
 task.spawn(function()
-    while true do
-        
+    while task.wait() do
         if TDS.GatlingConfig.Enabled then
-            
-            local pos = GetEnemy()
 
+            local pos = getEnemyPos()
             if pos then
-                local sync = workspace:GetAttribute("Sync")
-                local time = workspace:GetServerTimeNow()
-
                 for i = 1, TDS.GatlingConfig.Multiply do
-                    ggchannel:fireServer("Fire", pos, sync, time)
+                    ggchannel:fireServer(
+                        "Fire",
+                        pos,
+                        workspace:GetAttribute("Sync"),
+                        workspace:GetServerTimeNow()
+                    )
                 end
             end
 
             task.wait(TDS.GatlingConfig.Cooldown)
-
-        else
-            task.wait(0.3)
         end
-        
     end
 end)
-
-local function hookGatling()
-    gganim._fireGun = function(self)
-
-        if not TDS.GatlingConfig.Enabled then
-            return old_fire(self)
-        end
-
-        local pos = getEnemyPos()
-        if not pos then return end
-
-        for i = 1, TDS.GatlingConfig.Multiply do
-            ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
-        end
-
-        self:Wait(TDS.GatlingConfig.Cooldown)
-    end
-end
-
-local function unhookGatling()
-    gganim._fireGun = old_fire
-end
 
 local function Apply3dRendering()
     if Globals.Disable3DRendering then
@@ -1320,12 +1303,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         Callback = function(state)
             SetSetting("GatlingEnabled", state)
             TDS.GatlingConfig.Enabled = state
-
-            if state then
-                hookGatling()
-            else
-                unhookGatling()
-            end
         end
     })
 
