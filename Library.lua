@@ -1276,21 +1276,25 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
                 while GatlingLoop do
 
                     local npcs = workspace:FindFirstChild("NPCs")
+                    local target = nil
+
                     if npcs then
                         for _,enemy in pairs(npcs:GetChildren()) do
                             local hitbox = enemy:FindFirstChild("Hitbox")
-
                             if hitbox then
-                                local pos = hitbox.Position
-
-                                for i = 1, Globals.GatlingMultiply do
-                                    ggchannel:FireServer(
-                                        pos,
-                                        workspace:GetAttribute("Sync"),
-                                        workspace:GetServerTimeNow()
-                                    )
-                                end
+                                target = hitbox
+                                break -- hanya ambil 1 enemy
                             end
+                        end
+                    end
+
+                    if target then
+                        for i = 1, Globals.GatlingMultiply do
+                            ggchannel:FireServer(
+                                target.Position,
+                                workspace:GetAttribute("Sync"),
+                                workspace:GetServerTimeNow()
+                            )
                         end
                     end
 
