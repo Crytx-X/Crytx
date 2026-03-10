@@ -314,7 +314,7 @@ local function SetSetting(name, value)
     end
 end
 
--- // VISUAL TRACER LOGIC
+-- // VISUAL TRACER LOGIC (Lurus & Slow)
 local function CreateTracer(targetPos)
     local startPos = nil
     local towersFolder = workspace:FindFirstChild("Towers")
@@ -364,7 +364,7 @@ local function CreateTracer(targetPos)
     end)
 end
 
--- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire (Agar muncul hanya saat tereksekusi)
+-- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
@@ -373,7 +373,8 @@ if hookmetamethod then
         if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
             local p = self.Parent
             if p and p.Name == "GatlingGun" then
-                if Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
+                -- HANYA JALAN JIKA AUTO GATLING MENYALA DAN TARGET VISUAL AKTIF
+                if Globals.AutoGatling and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
                     local args = {...}
                     local targetPos = args[1]
                     if typeof(targetPos) == "Vector3" then
@@ -1824,9 +1825,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             Globals.TargetChamsEnabled = state
             SetSetting("TargetChamsEnabled", state) 
 
-            if not state and Globals.CurrentHighlight then
-                Globals.CurrentHighlight:Destroy()
-                Globals.CurrentHighlight = nil
+            -- CLEANUP SAAT TOGGLE OFF
+            if not state then
+                if Globals.CurrentHighlight then
+                    Globals.CurrentHighlight:Destroy()
+                    Globals.CurrentHighlight = nil
+                end
+                Globals.CurrentTarget = nil
             end
         end
     })
@@ -1912,6 +1917,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         task.wait(Globals.AutoCooldown or 0.05)
                     end
                 end)
+            else
+                -- CLEANUP HIGHLIGHT SAAT MATIKAN AUTO GATLING
+                if Globals.CurrentHighlight then
+                    Globals.CurrentHighlight:Destroy()
+                    Globals.CurrentHighlight = nil
+                end
+                Globals.CurrentTarget = nil
             end
         end
     })
