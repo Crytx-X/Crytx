@@ -317,9 +317,35 @@ local function SetSetting(name, value)
 end
 
 local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
+
 local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
 
 local old_fire = gganim._fireGun
+
+local function GetEnemy()
+    local npcs = workspace:FindFirstChild("NPCs")
+    if not npcs then return end
+
+    for _,v in pairs(npcs:GetChildren()) do
+        if v:FindFirstChild("Hitbox") then
+            return v.Hitbox.Position
+        end
+    end
+end
+
+task.spawn(function()
+    while task.wait() do
+        if TDS.GatlingConfig.Enabled then
+            local pos = GetEnemy()
+            if pos then
+                for i = 1, TDS.GatlingConfig.Multiply do
+                    ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+                end
+            end
+            task.wait(TDS.GatlingConfig.Cooldown)
+        end
+    end
+end)
 
 local function getEnemyPos()
     local folder = workspace:FindFirstChild("NPCs")
