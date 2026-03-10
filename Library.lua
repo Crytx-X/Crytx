@@ -221,6 +221,12 @@ local ItemNames = {
 TDS = {
     PlacedTowers = {},
     ActiveStrat = true,
+    GatlingConfig = {
+        Enabled = false,
+        Multiply = 10,
+        Cooldown = 0.05,
+        CriticalRange = 100
+    },
     MatchmakingMap = {
         ["Hardcore"] = "hardcore",
         ["Pizza Party"] = "halloween",
@@ -862,29 +868,27 @@ local function UpdatePathVisuals()
     end
 end
 
+-- === DUMMY ADDONS FUNCTION (REMOVED KEY SYSTEM) ===
 function TDS:Addons()
-    local url = "https://api.jnkie.com/api/v1/luascripts/public/57fe397f76043ce06afad24f07528c9f93e97730930242f57134d0b60a2d250b/download"
-
-    local success, code = pcall(game.HttpGet, game, url)
-
-    if not success then
-        return false
-    end
-
-    loadstring(code)()
-
-    while not (TDS.MultiMode and TDS.Multiplayer) do
-        task.wait(0.1)
-    end
-
-    local OriginalEquip = TDS.Equip
-    TDS.Equip = function(...)
-        if GameState == "GAME" then
-            return OriginalEquip(...)
-        end
-    end
-
+    -- Fitur premium otomatis terbuka tanpa perlu mendownload script key system eksternal.
     return true
+end
+
+-- === NATIVE EQUIP AND UNEQUIP ===
+function TDS:Equip(tower_name)
+    local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+    local success, err = pcall(function()
+        return remote:InvokeServer("Inventory", "Equip", "tower", tower_name)
+    end)
+    return success
+end
+
+function TDS:Unequip(tower_name)
+    local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+    local success, err = pcall(function()
+        return remote:InvokeServer("Inventory", "Unequip", "tower", tower_name)
+    end)
+    return success
 end
 
 local function GetEquippedTowers()
@@ -922,7 +926,7 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx
 
 local Window = Library:Window({
     Title = "Aether Hub",
-    Desc = "your #1 hub",
+    Desc = "your #1 hub (Premium Unlocked)",
     Theme = "Dark",
     DiscordLink = "https://discord.gg/autostrat",
     Icon = 126403638319957,
@@ -1257,31 +1261,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Main:Section({Title = "Premium"})
-    local UnlockBtn = Main:Button({
-        Title = "Unlock Premium Features",
-        Desc = "Required Key System to access Gatling and Equipper",
-        Callback = function()
-            task.spawn(function()
-                Window:Notify({Title = "ADS", Desc = "Loading Key System...", Time = 3})
-
-                local success = TDS:Addons()
-
-                if success then
-                    TDS.GatlingConfig.Enabled = true
-                    TDS:AutoGatling()
-
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Premium Unlocked! Gatling Gun is now ACTIVE.",
-                        Time = 5,
-                        Type = "normal"
-                    })
-                end
-            end)
-        end
-    })
-
     Main:Section({Title = "Equipper"})
     Main:Textbox({
         Title = "Equip:",
@@ -1292,18 +1271,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         Callback = function(text)
             if text == "" or text == nil then return end
             task.spawn(function()
-                if not TDS.Equip then
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Waiting for Key System to finish...",
-                        Time = 3,
-                        Type = "normal"
-                    })
-                    repeat 
-                        task.wait(0.5) 
-                    until TDS.Equip
-                end
-
                 local success, err = pcall(function()
                     TDS:Equip(tostring(text))
                 end)
@@ -1325,18 +1292,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         Title = "Auto Gatling Enabled",
         Value = Globals.GatlingEnabled,
         Callback = function(state)
-            if not TDS.Equip then
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Waiting for Key System to finish...",
-                    Time = 3,
-                    Type = "normal"
-                })
-                repeat 
-                    task.wait(0.5) 
-                until TDS.Equip
-            end
-
             SetSetting("GatlingEnabled", state)
             TDS.GatlingConfig.Enabled = state
         end
@@ -2275,31 +2230,15 @@ local function RejoinMatch()
                 local payload
 
                 if CurrentMode == "PizzaParty" then
-                    payload = {
-                        mode = "halloween",
-                        count = 1
-                    }
+                    payload = { mode = "halloween", count = 1 }
                 elseif CurrentMode == "Hardcore" then
-                    payload = {
-                        mode = "hardcore",
-                        count = 1
-                    }
+                    payload = { mode = "hardcore", count = 1 }
                 elseif CurrentMode == "PollutedWasteland" then
-                    payload = {
-                        mode = "polluted",
-                        count = 1
-                    }
+                    payload = { mode = "polluted", count = 1 }
                 elseif CurrentMode == "Badlands" then
-                    payload = {
-                        mode = "badlands",
-                        count = 1
-                    }
+                    payload = { mode = "badlands", count = 1 }
                 else
-                    payload = {
-                        difficulty = CurrentMode,
-                        mode = "survival",
-                        count = 1
-                    }
+                    payload = { difficulty = CurrentMode, mode = "survival", count = 1 }
                 end
 
                 return remote:InvokeServer("Multiplayer", "v2:start", payload)
@@ -2371,9 +2310,9 @@ local function HandlePostMatch()
                 {
                     name = "✨ Rewards",
                     value = "```ansi\n" ..
-                            "[2;33mCoins:[0m +" .. match.Coins .. "\n" ..
-                            "[2;34mGems: [0m +" .. match.Gems .. "\n" ..
-                            "[2;32mXP:   [0m +" .. match.XP .. "```",
+                            " [2;33mCoins: [0m +" .. match.Coins .. "\n" ..
+                            " [2;34mGems:  [0m +" .. match.Gems .. "\n" ..
+                            " [2;32mXP:    [0m +" .. match.XP .. "```",
                     inline = false
                 },
                 {
@@ -3478,6 +3417,7 @@ local function StartAutoDjBooth()
     task.spawn(function()
         while Globals.AutoDJ do
             local TowersFolder = workspace:FindFirstChild("Towers")
+            local DJ = nil
 
             if TowersFolder then
                 for _, towers in ipairs(TowersFolder:GetDescendants()) do
