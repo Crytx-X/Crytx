@@ -1929,12 +1929,45 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 FireFPSAbility(true)
 
                 task.spawn(function()
-                    local remote = game:GetService("ReplicatedStorage")
-                        :WaitForChild("Network")
-                        :WaitForChild("GatlingGun")
-                        :WaitForChild("RE:Fire")
+                    local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
+                    local gatlingNetwork = network:WaitForChild("GatlingGun")
+                    local fireRemote = gatlingNetwork:WaitForChild("RE:Fire")
+                    local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
 
                     while Globals.AutoGatling do
+                        local myGatlingRep = nil
+                        local towersFolder = workspace:FindFirstChild("Towers")
+                        
+                        -- Cari Gatling Gun milik player untuk dicek amunisinya
+                        if towersFolder then
+                            for _, tower in pairs(towersFolder:GetChildren()) do
+                                local rep = tower:FindFirstChild("TowerReplicator")
+                                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                                    myGatlingRep = rep
+                                    break
+                                end
+                            end
+                        end
+
+                        -- // LOGIKA AUTO RELOAD
+                        if myGatlingRep then
+                            local currentAmmo = myGatlingRep:GetAttribute("Ammo")
+                            local isReloading = myGatlingRep:GetAttribute("Reloading")
+
+                            -- Jika peluru 0 atau sedang dalam proses reload
+                            if (currentAmmo ~= nil and currentAmmo <= 0) or isReloading then
+                                -- Jika belum status reloading, panggil remote Reload
+                                if not isReloading then
+                                    pcall(function() reloadRemote:FireServer() end)
+                                end
+                                
+                                -- Skip penembakan dan tunggu sebentar sampai reload selesai
+                                task.wait(0.1)
+                                continue 
+                            end
+                        end
+
+                        -- // LOGIKA MENCARI TARGET
                         local target = nil
                         local npcs = workspace:FindFirstChild("NPCs")
 
@@ -1951,11 +1984,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                         end
 
+                        -- // LOGIKA NEMBAK (Hanya jalan jika ada target dan Ammo > 0)
                         if target then
                             for i = 1, Globals.AutoMultiply do
-                                -- Hanya Spam tembakan Gatling Gun (Tidak spam FPS Ability)
                                 pcall(function()
-                                    remote:FireServer(
+                                    fireRemote:FireServer(
                                         target.Position,
                                         workspace:GetAttribute("Sync"),
                                         workspace:GetServerTimeNow()
@@ -1975,8 +2008,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 end
                 Globals.CurrentTarget = nil
                 
-                -- Jalankan FPS menjadi 'false' saat toggle dimatikan 
-                -- (Karena Globals.AutoGatling sudah di-set false, Hook tidak akan memblokirnya)
+                -- Jalankan FPS menjadi 'false' saat toggle dimatikan
                 FireFPSAbility(false)
             end
         end
