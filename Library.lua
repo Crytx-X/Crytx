@@ -103,9 +103,9 @@ local function IdentifyGameState()
     local TempGui = TempPlayer:WaitForChild("PlayerGui")
 
     while true do
-        if TempGui:FindFirstChild("ReactLobbyHud") or TempGui:FindFirstChild("LobbyGui") then
+        if TempGui:FindFirstChild("ReactLobbyHud") then
             return "LOBBY"
-        elseif TempGui:FindFirstChild("ReactUniversalHotbar") or TempGui:FindFirstChild("GameGui") then
+        elseif TempGui:FindFirstChild("ReactUniversalHotbar") then
             return "GAME"
         end
         task.wait(1)
@@ -151,7 +151,6 @@ local TimeScaleNoTicketsWarned = false
 local AutoMercenaryBaseRunning = false
 local AutoMilitaryBaseRunning = false
 local SellFarmsRunning = false
-local AutoGatlingRunning = false
 
 local MaxPathDistance = 300 -- default
 local MilMarker = nil
@@ -184,13 +183,9 @@ local DefaultSettings = {
     SellFarms = false,
     AutoMercenary = false,
     AutoMilitary = false,
-    
-    -- Gatling Settings
     GatlingEnabled = false,
-    GatlingTargeting = "First",
     GatlingMultiply = 10,
     GatlingCooldown = 0.05,
-    
     Frost = false,
     Fallen = false,
     Easy = false,
@@ -202,6 +197,8 @@ local DefaultSettings = {
     NoRecoil = false,
     SellFarmsWave = 1,
     WebhookURL = "",
+    Cooldown = 0.01,
+    Multiply = 60,
     PickupMethod = "Pathfinding",
     StreamerMode = false,
     HideUsername = false,
@@ -259,6 +256,11 @@ local ItemNames = {
 TDS = {
     PlacedTowers = {},
     ActiveStrat = true,
+    GatlingConfig = {
+        Enabled = false,
+        Multiply = 10,
+        Cooldown = 0.05
+    },
     MatchmakingMap = {
         ["Hardcore"] = "hardcore",
         ["Pizza Party"] = "halloween",
@@ -1251,64 +1253,41 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Main:Section({Title = "Gatling Gun Auto-Fire"})
+    Main:Section({Title = "Gatling Gun"})
     Main:Toggle({
         Title = "Auto Gatling Enabled",
-        Desc = "Automatically fires Gatling Guns at enemies.",
+        Desc = "Automatically aims and shoots enemies with Gatling Gun",
         Value = Globals.GatlingEnabled,
         Callback = function(state)
             SetSetting("GatlingEnabled", state)
-        end
-    })
-
-    Main:Dropdown({
-        Title = "Target Priority",
-        Desc = "Select which NPC to shoot",
-        List = {"First", "Last", "Random", "Farthest", "Closest", "Weakest", "Strongest"},
-        Value = Globals.GatlingTargeting or "First",
-        Callback = function(val)
-            local selected = type(val) == "table" and val[1] or val
-            SetSetting("GatlingTargeting", selected)
-            
-            -- Set visual target in game
-            if GameState == "GAME" then
-                local towersFolder = workspace:FindFirstChild("Towers")
-                if towersFolder then
-                    for _, tower in ipairs(towersFolder:GetChildren()) do
-                        local rep = tower:FindFirstChild("TowerReplicator")
-                        if rep and rep:GetAttribute("Name") == "Gatling Gun" and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
-                            pcall(function()
-                                RemoteFunc:InvokeServer("Troops", "Target", "Set", {
-                                    Troop = tower,
-                                    Target = selected
-                                })
-                            end)
-                        end
-                    end
-                end
+            TDS.GatlingConfig.Enabled = state
+            if state then
+                StartAutoGatling()
             end
         end
     })
 
     Main:Slider({
         Title = "Gatling Multiply",
-        Desc = "How many bullets to fire per tick",
+        Desc = "How many bullets to fire at once",
         Min = 1,
-        Max = 50,
+        Max = 60,
         Value = Globals.GatlingMultiply or 10,
         Callback = function(val)
             SetSetting("GatlingMultiply", val)
+            TDS.GatlingConfig.Multiply = val
         end
     })
 
     Main:Slider({
         Title = "Gatling Cooldown",
-        Desc = "Delay between shots (Seconds)",
+        Desc = "Delay between each barrage (Lower = Faster)",
         Min = 0.01,
         Max = 1,
         Value = Globals.GatlingCooldown or 0.05,
         Callback = function(val)
             SetSetting("GatlingCooldown", val)
+            TDS.GatlingConfig.Cooldown = val
         end
     })
 
@@ -1750,6 +1729,68 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Value = Globals.ClaimRewards,
         Callback = function(v)
             SetSetting("ClaimRewards", v)
+        end
+    })
+
+    Misc:Section({Title = "Gatling Gun"})
+    Misc:Textbox({
+        Title = "Cooldown:",
+        Desc = "",
+        Placeholder = "0.01",
+        Value = Globals.Cooldown,
+        ClearTextOnFocus = true,
+        Callback = function(value)
+            if value ~= 0 then
+                SetSetting("Cooldown", value)
+            end
+        end
+    })
+
+    Misc:Textbox({
+        Title = "Multiply:",
+        Desc = "",
+        Placeholder = "60",
+        Value = Globals.Multiply,
+        ClearTextOnFocus = true,
+        Callback = function(value)
+            if value ~= 0 then
+                SetSetting("Multiply", value)
+            end
+        end
+    })
+
+    Misc:Button({
+        Title = "Apply Gatling",
+        Callback = function()
+            if hookmetamethod then
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Successfully applied Gatling Gun Settings",
+                    Time = 3,
+                    Type = "normal"
+                })
+
+                local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
+                local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+
+                gganim._fireGun = function(self)
+                    local cam = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
+                    local pos = cam.result and cam.result.Position or cam.position
+
+                    for i = 1, Globals.Multiply do
+                        ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+                    end
+
+                    self:Wait(Globals.Cooldown)
+                end
+            else
+                Window:Notify({
+                    Title = "ADS",
+                    Desc = "Your executor is not supported, please use a different one!",
+                    Time = 3,
+                    Type = "normal"
+                })
+            end
         end
     })
 
@@ -2890,6 +2931,71 @@ local function StartAntiLag()
     end)
 end
 
+local AutoGatlingRunning = false
+
+local function StartAutoGatling()
+    if AutoGatlingRunning or not Globals.GatlingEnabled then return end
+    AutoGatlingRunning = true
+
+    task.spawn(function()
+        local GatlingRemote = ReplicatedStorage:WaitForChild("Network"):WaitForChild("GatlingGun"):WaitForChild("RE:Fire")
+
+        while Globals.GatlingEnabled do
+            if GameState == "GAME" then
+                -- Keamanan: Cek apakah player benar-benar sudah meletakkan Gatling Gun di map
+                local hasGatling = false
+                local TowersFolder = workspace:FindFirstChild("Towers")
+                if TowersFolder then
+                    for _, rep in ipairs(TowersFolder:GetDescendants()) do
+                        if rep:IsA("Folder") and rep.Name == "TowerReplicator" then
+                            if rep:GetAttribute("Name") == "Gatling Gun" and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
+                                hasGatling = true
+                                break
+                            end
+                        end
+                    end
+                end
+
+                if hasGatling then
+                    local targetPos = nil
+                    local npcs = workspace:FindFirstChild("NPCs")
+
+                    -- Cari musuh yang valid di folder NPCs
+                    if npcs then
+                        for _, enemy in ipairs(npcs:GetChildren()) do
+                            local hitbox = enemy:FindFirstChild("Hitbox") or enemy:FindFirstChild("HumanoidRootPart")
+                            -- Ambil musuh pertama yang memiliki hitbox dan masih hidup
+                            if hitbox then
+                                targetPos = hitbox.Position
+                                break
+                            end
+                        end
+                    end
+
+                    -- Jika menemukan musuh, tembak secara beruntun (Multiply)
+                    if targetPos then
+                        local sync = workspace:GetAttribute("Sync") or 0
+                        local serverTime = workspace:GetServerTimeNow()
+                        local multi = Globals.GatlingMultiply or 10
+
+                        for i = 1, multi do
+                            -- Kirim remote attack
+                            pcall(function()
+                                GatlingRemote:FireServer(targetPos, sync, serverTime)
+                            end)
+                        end
+                    end
+                end
+            end
+            
+            -- Tunggu sesuai cooldown sebelum menembak musuh lagi
+            task.wait(Globals.GatlingCooldown or 0.05)
+        end
+        
+        AutoGatlingRunning = false
+    end)
+end
+
 local function StartAutoChain()
     if AutoChainRunning or not Globals.AutoChain then return end
     AutoChainRunning = true
@@ -3256,118 +3362,6 @@ local function StartSellFarm()
     end)
 end
 
--- // GATLING GUN AUTO FIRE CORE LOGIC
-local function GetGatlingTargetPos(gatlings)
-    local npcs = workspace:FindFirstChild("NPCs")
-    if not npcs then return nil end
-
-    local validTargets = {}
-    for _, npc in ipairs(npcs:GetChildren()) do
-        local hitbox = npc:FindFirstChild("Hitbox") or npc:FindFirstChild("HumanoidRootPart")
-        
-        local health = npc:GetAttribute("Health")
-        if not health then
-            local hum = npc:FindFirstChildOfClass("Humanoid")
-            if hum then health = hum.Health end
-        end
-        if not health and npc:FindFirstChild("Health") then
-            health = npc.Health.Value
-        end
-        
-        if hitbox and (not health or health > 0) then
-            local dist = npc:GetAttribute("Distance") or npc:GetAttribute("Progress") or 0
-            table.insert(validTargets, {
-                Model = npc,
-                Pos = hitbox.Position,
-                Health = health or 100,
-                Distance = dist
-            })
-        end
-    end
-
-    if #validTargets == 0 then return nil end
-
-    local mode = Globals.GatlingTargeting or "First"
-    
-    if mode == "Random" then
-        return validTargets[math.random(1, #validTargets)].Pos
-    elseif mode == "First" then
-        table.sort(validTargets, function(a, b) return a.Distance > b.Distance end)
-        return validTargets[1].Pos
-    elseif mode == "Last" then
-        table.sort(validTargets, function(a, b) return a.Distance < b.Distance end)
-        return validTargets[1].Pos
-    elseif mode == "Strongest" then
-        table.sort(validTargets, function(a, b) return a.Health > b.Health end)
-        return validTargets[1].Pos
-    elseif mode == "Weakest" then
-        table.sort(validTargets, function(a, b) return a.Health < b.Health end)
-        return validTargets[1].Pos
-    elseif mode == "Closest" or mode == "Farthest" then
-        local refPos = Vector3.new(0,0,0)
-        if gatlings and gatlings[1] then
-            local hrp = gatlings[1]:FindFirstChild("HumanoidRootPart") or gatlings[1]:FindFirstChild("Base")
-            if hrp then refPos = hrp.Position end
-        end
-        table.sort(validTargets, function(a, b)
-            local d1 = (a.Pos - refPos).Magnitude
-            local d2 = (b.Pos - refPos).Magnitude
-            if mode == "Closest" then return d1 < d2 else return d1 > d2 end
-        end)
-        return validTargets[1].Pos
-    end
-
-    return validTargets[1].Pos
-end
-
-local function StartAutoGatling()
-    if AutoGatlingRunning or not Globals.GatlingEnabled then return end
-    AutoGatlingRunning = true
-
-    task.spawn(function()
-        local network = game:GetService("ReplicatedStorage"):WaitForChild("Network", 5)
-        local gatlingNetwork = network and network:WaitForChild("GatlingGun", 5)
-        local fireRemote = gatlingNetwork and gatlingNetwork:WaitForChild("RE:Fire", 5)
-
-        while Globals.GatlingEnabled do
-            if GameState == "GAME" and fireRemote then
-                local myGatlings = {}
-                local towersFolder = workspace:FindFirstChild("Towers")
-                
-                if towersFolder then
-                    for _, tower in ipairs(towersFolder:GetChildren()) do
-                        local rep = tower:FindFirstChild("TowerReplicator")
-                        if rep and rep:GetAttribute("Name") == "Gatling Gun" and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
-                            table.insert(myGatlings, tower)
-                        end
-                    end
-                end
-
-                if #myGatlings > 0 then
-                    local targetPos = GetGatlingTargetPos(myGatlings)
-                    if targetPos then
-                        local sTime = workspace:GetServerTimeNow()
-                        local multi = Globals.GatlingMultiply or 10
-                        
-                        for _, gatling in ipairs(myGatlings) do
-                            local towerId = tonumber(gatling.Name)
-                            if towerId then
-                                for i = 1, multi do
-                                    pcall(function()
-                                        fireRemote:FireServer(targetPos, towerId, sTime)
-                                    end)
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            task.wait(Globals.GatlingCooldown or 0.05)
-        end
-        AutoGatlingRunning = false
-    end)
-end
-
 task.spawn(function()
     while true do
         if Globals.AutoPickups and not AutoPickupsRunning then
@@ -3410,12 +3404,13 @@ task.spawn(function()
             StartAntiLag()
         end
 
-        if Globals.GatlingEnabled and not AutoGatlingRunning then
-            StartAutoGatling()
-        end
-
         if Globals.AutoRejoin and not BackToLobbyRunning then
             StartBackToLobby()
+        end
+
+        -- TAMBAHKAN INI UNTUK GATLING GUN
+        if Globals.GatlingEnabled and not AutoGatlingRunning then
+            StartAutoGatling()
         end
 
         task.wait(1)
