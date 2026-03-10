@@ -20,6 +20,195 @@ local mouse = LocalPlayer:GetMouse()
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local FileName = "ADS_Config.json"
 
+local TowerSkins = {
+    ["Accelerator"] = {
+        ["Champion"] = "rbxassetid://90324305122544", ["Cupid"] = "rbxassetid://16742017040", ["Dank"] = "rbxassetid://18549604688", ["Default"] = "rbxassetid://16742017289", ["Disco"] = "rbxassetid://96135720673651", ["Ducky"] = "rbxassetid://16742017439", ["Eclipse"] = "rbxassetid://16742017644", ["Elite"] = "rbxassetid://16742017935", ["Fallen"] = "rbxassetid://18848269402", ["Ghost Buster"] = "rbxassetid://16742018196", ["Ice Witch"] = "rbxassetid://16742018426", ["Legend"] = "rbxassetid://16742018621", ["Mage"] = "rbxassetid://16742018781", ["Magician"] = "rbxassetid://104973122569052", ["Navy"] = "rbxassetid://16742018971", ["Nuclear"] = "rbxassetid://16742019185", ["Octopus"] = "rbxassetid://138359133170089", ["Patient Zero"] = "rbxassetid://88972169285855", ["Plushie"] = "rbxassetid://16742019393", ["Red"] = "rbxassetid://16742019754", ["Senator"] = "rbxassetid://17363277841", ["Speaker Titan"] = "rbxassetid://16997023622", ["Vigilante"] = "rbxassetid://16742019956"
+    },
+    ["Ace Pilot"] = {
+        ["Aerial Ace"] = "rbxassetid://17859245825", ["Default"] = "rbxassetid://17859246260", ["Easter"] = "rbxassetid://137734270861409", ["Green"] = "rbxassetid://17859246778", ["Navy"] = "rbxassetid://17859247163", ["Pumpkin"] = "rbxassetid://17859247510", ["Purple"] = "rbxassetid://17859247791", ["Red"] = "rbxassetid://17859248266", ["Toy Plane"] = "rbxassetid://90411909913759", ["Yellow"] = "rbxassetid://17859248807"
+    },
+    ["Archer"] = {
+        ["Default"] = "rbxassetid://102469025012991", ["Elf"] = "rbxassetid://118017603574255", ["Huntsman"] = "rbxassetid://108057864574863", ["Ice Soul"] = "rbxassetid://125693199171973", ["Spooky"] = "rbxassetid://109768712967611", ["Valentines"] = "rbxassetid://88010001274532"
+    },
+    ["Assassin"] = {
+        ["Actor"] = "rbxassetid://112178399627918", ["Default"] = "rbxassetid://117970650222627", ["Saber Tooth Tiger"] = "rbxassetid://129525356172974"
+    },
+    ["Biologist"] = {
+        ["Default"] = "rbxassetid://101795075923269", ["Grim"] = "rbxassetid://126912872410229"
+    },
+    ["Brawler"] = {
+        ["Banned"] = "rbxassetid://84628371320634", ["Blazing"] = "rbxassetid://18549605468", ["Default"] = "rbxassetid://17506304027", ["Fallen"] = "rbxassetid://18835925180", ["Horse"] = "rbxassetid://101555481625059", ["Jordan"] = "rbxassetid://70748904383488", ["Loader"] = "rbxassetid://131316320823683", ["Lobster"] = "rbxassetid://123985511698683", ["Lovestriker"] = "rbxassetid://83049730035300", ["Rudolph"] = "rbxassetid://122757939585280", ["Werewolf"] = "rbxassetid://105319960862894"
+    },
+    ["Combatant"] = {
+        ["Default"] = "rbxassetid://16742022822"
+    },
+    ["Commander"] = {
+        ["Aqua"] = "rbxassetid://89379123461384", ["Bloxy"] = "rbxassetid://16742023051", ["Brisk"] = "rbxassetid://16742023299", ["Bunny"] = "rbxassetid://17507647451", ["Candy Cane"] = "rbxassetid://115979067743950", ["Default"] = "rbxassetid://17507647561", ["Director"] = "rbxassetid://140380406065215", ["Ducky"] = "rbxassetid://16742023989", ["Eclipse"] = "rbxassetid://16742024255", ["Eggrypted"] = "rbxassetid://16742024613", ["Fallen"] = "rbxassetid://80567934657980", ["Frost"] = "rbxassetid://16742024893", ["Galactic"] = "rbxassetid://17507647660", ["Gargoyle"] = "rbxassetid://17507647804", ["General"] = "rbxassetid://17507647965", ["Ghost"] = "rbxassetid://17507648068", ["Green"] = "rbxassetid://17507648232", ["Holiday"] = "rbxassetid://16742026260", ["Lifeguard"] = "rbxassetid://16742026508", ["Maid"] = "rbxassetid://17507648382", ["Neko"] = "rbxassetid://17507648601", ["Patriotic"] = "rbxassetid://18323544710", ["Pattern"] = "rbxassetid://17507648760", ["Phantom"] = "rbxassetid://16742027114", ["Pirate"] = "rbxassetid://16742027462", ["Plushie"] = "rbxassetid://16742027624", ["Red"] = "rbxassetid://17507648923", ["Santa"] = "rbxassetid://117501182181139", ["Spring Time"] = "rbxassetid://17507649066", ["Umbra"] = "rbxassetid://16742028241", ["Valentines"] = "rbxassetid://16742028419", ["Victorian"] = "rbxassetid://17507649166", ["Vigilante"] = "rbxassetid://17507649270", ["War Lord"] = "rbxassetid://16742028910", ["Wasteland"] = "rbxassetid://93243165798255", ["Werewolf"] = "rbxassetid://110092626333388", ["Wonderland"] = "rbxassetid://86397469450446"
+    },
+    ["Commando"] = {
+        ["Default"] = "rbxassetid://140552401698797", ["Pirate"] = "rbxassetid://135452131994371", ["Trooper"] = "rbxassetid://81411979969960"
+    },
+    ["Cowboy"] = {
+        ["Agent"] = "rbxassetid://16742029625", ["Badlands"] = "rbxassetid://16742029785", ["Bandit"] = "rbxassetid://16742029974", ["Bounty Hunter"] = "rbxassetid://16742030178", ["Cop"] = "rbxassetid://16742030440", ["Cyberpunk"] = "rbxassetid://16742030746", ["Dark Frost"] = "rbxassetid://78872525322359", ["Default"] = "rbxassetid://16742031062", ["Ducky"] = "rbxassetid://16742031273", ["Fallen"] = "rbxassetid://18848220133", ["Golden"] = "rbxassetid://16742031462", ["Holiday"] = "rbxassetid://16742031725", ["Kasodus"] = "rbxassetid://16742031988", ["Masquerade"] = "rbxassetid://16742032218", ["Mecha Bunny"] = "rbxassetid://70870846433248", ["Megalodon"] = "rbxassetid://129525988654572", ["Noir"] = "rbxassetid://16742032406", ["Plushie"] = "rbxassetid://84617405752906", ["Pumpkin"] = "rbxassetid://16742032605", ["Redemption"] = "rbxassetid://16742032735", ["Retired"] = "rbxassetid://16742032911", ["Spring Time"] = "rbxassetid://127656855808415", ["Valentines"] = "rbxassetid://16742033284", ["Vampire Hunter"] = "rbxassetid://99306749260135"
+    },
+    ["Crook Boss"] = {
+        ["Alien Focus"] = "rbxassetid://133134889361359", ["Assassin"] = "rbxassetid://16742033599", ["Blue"] = "rbxassetid://16742033877", ["Checker"] = "rbxassetid://16742034068", ["Corso"] = "rbxassetid://16742034286", ["Cupid"] = "rbxassetid://16742034551", ["Cybernetic"] = "rbxassetid://16996940813", ["DRKSHDW"] = "rbxassetid://16742034843", ["Dark Frost"] = "rbxassetid://125130339305089", ["Default"] = "rbxassetid://16742035067", ["Demon"] = "rbxassetid://16742035383", ["Easter"] = "rbxassetid://101408307745429", ["Game Master"] = "rbxassetid://75261782948960", ["Golden"] = "rbxassetid://16742035712", ["Holiday"] = "rbxassetid://16742036050", ["Intern"] = "rbxassetid://16742036260", ["Narrator"] = "rbxassetid://92111450115834", ["Necromancer"] = "rbxassetid://16742036503", ["Null"] = "rbxassetid://102269930328399", ["Pirate"] = "rbxassetid://16742036700", ["Rat King"] = "rbxassetid://99680623337214", ["Red"] = "rbxassetid://16742036972", ["Soviet"] = "rbxassetid://17363278550", ["Spooky"] = "rbxassetid://16742037577", ["SteamPunk"] = "rbxassetid://16742037752", ["Victorian"] = "rbxassetid://95810120766308", ["Xmas"] = "rbxassetid://16742038000"
+    },
+    ["Cryomancer"] = {
+        ["Default"] = "rbxassetid://16742059533", ["Krampus Slayer"] = "rbxassetid://16742059785"
+    },
+    ["DJ Booth"] = {
+        ["Default"] = "rbxassetid://90127560097295", ["Ducky"] = "rbxassetid://108324875176244", ["Garage Band"] = "rbxassetid://102404432745932", ["Ghost"] = "rbxassetid://111981689753740", ["Gingerbread"] = "rbxassetid://88595674290447", ["Mako"] = "rbxassetid://105492996309734", ["Masquerade"] = "rbxassetid://16742060736", ["Neko"] = "rbxassetid://115310627249069", ["Neon Rave"] = "rbxassetid://88395223637973", ["Plushie"] = "rbxassetid://16742061708", ["Seal"] = "rbxassetid://124438946534088"
+    },
+    ["Demoman"] = {
+        ["Blue"] = "rbxassetid://16742061940", ["Default"] = "rbxassetid://16742062171", ["Ducky"] = "rbxassetid://112748767260662", ["Fortress"] = "rbxassetid://16742062515", ["Ghost"] = "rbxassetid://81760835645289", ["Green"] = "rbxassetid://16742062839", ["Military"] = "rbxassetid://16742063163", ["Pirate"] = "rbxassetid://16742063574", ["Pumpkin"] = "rbxassetid://16742063839", ["Red"] = "rbxassetid://16742064120", ["Yellow"] = "rbxassetid://16742064313"
+    },
+    ["Electroshocker"] = {
+        ["Banned"] = "rbxassetid://118823738322908", ["Bunny"] = "rbxassetid://16742064560", ["Classic"] = "rbxassetid://17744633836", ["Dark Frost"] = "rbxassetid://92937669662901", ["Default"] = "rbxassetid://16742064918", ["Ducky"] = "rbxassetid://16742065360", ["Frankenstein"] = "rbxassetid://16742065631", ["Ghost"] = "rbxassetid://16742065873", ["Hazmat"] = "rbxassetid://16742066166", ["Jellyfish"] = "rbxassetid://85663070964840", ["Korblox"] = "rbxassetid://122538908879439", ["Lovestriker"] = "rbxassetid://106374635483378", ["TeeVee"] = "rbxassetid://16997023926", ["Valentines"] = "rbxassetid://16742066423", ["Vigilante"] = "rbxassetid://16742066740"
+    },
+    ["Elementalist"] = {
+        ["Default"] = "rbxassetid://78382857674962"
+    },
+    ["Elf Camp"] = {
+        ["Chocolatier"] = "rbxassetid://79600048176341", ["Classic"] = "rbxassetid://89043476285776", ["Default"] = "rbxassetid://90684298180076"
+    },
+    ["Engineer"] = {
+        ["Beach"] = "rbxassetid://70830745549464", ["Dark Frost"] = "rbxassetid://72967186484602", ["Default"] = "rbxassetid://16742067184", ["DraxRex"] = "rbxassetid://18549606104", ["Ducky"] = "rbxassetid://16742040216", ["Fallen"] = "rbxassetid://18950630600", ["Ghost"] = "rbxassetid://104901982243529", ["Grave Digger"] = "rbxassetid://16742067352", ["Heartbreak"] = "rbxassetid://16742067565", ["Holiday"] = "rbxassetid://16742067797", ["Mechanic"] = "rbxassetid://16742068076", ["Phantom"] = "rbxassetid://16742068314", ["Plushie"] = "rbxassetid://16742068525", ["Wikia"] = "rbxassetid://16742068760"
+    },
+    ["Executioner"] = {
+        ["Default"] = "rbxassetid://16742069000", ["Eclipse"] = "rbxassetid://16742069213", ["Heartbreak"] = "rbxassetid://100643097900090", ["Vanquisher"] = "rbxassetid://17363278858"
+    },
+    ["Farm"] = {
+        ["Arcade"] = "rbxassetid://16742069471", ["Booth"] = "rbxassetid://114387520669997", ["Cinema"] = "rbxassetid://113467369649039", ["Cozy Camp"] = "rbxassetid://140408163540785", ["Crab"] = "rbxassetid://80117562627776", ["Crypto"] = "rbxassetid://16742069733", ["Cube"] = "rbxassetid://80832036812275", ["Default"] = "rbxassetid://16742069981", ["Ducky"] = "rbxassetid://16742070242", ["Graveyard"] = "rbxassetid://16742070511", ["Lemonade Stand"] = "rbxassetid://81915340530819", ["Null Soul"] = "rbxassetid://81613076972732", ["PNG"] = "rbxassetid://102229660485968", ["Pirate"] = "rbxassetid://16742070778", ["Present"] = "rbxassetid://16742071112", ["Tycoon"] = "rbxassetid://16742071421", ["Vendor"] = "rbxassetid://16742071670", ["Wasteland"] = "rbxassetid://115389901462450", ["Xmas"] = "rbxassetid://16742072101"
+    },
+    ["Firework Technician"] = {
+        ["2026"] = "rbxassetid://122550929943456", ["Default"] = "rbxassetid://113647654122910", ["Inventor"] = "rbxassetid://76009529192577"
+    },
+    ["Freezer"] = {
+        ["Cryptid"] = "rbxassetid://16742072500", ["Deep Freeze"] = "rbxassetid://16742072779", ["Default"] = "rbxassetid://16742073034", ["Foam"] = "rbxassetid://16742073341", ["Frost Legion"] = "rbxassetid://80819236795571", ["IcyTea"] = "rbxassetid://16742073604", ["Mint Choco"] = "rbxassetid://16742073860", ["Polar Bear"] = "rbxassetid://78779113854366", ["Vendor"] = "rbxassetid://109388902986099"
+    },
+    ["Frost Blaster"] = {
+        ["Default"] = "rbxassetid://16742074063"
+    },
+    ["Gatling Gun"] = {
+        ["Default"] = "rbxassetid://81281360352088", ["Easter"] = "rbxassetid://102642733564095"
+    },
+    ["Gladiator"] = {
+        ["Beach"] = "rbxassetid://16742074319", ["Cameraman"] = "rbxassetid://17119429753", ["Default"] = "rbxassetid://16742074569", ["Demon"] = "rbxassetid://16742074780", ["Galactic"] = "rbxassetid://16742075002", ["Phantom"] = "rbxassetid://16742075283", ["Pirate"] = "rbxassetid://16742075600", ["Pumpkin"] = "rbxassetid://16742075866", ["Slugger"] = "rbxassetid://16742076100", ["Umbrella"] = "rbxassetid://16742076293", ["Vigilante"] = "rbxassetid://16742076549"
+    },
+    ["Hacker"] = {
+        ["Camera Operator"] = "rbxassetid://83759196809017", ["Default"] = "rbxassetid://111199743077047", ["Fallen"] = "rbxassetid://122092656436424", ["Reindeer Mech"] = "rbxassetid://71250983401324", ["Triumphant"] = "rbxassetid://122127536135971"
+    },
+    ["Hallow Punk"] = {
+        ["Default"] = "rbxassetid://134504826386080", ["Lunar"] = "rbxassetid://108437763960397"
+    },
+    ["Harvester"] = {
+        ["Default"] = "rbxassetid://87684607767207", ["Lunar"] = "rbxassetid://137379745720939", ["Wasteland"] = "rbxassetid://74677227259405"
+    },
+    ["Hunter"] = {
+        ["Blue"] = "rbxassetid://16742076812", ["Default"] = "rbxassetid://16742077024", ["Ducky"] = "rbxassetid://16742077321", ["Halloween"] = "rbxassetid://16742077487", ["Pirate"] = "rbxassetid://16742077780", ["Vampire Slayer"] = "rbxassetid://16742078183"
+    },
+    ["Jester"] = {
+        ["Clown"] = "rbxassetid://17744634147", ["Default"] = "rbxassetid://16742096294", ["Heartbreak"] = "rbxassetid://119670783538459", ["The Beast"] = "rbxassetid://75863398247354", ["The Flea"] = "rbxassetid://105377590942476"
+    },
+    ["Juggernaut"] = {
+        ["Default"] = "rbxassetid://16742096516"
+    },
+    ["Kingpin"] = {
+        ["Default"] = "rbxassetid://16742128592"
+    },
+    ["Mecha Base"] = {
+        ["Default"] = "rbxassetid://16742097118"
+    },
+    ["Medic"] = {
+        ["Bartender"] = "rbxassetid://76122446126363", ["Bunny"] = "rbxassetid://81292807669872", ["Cyber"] = "rbxassetid://77947916767981", ["Default"] = "rbxassetid://70910607127530", ["Fallen"] = "rbxassetid://131777122693897", ["Masquerade"] = "rbxassetid://102457549018286", ["Mermaid"] = "rbxassetid://107509961893175", ["Plague"] = "rbxassetid://86420908708799", ["Second Chance"] = "rbxassetid://103107154309507", ["Stranded"] = "rbxassetid://97722323410544", ["Toy Ballerina"] = "rbxassetid://87046562754510", ["Valentines"] = "rbxassetid://98455922318086", ["Witch"] = "rbxassetid://120995785751376"
+    },
+    ["Mercenary Base"] = {
+        ["Default"] = "rbxassetid://17202640474", ["Frost Legion"] = "rbxassetid://78931994632689", ["Graveyard"] = "rbxassetid://98029015468306", ["Liberator"] = "rbxassetid://17767106489"
+    },
+    ["Militant"] = {
+        ["Ace Pilot"] = "rbxassetid://16742099577", ["Acheron"] = "rbxassetid://114000424593798", ["Arsenal"] = "rbxassetid://16742099799", ["Beach"] = "rbxassetid://16742100038", ["Chocolatier"] = "rbxassetid://16742100398", ["Davinchi"] = "rbxassetid://16742100635", ["Default"] = "rbxassetid://16742100840", ["Ducky"] = "rbxassetid://16742101071", ["Easter"] = "rbxassetid://86436209069316", ["Fallen"] = "rbxassetid://18835926439", ["Ghost"] = "rbxassetid://16742101377", ["Hazmat"] = "rbxassetid://16742101622", ["John"] = "rbxassetid://16742101804", ["Lumberjack"] = "rbxassetid://16742102093", ["Pumpkin"] = "rbxassetid://16742102372", ["Star Spartan"] = "rbxassetid://76196766882530", ["Undead"] = "rbxassetid://99237916719964", ["Wasteland"] = "rbxassetid://140245000984082"
+    },
+    ["Military Base"] = {
+        ["Base 1776"] = "rbxassetid://82822915671522", ["Classic"] = "rbxassetid://16997024256", ["Cyber"] = "rbxassetid://109839701132351", ["Default"] = "rbxassetid://16997024735", ["Wasteland"] = "rbxassetid://78972347785643"
+    },
+    ["Minigunner"] = {
+        ["Beach"] = "rbxassetid://16742103082", ["Black Ops"] = "rbxassetid://16742103323", ["Blue"] = "rbxassetid://16742103560", ["Bunny"] = "rbxassetid://16742103808", ["Chad"] = "rbxassetid://16997025666", ["Chocolatier"] = "rbxassetid://123838075161800", ["Community"] = "rbxassetid://16742104107", ["Crusader"] = "rbxassetid://16742104409", ["Cursed"] = "rbxassetid://120591121926081", ["Default"] = "rbxassetid://16742104678", ["Ducky"] = "rbxassetid://16742104895", ["Fallen"] = "rbxassetid://18739982182", ["Frost"] = "rbxassetid://16742105137", ["Gardener"] = "rbxassetid://82544636570442", ["Ghost"] = "rbxassetid://16742105452", ["Golden"] = "rbxassetid://16742105731", ["Golden Plushie"] = "rbxassetid://18563673298", ["Green"] = "rbxassetid://16742105989", ["Hazmat"] = "rbxassetid://16742106200", ["Heavy"] = "rbxassetid://16742106470", ["Holiday"] = "rbxassetid://16742106731", ["Nutcracker"] = "rbxassetid://123307115343441", ["Ox"] = "rbxassetid://74202120404385", ["Party"] = "rbxassetid://16742106926", ["Phantom"] = "rbxassetid://16742107196", ["Plushie"] = "rbxassetid://16742107455", ["Pumpkin"] = "rbxassetid://16742107785", ["Road Rage"] = "rbxassetid://127265987839477", ["Space Elite"] = "rbxassetid://16742108056", ["Sweaking"] = "rbxassetid://16742108280", ["Toy"] = "rbxassetid://16742108498", ["Trucker"] = "rbxassetid://16997026080", ["Twitter"] = "rbxassetid://16742108697", ["Warlord"] = "rbxassetid://16742108927", ["Wraith"] = "rbxassetid://16742109128", ["Xmas"] = "rbxassetid://16742109340"
+    },
+    ["Mortar"] = {
+        ["Baseball"] = "rbxassetid://18549606696", ["Bunny"] = "rbxassetid://16742109548", ["Dark Frost"] = "rbxassetid://75806838714392", ["Default"] = "rbxassetid://16742109840", ["DefaultOld"] = "rbxassetid://16742110099", ["Defender"] = "rbxassetid://16742110354", ["Ducky"] = "rbxassetid://16742110596", ["Eclipse"] = "rbxassetid://16742110815", ["Fallen"] = "rbxassetid://18835927281", ["Festive"] = "rbxassetid://136722938963670", ["Frost"] = "rbxassetid://119613427526708", ["Krampus"] = "rbxassetid://91368433364360", ["Mecha Ducky"] = "rbxassetid://70538066358366", ["Pirate"] = "rbxassetid://16742111011", ["Valentines"] = "rbxassetid://133447641741866", ["Vigilante"] = "rbxassetid://16742111168"
+    },
+    ["Necromancer"] = {
+        ["Creepy Santa"] = "rbxassetid://121558895628032", ["Default"] = "rbxassetid://16742111373", ["Duck"] = "rbxassetid://106663322139673", ["Fallen"] = "rbxassetid://18950652558", ["Mage"] = "rbxassetid://16997026277"
+    },
+    ["Operator"] = {
+        ["Default"] = "rbxassetid://16742111580"
+    },
+    ["Paintballer"] = {
+        ["Bunny"] = "rbxassetid://16742111855", ["Default"] = "rbxassetid://16742112045", ["Green"] = "rbxassetid://17766383428", ["Red"] = "rbxassetid://16742112218"
+    },
+    ["Pursuit"] = {
+        ["Default"] = "rbxassetid://71565475215945", ["Dragon"] = "rbxassetid://75987818617959", ["Eggy"] = "rbxassetid://129121886854482"
+    },
+    ["Pyromancer"] = {
+        ["Acidic"] = "rbxassetid://16742112759", ["Barbecue"] = "rbxassetid://16742112955", ["Blue"] = "rbxassetid://16742113148", ["Bunny"] = "rbxassetid://16742113383", ["Default"] = "rbxassetid://16742113730", ["Dwarf"] = "rbxassetid://16742114045", ["Fire Breather"] = "rbxassetid://87818829094012", ["Frost"] = "rbxassetid://16742114293", ["Ghost"] = "rbxassetid://16742114699", ["Golden"] = "rbxassetid://16742128811", ["Hallow Punk"] = "rbxassetid://100038154702519", ["Hazmat"] = "rbxassetid://16742128975", ["Mage"] = "rbxassetid://16742129185", ["Plushie"] = "rbxassetid://110949683234465", ["Pool Party"] = "rbxassetid://104604814725961", ["Reindeer"] = "rbxassetid://128884594892871", ["Scarecrow"] = "rbxassetid://16742129397", ["Valentines"] = "rbxassetid://16742129623", ["Vigilante"] = "rbxassetid://16742129830"
+    },
+    ["Ranger"] = {
+        ["5ouls"] = "rbxassetid://18549607210", ["Badlands"] = "rbxassetid://16801603418", ["Beast Slayer"] = "rbxassetid://16742130037", ["Black Ops"] = "rbxassetid://16742130258", ["Blue"] = "rbxassetid://16742130444", ["Bunny"] = "rbxassetid://16742130675", ["Classic"] = "rbxassetid://16742130816", ["Dark Matter"] = "rbxassetid://16742131006", ["Default"] = "rbxassetid://16742131160", ["Eclipse"] = "rbxassetid://16742131402", ["Eskimo"] = "rbxassetid://128714714796489", ["Frankenstein"] = "rbxassetid://123830216490388", ["Frost"] = "rbxassetid://16742131549", ["Green"] = "rbxassetid://16742131725", ["Gun Gale"] = "rbxassetid://16742131902", ["Mecha Ducky"] = "rbxassetid://111106612615105", ["Partisan"] = "rbxassetid://16742132072", ["Phantom"] = "rbxassetid://16742132284", ["Propellars"] = "rbxassetid://16742132454", ["Pumpkin"] = "rbxassetid://16742048328", ["Railgunner"] = "rbxassetid://16742132622", ["Shark"] = "rbxassetid://118641195806072", ["SteamPunk"] = "rbxassetid://17766383629", ["Valentines"] = "rbxassetid://16742132842", ["Wraith"] = "rbxassetid://16742133100"
+    },
+    ["Rocketeer"] = {
+        ["Bosanka"] = "rbxassetid://97562066551955", ["Dark Matter"] = "rbxassetid://82619969731160", ["Default"] = "rbxassetid://72053097584198", ["Duck"] = "rbxassetid://82581428525440", ["Fortress"] = "rbxassetid://104029788106610", ["Ghost"] = "rbxassetid://126109130686279", ["Lovestriker"] = "rbxassetid://122261435962808", ["Lunar"] = "rbxassetid://106246370633835", ["Pumpkin"] = "rbxassetid://103379695538461", ["Steampunk"] = "rbxassetid://132152532289629", ["Toy"] = "rbxassetid://125539379459445", ["Trombone"] = "rbxassetid://127541134546574", ["Xmas"] = "rbxassetid://94263168154969"
+    },
+    ["Scout"] = {
+        ["Banned"] = "rbxassetid://98679998862541", ["Beach"] = "rbxassetid://16742135002", ["Black Ops"] = "rbxassetid://16742135175", ["Blue"] = "rbxassetid://16742135394", ["Bunny"] = "rbxassetid://16742135669", ["Cookie"] = "rbxassetid://16742135838", ["Default"] = "rbxassetid://16742136020", ["Ducky"] = "rbxassetid://16742136236", ["Eclipse"] = "rbxassetid://16742136452", ["Fallen"] = "rbxassetid://18739982633", ["Frost Hunter"] = "rbxassetid://16742136608", ["Golden"] = "rbxassetid://16742136768", ["Green"] = "rbxassetid://16742136919", ["Guest"] = "rbxassetid://17571579155", ["Haz3mn"] = "rbxassetid://130252324129434", ["Holiday"] = "rbxassetid://16742137176", ["Intern"] = "rbxassetid://16742137311", ["King of Rock"] = "rbxassetid://117402710044000", ["Masquerade"] = "rbxassetid://16742137522", ["Party"] = "rbxassetid://16742137715", ["Penguin"] = "rbxassetid://102209448087896", ["Phantom"] = "rbxassetid://16742137918", ["Plushie"] = "rbxassetid://16742138111", ["Prime Raven"] = "rbxassetid://16742138286", ["Red"] = "rbxassetid://16742138539", ["Shark"] = "rbxassetid://89854318503673", ["Skull Trooper"] = "rbxassetid://16742138815", ["Survivor"] = "rbxassetid://16742139178", ["Toilet"] = "rbxassetid://16997026586", ["Valentines"] = "rbxassetid://16742139334", ["Valhalla"] = "rbxassetid://16742139584"
+    },
+    ["Shotgunner"] = {
+        ["Classic"] = "rbxassetid://16742139792", ["Dance Fever"] = "rbxassetid://139385538174792", ["Default"] = "rbxassetid://16742140018", ["Ducky"] = "rbxassetid://16742140221", ["Gardener"] = "rbxassetid://98658379166107", ["Hallow Punk"] = "rbxassetid://16742140448", ["Holiday"] = "rbxassetid://16742140772", ["Null"] = "rbxassetid://93120520148959", ["Phantom"] = "rbxassetid://16742140988", ["Slayer"] = "rbxassetid://16998519554", ["Spooky"] = "rbxassetid://16742141438", ["Trumpeter"] = "rbxassetid://96004685279062", ["Vigilante"] = "rbxassetid://16742050157"
+    },
+    ["Slasher"] = {
+        ["Default"] = "rbxassetid://85826790424914", ["Jason"] = "rbxassetid://80815511240891", ["Spooky"] = "rbxassetid://87446356234317", ["Spring Time"] = "rbxassetid://100945870370166"
+    },
+    ["Sledger"] = {
+        ["Brave Soul"] = "rbxassetid://16742142332", ["Chocolatier"] = "rbxassetid://128749730055893", ["Default"] = "rbxassetid://75780199539960", ["Fallen"] = "rbxassetid://18961805501", ["Phantom"] = "rbxassetid://16742142970"
+    },
+    ["Sniper"] = {
+        ["Blue"] = "rbxassetid://16742143211", ["Bunny"] = "rbxassetid://16742143396", ["Davinchi"] = "rbxassetid://16742143675", ["Default"] = "rbxassetid://16742143963", ["Ducky"] = "rbxassetid://16742144110", ["Frost Legion"] = "rbxassetid://93332491661008", ["Ghillie"] = "rbxassetid://16742144423", ["Red"] = "rbxassetid://16742144687", ["Redemption"] = "rbxassetid://16997027118", ["Shrimp"] = "rbxassetid://139661519405754", ["Silent"] = "rbxassetid://16742144921", ["Valentines"] = "rbxassetid://16742158141"
+    },
+    ["Snowballer"] = {
+        ["Default"] = "rbxassetid://114134096038917"
+    },
+    ["Soldier"] = {
+        ["Aerobics"] = "rbxassetid://104435661189010", ["Beast Slayer"] = "rbxassetid://16742158393", ["Blue"] = "rbxassetid://16742158617", ["Bunny"] = "rbxassetid://90125360452717", ["Classic"] = "rbxassetid://16742158900", ["Cold Soldier"] = "rbxassetid://16742159220", ["Dark Frost"] = "rbxassetid://79808121861280", ["Default"] = "rbxassetid://16742159440", ["Doughboy"] = "rbxassetid://16742159744", ["Ducky"] = "rbxassetid://16742159991", ["Golden"] = "rbxassetid://16742160355", ["Grand Theft"] = "rbxassetid://16742160584", ["Holiday"] = "rbxassetid://16742160760", ["Korblox"] = "rbxassetid://70787227887803", ["Liberator"] = "rbxassetid://16997027649", ["Null"] = "rbxassetid://124579321748902", ["Party"] = "rbxassetid://16742161040", ["Red"] = "rbxassetid://16742161237", ["Stealth Ops"] = "rbxassetid://100325781772079", ["Toilet"] = "rbxassetid://16997028225", ["Toy"] = "rbxassetid://16742161627", ["Valentines"] = "rbxassetid://16742161860"
+    },
+    ["Spotlight Tech"] = {
+        ["Default"] = "rbxassetid://100541687228569"
+    },
+    ["Swarmer"] = {
+        ["Default"] = "rbxassetid://130558134123777"
+    },
+    ["Tesla"] = {
+        ["Default"] = "rbxassetid://82978810572655"
+    },
+    ["Toxic Gunner"] = {
+        ["Default"] = "rbxassetid://73834896430233", ["Phantom"] = "rbxassetid://16742162641"
+    },
+    ["Trapper"] = {
+        ["Banned"] = "rbxassetid://138302025230911", ["Chocolatier"] = "rbxassetid://97990283366444", ["Dark Frost"] = "rbxassetid://120378214035608", ["Default"] = "rbxassetid://16742162831", ["Hermit"] = "rbxassetid://132047366954925", ["Holiday"] = "rbxassetid://135434192278722", ["Jolly Tree"] = "rbxassetid://122626004746795", ["Mallard Duck"] = "rbxassetid://128010558189605", ["Plushie"] = "rbxassetid://17362851197"
+    },
+    ["Turret"] = {
+        ["Crossbow"] = "rbxassetid://114313678039848", ["Default"] = "rbxassetid://98957331113953", ["Grinch"] = "rbxassetid://121152276423958", ["Jetski"] = "rbxassetid://135352734380419", ["XR300"] = "rbxassetid://107330122678487", ["XR500"] = "rbxassetid://88505927728819"
+    },
+    ["War Machine"] = {
+        ["Default"] = "rbxassetid://16742163808"
+    },
+    ["Warden"] = {
+        ["Baseball"] = "rbxassetid://16742164022", ["Dark Frost"] = "rbxassetid://137394918093332", ["Default"] = "rbxassetid://16742164273", ["Ducky"] = "rbxassetid://16742051899", ["Fallen"] = "rbxassetid://18960948589", ["Freddy"] = "rbxassetid://106739389283977", ["Galactic"] = "rbxassetid://16742164510", ["Isaac"] = "rbxassetid://16742164667", ["Korblox"] = "rbxassetid://16742164799", ["Masquerade"] = "rbxassetid://16742165002", ["Pirate"] = "rbxassetid://16742165168", ["Shark"] = "rbxassetid://70941336840822", ["Slaughter"] = "rbxassetid://16742165310"
+    },
+    ["Warlock"] = {
+        ["Default"] = "rbxassetid://91902523805977", ["Rockstar"] = "rbxassetid://82651587906745", ["Tiger"] = "rbxassetid://139541269723119"
+    }
+}
+
 -- // TOWER RESOLVER LOGIC (For Equipper & Unequipper)
 local ValidTowersList = {
     "Scout","Sniper","Paintballer","Demoman","Hunter","Soldier","Militant",
@@ -1379,6 +1568,93 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
                     })
                 end
             end)
+        end
+    })
+
+    Main:Section({Title = "Skins"})
+    
+    local tower_skin_list = {}
+    for t_name, _ in pairs(TowerSkins) do
+        table.insert(tower_skin_list, t_name)
+    end
+    table.sort(tower_skin_list)
+
+    local selected_skin_tower = tower_skin_list[1]
+    local selected_skin_name = "Default"
+
+    local function get_skins(tower)
+        local list = {}
+        if TowerSkins[tower] then
+            for s_name, _ in pairs(TowerSkins[tower]) do
+                table.insert(list, s_name)
+            end
+            table.sort(list)
+        end
+        return list
+    end
+
+    local SkinDropdown -- placeholder definition
+
+    Main:Dropdown({
+        Title = "Select Tower:",
+        List = tower_skin_list,
+        Value = selected_skin_tower,
+        Callback = function(choice)
+            selected_skin_tower = choice
+            local new_skins = get_skins(choice)
+            selected_skin_name = new_skins[1] or "Default"
+            
+            if SkinDropdown then
+                SkinDropdown:Clear()
+                for _, s in ipairs(new_skins) do
+                    SkinDropdown:Add(s)
+                end
+                SkinDropdown:SetValue(selected_skin_name)
+            end
+        end
+    })
+
+    SkinDropdown = Main:Dropdown({
+        Title = "Select Skin:",
+        List = get_skins(selected_skin_tower),
+        Value = selected_skin_name,
+        Callback = function(choice)
+            selected_skin_name = choice
+        end
+    })
+
+    Main:Button({
+        Title = "Apply Skin",
+        Callback = function()
+            if selected_skin_tower and selected_skin_name then
+                local args = {
+                    "Inventory",
+                    "Equip",
+                    "Skin",
+                    selected_skin_tower,
+                    selected_skin_name
+                }
+                
+                local success, result = pcall(function()
+                    return game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
+                end)
+
+                if success then
+                    Window:Notify({
+                        Title = "ADS",
+                        Desc = "Successfully equipped " .. selected_skin_name .. " skin for " .. selected_skin_tower .. "!",
+                        Time = 3,
+                        Type = "normal"
+                    })
+                else
+                    Window:Notify({
+                        Title = "ADS",
+                        Desc = "Failed to equip skin.",
+                        Time = 3,
+                        Type = "error"
+                    })
+                end
+            end
         end
     })
 
