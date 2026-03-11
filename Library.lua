@@ -385,9 +385,9 @@ local DefaultSettings = {
     SellFarmsWave = 1,
     WebhookURL = "",
     Cooldown = 0.01,
-    Multiply = 60,
+    Multiply = 1,
     AutoCooldown = 0.01,
-    AutoMultiply = 60,
+    AutoMultiply = 1,
     AutoGatling = false,
     TargetChamsEnabled = false,
     TargetChamsType = "Highlight",
@@ -2238,7 +2238,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 end
                                 
                                 -- Skip penembakan dan tunggu sebentar sampai reload selesai
-                                task.wait(0.01)
+                                task.wait(0.1)
                                 continue 
                             end
                         end
