@@ -2323,62 +2323,134 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Section({Title = "Gatling Gun"})
 
-    -- 2. PURE NATIVE SILENT AIM (MAGIC BULLET)
+    -- // 1. STANDALONE SILENT AIM (MAGIC BULLETS)
+    Globals.TargetPriority = "First"
+
+    Misc:Dropdown({
+        Title = "Silent Aim Priority",
+        Desc = "Choose target priority for Silent Aim",
+        List = {"First", "Strongest", "Close"},
+        Value = "First",
+        Callback = function(choice)
+            local selected = type(choice) == "table" and choice[1] or choice
+            Globals.TargetPriority = selected
+        end
+    })
+
     Misc:Toggle({
-        Title = "Silent Aim (Pure Native)",
-        Desc = "Uses the game's built-in target finder. 100% accurate, no missed bullets, respects range/camo.",
+        Title = "Enable Silent Aim (Native)",
+        Desc = "Magic bullets that auto-hit enemies.",
         Value = false,
         Callback = function(state)
-            Globals.SilentAim = state
-            local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+            Globals.SilentAimEnabled = state
             
-            -- Simpan fungsi original agar bisa dimatikan
+            local success, gganim = pcall(function()
+                return require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+            end)
+
+            if not success or not gganim then
+                Window:Notify({Title = "Error", Desc = "Gatling Gun module not found! Equip it first.", Time = 3, Type = "error"})
+                return
+            end
+
+            -- Backup fungsi original khusus untuk Silent Aim
             if not Globals.OriginalFireGunSilent then
                 Globals.OriginalFireGunSilent = gganim._fireGun
             end
 
             if state then
-                -- Timpa (Hook) fungsi nembak manualnya
+                local CameraController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
+                local NewNetwork = require(game.ReplicatedStorage.Shared.Modules.NewNetwork)
+                
                 gganim._fireGun = function(self)
-                    local pos = nil
-                    
-                    -- [KUNCI RAHASIA DARI DUMP]: Gunakan fungsi native pencari target!
-                    -- Ini akan otomatis memilih musuh sesuai prioritas (First, Last, dll)
-                    -- dan memastikan musuh berada di dalam range serta bisa di-damage.
-                    local nativeTarget = self:FindTarget()
-                    
-                    if nativeTarget and nativeTarget.PrimaryPart then
-                        -- Jika menemukan target valid, belokkan peluru ke tengah badannya
-                        pos = nativeTarget.PrimaryPart.Position
-                    else
-                        -- Jika tidak ada musuh di range, tembak lurus sesuai arah crosshair layar
-                        local cam = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
-                        pos = cam.result and cam.result.Position or cam.position
-                    end
+                    local TargetPosition = nil
+                    local NPCs = workspace:FindFirstChild("NPCs")
 
-                    -- Kirim tembakan ke server
-                    if pos then
-                        local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
-                        
-                        -- Fitur Multiply: Tembak berkali-kali dalam 1 klik
-                        for i = 1, (Globals.Multiply or 1) do
-                            ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+                    -- Pencari Target (Smart AI)
+                    if NPCs then
+                        local BestTarget = nil
+                        local MaxDistance = -1
+                        local MaxHealth = -1
+                        local MinDistToPlayer = math.huge
+                        local camPos = workspace.CurrentCamera.CFrame.Position
+
+                        for _, enemy in ipairs(NPCs:GetChildren()) do
+                            local HRP = enemy:FindFirstChild("HumanoidRootPart")
+                            local Pointer = enemy:FindFirstChild("RootPointer")
+                            
+                            if HRP and Pointer and Pointer.Value then
+                                local RepFolder = Pointer.Value
+                                local Health = RepFolder:GetAttribute("Health")
+                                local PathDist = RepFolder:GetAttribute("PathDistance") or 0
+                                
+                                if Health and Health > 0 then
+                                    if Globals.TargetPriority == "First" then
+                                        if PathDist > MaxDistance then
+                                            MaxDistance = PathDist
+                                            BestTarget = HRP
+                                        end
+                                    elseif Globals.TargetPriority == "Strongest" then
+                                        if Health > MaxHealth then
+                                            MaxHealth = Health
+                                            BestTarget = HRP
+                                        end
+                                    elseif Globals.TargetPriority == "Close" then
+                                        local dist = (HRP.Position - camPos).Magnitude
+                                        if dist < MinDistToPlayer then
+                                            MinDistToPlayer = dist
+                                            BestTarget = HRP
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        if BestTarget then
+                            TargetPosition = BestTarget.Position
                         end
                     end
 
-                    -- Jeda cooldown (Bisa pakai custom cooldown dari UI)
+                    -- Jika tidak ada target, tembak lurus ke arah crosshair
+                    if not TargetPosition then
+                        TargetPosition = CameraController.result and CameraController.result.Position or CameraController.position
+                    end
+
+                    if not TargetPosition then return end
+
+                    -- Logic Nembak Asli & Visual Peluru Belok
+                    local isMinigun = self.Replicator:Get("Minigun")
+                    local canFire = self.Replicator:Get("CanFire")
+
+                    if not isMinigun and true or canFire then
+                        pcall(function() self:_fire(TargetPosition) end)
+                    end
+
+                    -- Kirim damage ke server (Membaca nilai Multiply Textbox mu)
+                    pcall(function()
+                        local GatlingChannel = NewNetwork.Channel("GatlingGun")
+                        local sync = workspace:GetAttribute("Sync")
+                        local serverTime = workspace:GetServerTimeNow()
+                        
+                        local currentMultiply = Globals.Multiply or 1
+                        for i = 1, currentMultiply do
+                            GatlingChannel:fireServer("Fire", TargetPosition, sync, serverTime)
+                        end
+                    end)
+
+                    -- Cooldown (Membaca nilai Cooldown Textbox mu)
                     self:Wait(Globals.Cooldown or self:GetCooldown())
                 end
-                
-                Window:Notify({Title = "Silent Aim", Desc = "Native Magic Bullets Enabled!", Time = 3})
+
+                Window:Notify({Title = "Silent Aim", Desc = "Activated! Magic Bullets ON.", Time = 3, Type = "normal"})
             else
-                -- Kembalikan ke normal
+                -- Kembalikan ke fungsi normal
                 gganim._fireGun = Globals.OriginalFireGunSilent
-                Window:Notify({Title = "Silent Aim", Desc = "Disabled!", Time = 3})
+                Window:Notify({Title = "Silent Aim", Desc = "Deactivated!", Time = 3, Type = "normal"})
             end
         end
     })
 
+    -- // 2. SETTINGAN LAMA MILIKMU (Manual Gatling)
     Misc:Textbox({
         Title = "Cooldown:",
         Desc = "",
