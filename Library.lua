@@ -2323,40 +2323,33 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Section({Title = "Gatling Gun"})
 
-    local SilentAimEnabled = false
-    local OriginalFireServer
+    local SilentAim = false
+    local camController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
 
     local function GetNearestEnemy()
 
         local cam = workspace.CurrentCamera
-        local closest = nil
-        local shortest = math.huge
+        local closest
+        local dist = math.huge
 
-        local enemies = workspace:FindFirstChild("Enemies")
-        if not enemies then return end
+        for _,v in pairs(workspace:GetDescendants()) do
+            if v.Name == "HumanoidRootPart" and v.Parent:FindFirstChild("Humanoid") then
 
-        for _,enemy in pairs(enemies:GetChildren()) do
-
-            local root = enemy:FindFirstChild("HumanoidRootPart")
-
-            if root then
-
-                local pos, visible = cam:WorldToViewportPoint(root.Position)
+                local pos,visible = cam:WorldToViewportPoint(v.Position)
 
                 if visible then
 
-                    local dist = (Vector2.new(pos.X,pos.Y) -
-                    Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)).Magnitude
+                    local magnitude = (Vector2.new(pos.X,pos.Y) -
+                    Vector2.new(cam.ViewportSize.X/2,cam.ViewportSize.Y/2)).Magnitude
 
-                    if dist < shortest then
-                        shortest = dist
-                        closest = root
+                    if magnitude < dist then
+                        dist = magnitude
+                        closest = v
                     end
 
                 end
 
             end
-
         end
 
         if closest then
@@ -2366,45 +2359,35 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
 
-    Misc:Toggle({
-        Title = "Silent Aim",
-        Desc = "Auto aim enemy",
-        Value = false,
-        Callback = function(state)
+    -- Silent Aim Loop
+    task.spawn(function()
 
-            SilentAimEnabled = state
+        while true do
+            task.wait()
 
-            if state then
+            if SilentAim then
 
-                if not OriginalFireServer then
+                local target = GetNearestEnemy()
 
-                    OriginalFireServer = hookmetamethod(game, "__namecall", function(self,...)
-
-                        local args = {...}
-                        local method = getnamecallmethod()
-
-                        if SilentAimEnabled
-                        and method == "FireServer"
-                        and tostring(self) == "GatlingGun"
-                        and args[1] == "Fire" then
-
-                            local target = GetNearestEnemy()
-
-                            if target then
-                                args[2] = target
-                                return OriginalFireServer(self, unpack(args))
-                            end
-
-                        end
-
-                        return OriginalFireServer(self,...)
-
-                    end)
-
+                if target then
+                    camController.result = {
+                        Position = target
+                    }
                 end
 
             end
 
+        end
+
+    end)
+
+
+    Misc:Toggle({
+        Title = "Silent Aim",
+        Desc = "Auto Aim Enemy",
+        Value = false,
+        Callback = function(state)
+            SilentAim = state
         end
     })
 
