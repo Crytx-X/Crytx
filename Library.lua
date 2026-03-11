@@ -2099,6 +2099,190 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
+    Misc:Section({Title = "🔥 Gatling Gun (GOD MODE)"})
+    
+    -- Variables untuk menyimpan fungsi asli bawaan game
+    local OriginalFireGun = nil
+    local OriginalWind = nil
+    local OriginalRecoil = nil
+    local GatlingOverridesActive = false
+
+    -- Fungsi cerdas untuk mencari musuh paling depan (Aimbot)
+    local function GetBestEnemy()
+        local best_enemy = nil
+        local max_distance = -1
+        local npcs = workspace:FindFirstChild("NPCs")
+
+        if npcs then
+            for _, enemy in pairs(npcs:GetChildren()) do
+                local hitbox = enemy:FindFirstChild("HumanoidRootPart")
+                local pointer = enemy:FindFirstChild("RootPointer")
+                
+                if hitbox and pointer and pointer.Value then
+                    local repFolder = pointer.Value
+                    local health = repFolder:GetAttribute("Health")
+                    local pathDist = repFolder:GetAttribute("PathDistance") or 0
+                    
+                    if health and health > 0 and pathDist > max_distance then
+                        max_distance = pathDist
+                        best_enemy = hitbox
+                    end
+                end
+            end
+        end
+        return best_enemy
+    end
+
+    Misc:Textbox({
+        Title = "Mag Dump (Multiply):",
+        Desc = "Jumlah peluru yang keluar dalam 1 tembakan (Max 100)",
+        Placeholder = "60",
+        Value = Globals.Multiply or 60,
+        ClearTextOnFocus = true,
+        Callback = function(value)
+            if tonumber(value) then
+                Globals.Multiply = tonumber(value)
+                SetSetting("Multiply", tonumber(value)) 
+            end
+        end
+    })
+
+    Misc:Toggle({
+        Title = "Silent Aim (Aimbot)",
+        Desc = "Otomatis menembak zombie paling depan",
+        Value = Globals.SilentAim or false,
+        Callback = function(state)
+            Globals.SilentAim = state
+            SetSetting("SilentAim", state)
+        end
+    })
+
+    Misc:Toggle({
+        Title = "No Recoil & Instant Wind-up",
+        Desc = "Akurasi laser & Laras tidak perlu muter",
+        Value = Globals.NoRecoilGatling or false,
+        Callback = function(state)
+            Globals.NoRecoilGatling = state
+            SetSetting("NoRecoilGatling", state)
+        end
+    })
+
+    Misc:Button({
+        Title = "🚀 APPLY GATLING EXPLOITS",
+        Callback = function()
+            local success, err = pcall(function()
+                local towerContent = game:GetService("ReplicatedStorage").Content.Tower:FindFirstChild("Gatling Gun")
+                if not towerContent then return error("Gatling Gun belum di-load oleh game!") end
+                
+                local gganim = require(towerContent.Animator)
+                local camCtrl = require(towerContent.Animator.CameraController)
+                local ggchannel = require(game:GetService("ReplicatedStorage").Resources.Universal.NewNetwork).Channel("GatlingGun")
+
+                -- Simpan fungsi asli jika belum disimpan
+                if not OriginalFireGun then OriginalFireGun = gganim._fireGun end
+                if not OriginalWind then OriginalWind = gganim._wind end
+                if not OriginalRecoil then OriginalRecoil = camCtrl.recoil end
+
+                GatlingOverridesActive = true
+
+                -- 1. OVERRIDE FIREGUN (Silent Aim + Mag Dump + Perfect Reload)
+                gganim._fireGun = function(self)
+                    local targetHitbox = Globals.SilentAim and GetBestEnemy() or nil
+                    local pos = targetHitbox and targetHitbox.Position or (camCtrl.result and camCtrl.result.Position or camCtrl.position)
+
+                    -- Cek Perfect Reload (Jika peluru sisa <= 1, paksa reload instan)
+                    local currentAmmo = self.Replicator:Get("Ammo")
+                    local isReloading = self.Replicator:Get("Reloading")
+                    if currentAmmo and currentAmmo <= 1 and not isReloading then
+                        ggchannel:fireServer("Reload")
+                        return -- Stop nembak dan biarkan reload
+                    end
+
+                    -- Tembakan Mag Dump (Multiply)
+                    for i = 1, Globals.Multiply do
+                        ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+                    end
+
+                    self:Wait(Globals.Cooldown or 0.01)
+                end
+
+                -- 2. OVERRIDE WIND-UP (Instant Spin)
+                gganim._wind = function(self)
+                    if Globals.NoRecoilGatling then
+                        self._windPercent = 1
+                        self._allowedToFire = true
+                        self._currentDirection = "up"
+                    else
+                        return OriginalWind(self)
+                    end
+                end
+
+                -- 3. OVERRIDE RECOIL (No Recoil)
+                camCtrl.recoil = function(...)
+                    if Globals.NoRecoilGatling then
+                        return -- Lakukan nothing (Kamera diam)
+                    else
+                        return OriginalRecoil(...)
+                    end
+                end
+            end)
+
+            if success then
+                Window:Notify({Title = "SUCCESS", Desc = "God Mode Gatling Gun Aktif!", Time = 3, Type = "normal"})
+            else
+                Window:Notify({Title = "ERROR", Desc = "Gagal: Harus menaruh Gatling Gun terlebih dahulu!", Time = 4, Type = "error"})
+            end
+        end
+    })
+
+    Misc:Button({
+        Title = "❌ RESET GATLING EXPLOITS",
+        Callback = function()
+            if GatlingOverridesActive then
+                pcall(function()
+                    local towerContent = game:GetService("ReplicatedStorage").Content.Tower["Gatling Gun"]
+                    local gganim = require(towerContent.Animator)
+                    local camCtrl = require(towerContent.Animator.CameraController)
+
+                    gganim._fireGun = OriginalFireGun
+                    gganim._wind = OriginalWind
+                    camCtrl.recoil = OriginalRecoil
+
+                    GatlingOverridesActive = false
+                end)
+                Window:Notify({Title = "RESET", Desc = "Gatling Gun kembali normal.", Time = 3, Type = "normal"})
+            end
+        end
+    })
+
+    Misc:Button({
+        Title = "🚪 Force Enter FPS Mode",
+        Desc = "Teleport langsung ke dalam Gatling tanpa diklik",
+        Callback = function()
+            local found = false
+            local towersFolder = workspace:FindFirstChild("Towers")
+            if towersFolder then
+                for _, tower in pairs(towersFolder:GetChildren()) do
+                    local rep = tower:FindFirstChild("TowerReplicator")
+                    if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                        -- Tembak remote untuk memaksa masuk FPS
+                        game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer("Troops", "Abilities", "Activate", {
+                            Troop = tower,
+                            Name = "FPS",
+                            Data = { enabled = true }
+                        })
+                        found = true
+                        Window:Notify({Title = "ADS", Desc = "Memasuki FPS Mode...", Time = 2, Type = "normal"})
+                        break
+                    end
+                end
+            end
+            if not found then
+                Window:Notify({Title = "ERROR", Desc = "Gatling Gun milikmu tidak ditemukan di map!", Time = 3, Type = "error"})
+            end
+        end
+    })
+
     Misc:Section({Title = "Target Visual"})
     Misc:Dropdown({
         Title = "Target Visual Type",
@@ -2238,7 +2422,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 end
                                 
                                 -- Skip penembakan dan tunggu sebentar sampai reload selesai
-                                task.wait(0.1)
+                                task.wait(0.01)
                                 continue 
                             end
                         end
@@ -2321,7 +2505,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-Misc:Section({Title = "Gatling Gun"})
+    Misc:Section({Title = "Gatling Gun"})
     Misc:Textbox({
         Title = "Cooldown:",
         Desc = "",
