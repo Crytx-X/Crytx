@@ -2164,7 +2164,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatlingfix",
+        Title = "Enable Auto Gatling",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
@@ -2197,7 +2197,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if state then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Auto Gatling Enabled",
+                    Desc = "Auto Gatling Enabled (With Prediction)",
                     Time = 3
                 })
 
@@ -2209,6 +2209,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     local gatlingNetwork = network:WaitForChild("GatlingGun")
                     local fireRemote = gatlingNetwork:WaitForChild("RE:Fire")
                     local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
+
+                    -- Variabel untuk menyimpan posisi sebelumnya agar bisa memprediksi gerakan musuh
+                    local last_target_id = nil
+                    local last_target_pos = nil
 
                     while Globals.AutoGatling do
                         local myGatlingRep = nil
@@ -2232,19 +2236,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                             -- Jika peluru 0 atau sedang dalam proses reload
                             if (currentAmmo ~= nil and currentAmmo <= 0) or isReloading then
-                                -- Jika belum status reloading, panggil remote Reload
                                 if not isReloading then
                                     pcall(function() reloadRemote:FireServer() end)
                                 end
-                                
-                                -- Skip penembakan dan tunggu sebentar sampai reload selesai
                                 task.wait(0.1)
                                 continue 
                             end
                         end
 
                         -- ==============================================================================
-                        -- // LOGIKA MENCARI TARGET
+                        -- // LOGIKA MENCARI TARGET (Prioritas Paling Depan)
                         -- ==============================================================================
                         local target = nil
                         local best_enemy = nil
@@ -2254,19 +2255,15 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         if npcs then
                             for _, enemy in pairs(npcs:GetChildren()) do
                                 local hitbox = enemy:FindFirstChild("HumanoidRootPart")
-                                local pointer = enemy:FindFirstChild("RootPointer") -- Ambil Folder Replicator Musuh
+                                local pointer = enemy:FindFirstChild("RootPointer") 
                                 
-                                -- Pastikan musuh punya hitbox dan folder info
                                 if hitbox and pointer and pointer.Value then
                                     local repFolder = pointer.Value
                                     
-                                    -- Ambil data darah dan jarak tempuh dari server
                                     local health = repFolder:GetAttribute("Health")
                                     local pathDist = repFolder:GetAttribute("PathDistance") or 0
                                     
-                                    -- Cek apakah musuh MASIH HIDUP (Darah > 0)
                                     if health and health > 0 then
-                                        -- Lock ke musuh yang "Paling Depan" (Jarak terjauh/First)
                                         if pathDist > max_distance then
                                             max_distance = pathDist
                                             best_enemy = enemy
@@ -2277,52 +2274,52 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                         end
 
-                        -- Set target visual (Chams) jika menemukan musuh yang valid
+                        -- Set target visual & hit prediction
                         if best_enemy and target then
                             Globals.CurrentTarget = best_enemy
                             ApplyTargetChams(best_enemy)
-                        else
-                            -- Bersihkan visual target jika semua musuh sudah mati/tidak ada target
-                            if Globals.CurrentHighlight then
-                                Globals.CurrentHighlight:Destroy()
-                                Globals.CurrentHighlight = nil
-                            end
-                            Globals.CurrentTarget = nil
-                        end
-                        -- ==============================================================================
 
-                        -- // LOGIKA NEMBAK (Hanya jalan jika ada target dan Ammo > 0)
-                        if target and best_enemy then
-                            -- [PERBAIKAN] PREDIKSI POSISI (Lead Aim) untuk musuh cepat
-                            local predictedPos = target.Position
-                            local velocity = target.AssemblyLinearVelocity
-                            
-                            -- Kompensasi Ping (Jika tembakan terasa kekecepatan / mendahului musuh, kurangi nilai ini jadi 0.1 atau 0.08)
-                            local pingCompensation = 0.15 
+                            -- // PREDICTION LOGIC (Mengatasi musuh cepat & Ping desync)
+                            local predicted_pos = target.Position
 
-                            if velocity and velocity.Magnitude > 1 then
-                                -- Jika enemy bergerak menggunakan physics
-                                predictedPos = target.Position + (velocity * pingCompensation)
-                            else
-                                -- Jika enemy bergerak menggunakan CFrame (TDS menggunakan sistem ini)
-                                local speed = 15 -- Base speed
-                                local pointer = best_enemy:FindFirstChild("RootPointer")
-                                if pointer and pointer.Value then
-                                    speed = pointer.Value:GetAttribute("Speed") or 15
-                                end
-                                -- Geser titik tembak ke depan musuh sesuai arah hadap dan kecepatannya
-                                predictedPos = target.Position + (target.CFrame.LookVector * (speed * pingCompensation))
+                            if best_enemy == last_target_id and last_target_pos then
+                                -- Hitung arah & kecepatan musuh per-tick
+                                local delta_pos = target.Position - last_target_pos
+                                -- Tembak sedikit di "DEPAN" musuh (Multiplier 2.0 sampai 3.0 sangat optimal untuk Roblox)
+                                predicted_pos = target.Position + (delta_pos * 2.5) 
                             end
 
+                            last_target_id = best_enemy
+                            last_target_pos = target.Position
+
+                            -- // LOGIKA NEMBAK DENGAN MICRO-SPREAD (Mencegah peluru diblokir Anti-Cheat server)
                             for i = 1, Globals.AutoMultiply do
+                                -- Menambahkan radius acak kecil agar 60 tembakan tidak di koordinat x,y,z yang sama persis
+                                local spread_offset = Vector3.new(
+                                    (math.random() - 0.5) * 1.5,
+                                    (math.random() - 0.5) * 1.5,
+                                    (math.random() - 0.5) * 1.5
+                                )
+                                
+                                local final_shoot_pos = predicted_pos + spread_offset
+
                                 pcall(function()
                                     fireRemote:FireServer(
-                                        predictedPos, -- MENEMBAK KE POSISI PREDIKSI (Bukan posisi asli)
+                                        final_shoot_pos,
                                         workspace:GetAttribute("Sync"),
                                         workspace:GetServerTimeNow()
                                     )
                                 end)
                             end
+                        else
+                            -- Bersihkan visual target & Reset tracker
+                            if Globals.CurrentHighlight then
+                                Globals.CurrentHighlight:Destroy()
+                                Globals.CurrentHighlight = nil
+                            end
+                            Globals.CurrentTarget = nil
+                            last_target_id = nil
+                            last_target_pos = nil
                         end
 
                         task.wait(Globals.AutoCooldown or 0.05)
