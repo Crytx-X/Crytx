@@ -582,7 +582,7 @@ local function GetBestGatlingTarget()
     return best_pos
 end
 
--- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire DAN MEMBLOKIR FPS
+-- // HOOK UNTUK MENCEGAT FIRESERVER DAN MEMBLOKIR FPS
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
@@ -596,21 +596,34 @@ if hookmetamethod then
                 local args = {...}
                 
                 -- ==========================================
-                -- [NEW] LOGIKA SILENT AIM / MAGIC BULLETS
+                -- [NEW] SILENT AIM / MAGIC BULLETS
                 -- ==========================================
                 if Globals.GatlingSilentAim then
                     local magicTarget = GetBestGatlingTarget()
                     if magicTarget then
-                        args[1] = magicTarget -- Timpa arah tembakan manualmu (crosshair) ke arah musuh!
+                        -- Cari argumen yang berupa Vector3 secara dinamis, lalu ganti dengan posisi musuh
+                        for i, v in ipairs(args) do
+                            if typeof(v) == "Vector3" then
+                                args[i] = magicTarget
+                                break
+                            end
+                        end
                     end
                 end
                 
                 -- ==========================================
-                -- LOGIKA TRACER PELURU
+                -- TRACER PELURU (Untuk Visual)
                 -- ==========================================
                 if Globals.AutoGatling and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
-                    local targetPos = args[1] -- Menggunakan args[1] yang mungkin sudah diubah oleh Silent Aim
-                    if typeof(targetPos) == "Vector3" then
+                    local targetPos = nil
+                    for i, v in ipairs(args) do
+                        if typeof(v) == "Vector3" then
+                            targetPos = v
+                            break
+                        end
+                    end
+                    
+                    if targetPos then
                         local now = os.clock()
                         if now - lastTracerTime >= 0.03 then 
                             lastTracerTime = now
@@ -619,7 +632,6 @@ if hookmetamethod then
                     end
                 end
                 
-                -- JANGAN LUPA: Return menggunakan args yang sudah dimodifikasi!
                 return oldNamecall(self, unpack(args))
             end
         end
@@ -2367,11 +2379,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Section({Title = "Gatling Gun"})
     Misc:Toggle({
         Title = "Gatling Silent Aim (Magic Bullets)",
-        Desc = "Tembak manual ke arah manapun, peluru otomatis membelok ke musuh terdepan!",
+        Desc = "Saat main FPS manual, tembak ke arah manapun peluru akan mengenai musuh terdepan!",
         Value = Globals.GatlingSilentAim or false,
         Callback = function(state)
             Globals.GatlingSilentAim = state
-            SetSetting("GatlingSilentAim", state) -- Agar tersimpan di Load/Save Settings
+            SetSetting("GatlingSilentAim", state)
         end
     })
 
