@@ -690,18 +690,18 @@ local function CreateTracer(targetPos)
     game:GetService("Debris"):AddItem(tracer, 0.15)
 end
 
--- Hook Remote
+-- Hook Remote Terpusat (Tracer, Gatling, & Place Anywhere Bypass)
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         local method = getnamecallmethod()
+        local args = {...}
         
         if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
             local p = self.Parent
             if p and p.Name == "GatlingGun" then
                 if (Globals.AutoGatling or Globals.SilentAimEnabled) and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
-                    local args = {...}
                     local targetPos = args[1]
                     if typeof(targetPos) == "Vector3" then
                         local now = os.clock()
@@ -715,7 +715,7 @@ if hookmetamethod then
         end
 
         if method == "InvokeServer" and typeof(self) == "Instance" and self.Name == "RemoteFunction" then
-            local args = {...}
+            -- 1. Auto Gatling FPS Ability
             if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
                 local payload = args[4]
                 if type(payload) == "table" and payload.Name == "FPS" then
@@ -725,6 +725,18 @@ if hookmetamethod then
                             return oldNamecall(self, unpack(args))
                         end
                     end
+                end
+            end
+            
+            -- 2. SERVER ANTI-STACK BYPASS (PLACE ANYWHERE)
+            if Globals.PlaceAnywhere and args[1] == "Troops" and (args[2] == "Place" or args[2] == "Pl\208\176ce") then
+                local placementData = args[3]
+                if type(placementData) == "table" and placementData.Position then
+                    -- Menambahkan offset sangat kecil agar server mengira lokasinya beda (Bypass Stacking)
+                    local offsetX = math.random(-25, 25) / 1000
+                    local offsetZ = math.random(-25, 25) / 1000
+                    args[3].Position = args[3].Position + Vector3.new(offsetX, 0, offsetZ)
+                    return oldNamecall(self, unpack(args))
                 end
             end
         end
@@ -1494,38 +1506,44 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    -- // PLACE ANYWHERE FEATURE
+    -- // ULTIMATE PLACE ANYWHERE (Client Bypass)
     local SharedGameFuncs = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Modules"):WaitForChild("SharedGameFunctions")
     local successShared, SharedModule = pcall(require, SharedGameFuncs)
-    local OriginalCheckCollisions = nil
-
-    if successShared and type(SharedModule) == "table" and SharedModule.CheckTowerCollisions then
-        OriginalCheckCollisions = SharedModule.CheckTowerCollisions
-    end
+    local OriginalCollisionFuncs = {}
 
     Main:Toggle({
-        Title = "Place Anywhere",
-        Desc = "Bypasses local placement restrictions (Towers always glow green).",
+        Title = "Place Anywhere & Stack",
+        Desc = "Bypasses collision bounds and allows stacking/path placement.",
         Value = Globals.PlaceAnywhere or false,
         Callback = function(v)
             Globals.PlaceAnywhere = v
             SetSetting("PlaceAnywhere", v)
 
-            if successShared and OriginalCheckCollisions then
+            if successShared and type(SharedModule) == "table" then
                 if v then
-                    -- Override fungsi pengecekan tabrakan menjadi selalu VALID (true)
-                    SharedModule.CheckTowerCollisions = function(...)
-                        return true, nil 
+                    -- Ambil dan timpa semua fungsi yang mengandung kata "Collision" (Tower, Environment, Path)
+                    for funcName, func in pairs(SharedModule) do
+                        if type(func) == "function" and string.find(funcName, "Collision") then
+                            if not OriginalCollisionFuncs[funcName] then
+                                OriginalCollisionFuncs[funcName] = func
+                            end
+                            -- Memaksa script TDS menganggap posisi selalu valid
+                            SharedModule[funcName] = function(...)
+                                return true, nil
+                            end
+                        end
                     end
                     Window:Notify({
                         Title = "Place Anywhere",
-                        Desc = "Enabled! You can now place towers anywhere.",
+                        Desc = "Advanced bypass enabled! You can now stack towers anywhere.",
                         Time = 3,
                         Type = "normal"
                     })
                 else
-                    -- Kembalikan ke fungsi aslinya
-                    SharedModule.CheckTowerCollisions = OriginalCheckCollisions
+                    -- Kembalikan fungsi TDS ke kondisi normal
+                    for funcName, originalFunc in pairs(OriginalCollisionFuncs) do
+                        SharedModule[funcName] = originalFunc
+                    end
                     Window:Notify({
                         Title = "Place Anywhere",
                         Desc = "Disabled! Normal placement restored.",
@@ -1533,13 +1551,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
                         Type = "normal"
                     })
                 end
-            else
-                Window:Notify({
-                    Title = "Error",
-                    Desc = "Failed to hook placement module!",
-                    Time = 3,
-                    Type = "error"
-                })
             end
         end
     })
@@ -2213,127 +2224,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Callback = function(v)
             SetSetting("Disable3DRendering", v)
             Apply3dRendering()
-        end
-    })
-
-    -- // WAVE & ENEMY TRACKER UI
-    local TrackerUI = nil
-    local TrackerConnection = nil
-
-    local function CreateTrackerUI()
-        if TrackerUI then TrackerUI:Destroy() end
-        
-        TrackerUI = Instance.new("ScreenGui")
-        TrackerUI.Name = "ADS_EnemyTracker"
-        TrackerUI.ResetOnSpawn = false
-        TrackerUI.Parent = game:GetService("CoreGui")
-
-        local MainFrame = Instance.new("Frame")
-        MainFrame.Size = UDim2.new(0, 250, 0, 300)
-        MainFrame.Position = UDim2.new(1, -260, 0.5, -150)
-        MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-        MainFrame.BackgroundTransparency = 0.2
-        MainFrame.BorderSizePixel = 0
-        MainFrame.Parent = TrackerUI
-
-        local UICorner = Instance.new("UICorner")
-        UICorner.CornerRadius = UDim.new(0, 8)
-        UICorner.Parent = MainFrame
-
-        local Title = Instance.new("TextLabel")
-        Title.Size = UDim2.new(1, 0, 0, 30)
-        Title.BackgroundTransparency = 1
-        Title.Text = "📡 Live Enemy Tracker"
-        Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Title.Font = Enum.Font.GothamBold
-        Title.TextSize = 14
-        Title.Parent = MainFrame
-
-        local ScrollList = Instance.new("ScrollingFrame")
-        ScrollList.Size = UDim2.new(1, -10, 1, -40)
-        ScrollList.Position = UDim2.new(0, 5, 0, 35)
-        ScrollList.BackgroundTransparency = 1
-        ScrollList.ScrollBarThickness = 4
-        ScrollList.Parent = MainFrame
-
-        local UIListLayout = Instance.new("UIListLayout")
-        UIListLayout.Padding = UDim.new(0, 5)
-        UIListLayout.Parent = ScrollList
-
-        return ScrollList
-    end
-
-    Misc:Toggle({
-        Title = "Live Enemy Tracker",
-        Desc = "Shows alive enemies, counts, and their total HP on screen.",
-        Value = Globals.EnemyTracker or false,
-        Callback = function(v)
-            Globals.EnemyTracker = v
-            SetSetting("EnemyTracker", v)
-
-            if v then
-                local ScrollList = CreateTrackerUI()
-                
-                -- Loop Update Real-time
-                TrackerConnection = RunService.Heartbeat:Connect(function()
-                    if not Globals.EnemyTracker then return end
-                    
-                    local EnemyData = {}
-                    local NPCs = workspace:FindFirstChild("NPCs")
-                    
-                    if NPCs then
-                        for _, enemy in ipairs(NPCs:GetChildren()) do
-                            local pointer = enemy:FindFirstChild("RootPointer")
-                            if pointer and pointer.Value then
-                                local health = pointer.Value:GetAttribute("Health") or 0
-                                if health > 0 then
-                                    local name = enemy.Name
-                                    if not EnemyData[name] then
-                                        EnemyData[name] = {Count = 0, TotalHP = 0}
-                                    end
-                                    EnemyData[name].Count += 1
-                                    EnemyData[name].TotalHP += health
-                                end
-                            end
-                        end
-                    end
-
-                    -- Update UI
-                    for _, child in ipairs(ScrollList:GetChildren()) do
-                        if child:IsA("TextLabel") then child:Destroy() end
-                    end
-
-                    local totalEnemies = 0
-                    for name, data in pairs(EnemyData) do
-                        totalEnemies += data.Count
-                        
-                        local Entry = Instance.new("TextLabel")
-                        Entry.Size = UDim2.new(1, 0, 0, 20)
-                        Entry.BackgroundTransparency = 1
-                        Entry.Text = string.format(" %s (x%d) - ♥ %d", name, data.Count, math.floor(data.TotalHP))
-                        Entry.TextColor3 = Color3.fromRGB(200, 200, 200)
-                        Entry.Font = Enum.Font.GothamSemibold
-                        Entry.TextSize = 12
-                        Entry.TextXAlignment = Enum.TextXAlignment.Left
-                        Entry.Parent = ScrollList
-                    end
-
-                    if totalEnemies == 0 then
-                        local Entry = Instance.new("TextLabel")
-                        Entry.Size = UDim2.new(1, 0, 0, 20)
-                        Entry.BackgroundTransparency = 1
-                        Entry.Text = " No enemies alive."
-                        Entry.TextColor3 = Color3.fromRGB(100, 100, 100)
-                        Entry.Font = Enum.Font.GothamSemibold
-                        Entry.TextSize = 12
-                        Entry.TextXAlignment = Enum.TextXAlignment.Left
-                        Entry.Parent = ScrollList
-                    end
-                end)
-            else
-                if TrackerConnection then TrackerConnection:Disconnect() end
-                if TrackerUI then TrackerUI:Destroy() end
-            end
         end
     })
 
