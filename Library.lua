@@ -2195,7 +2195,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local difficulty = state and state:FindFirstChild("Difficulty") and state.Difficulty.Value
         if not difficulty then return nil end
 
-        -- Cari module yang namanya sama dengan difficulty saat ini
         for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
             if obj:IsA("ModuleScript") and obj.Name == difficulty then
                 CachedModeModule = obj
@@ -2205,14 +2204,34 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return nil
     end
 
-    -- Parser untuk Modifier (Mengubah table modifier menjadi string yang bisa dibaca)
+    -- FUNGSI BARU: Ambil wave instan tanpa task.wait (Mencegah Lag/Crash & Nil error)
+    local function GetFastWave()
+        local pg = LocalPlayer:FindFirstChild("PlayerGui")
+        if not pg then return 0 end
+        
+        local topDisplay = pg:FindFirstChild("ReactGameTopGameDisplay")
+        if topDisplay then
+            local frame = topDisplay:FindFirstChild("Frame")
+            if frame and frame:FindFirstChild("wave") then
+                local container = frame.wave:FindFirstChild("container")
+                if container and container:FindFirstChild("value") then
+                    local text = container.value.Text
+                    local waveNum = text:match("^(%d+)")
+                    return tonumber(waveNum) or 0
+                end
+            end
+        end
+        return 0
+    end
+
+    -- Parser untuk Modifier
     local function ParseModifiers(modTable)
         if type(modTable) ~= "table" then return "" end
         local mods = {}
         for k, v in pairs(modTable) do
             if v then
                 local str = tostring(k)
-                str = str:gsub("Modifier%.", "") -- Menghapus prefix Enum jika ada
+                str = str:gsub("Modifier%.", "") 
                 table.insert(mods, str)
             end
         end
@@ -2226,14 +2245,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         if TrackerUI then TrackerUI:Destroy() end
         GroupCards = {} 
         EnemyPills = {}
-        LastProcessedWave = -1 -- Reset cache wave
+        LastProcessedWave = -1 
         
         TrackerUI = Instance.new("ScreenGui")
         TrackerUI.Name = "ADS_AdvancedTracker"
         TrackerUI.ResetOnSpawn = false
         TrackerUI.Parent = game:GetService("CoreGui")
 
-        -- Main UI Background (Diperpanjang untuk 2 sesi)
         local MainFrame = Instance.new("Frame")
         MainFrame.Size = UDim2.new(0, 260, 0, 480)
         MainFrame.Position = UDim2.new(1, -270, 0.5, -240)
@@ -2291,7 +2309,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         UpcomingLayout.Padding = UDim.new(0, 2)
         UpcomingLayout.Parent = UpcomingScroll
 
-        -- Garis Pemisah
         local Divider = Instance.new("Frame")
         Divider.Size = UDim2.new(1, -20, 0, 2)
         Divider.Position = UDim2.new(0, 10, 0, 215)
@@ -2336,7 +2353,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel
     end
 
-    -- Membuat Frame List Musuh Selanjutnya
     local function CreateUpcomingEntry(parent, text, color)
         local Entry = Instance.new("TextLabel")
         Entry.Size = UDim2.new(1, 0, 0, 18)
@@ -2351,7 +2367,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return Entry
     end
 
-    -- Group Card Live Radar (Sama seperti sebelumnya)
     local function CreateGroupCard(groupName, parent)
         local Card = Instance.new("Frame")
         Card.Size = UDim2.new(1, 0, 0, 40)
@@ -2453,15 +2468,15 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     if not Globals.EnemyTracker then return end
                     
                     -- ==========================================
-                    -- LOGIKA UPDATE UPCOMING WAVE
+                    -- UPDATE UPCOMING WAVE (ANTI LAG/NIL)
                     -- ==========================================
-                    local currentWave = GetCurrentWave()
+                    local currentWave = GetFastWave()
+                    
                     if currentWave ~= LastProcessedWave then
                         LastProcessedWave = currentWave
                         local nextWaveNum = currentWave + 1
                         UpcomingTitle.Text = "🔮 UPCOMING WAVE (" .. nextWaveNum .. ")"
                         
-                        -- Bersihkan list upcoming lama
                         for _, child in ipairs(UpcomingScroll:GetChildren()) do
                             if child:IsA("TextLabel") then child:Destroy() end
                         end
@@ -2469,17 +2484,18 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local modeDataModule = GetModeDataModule()
                         if modeDataModule then
                             local success, modeData = pcall(function() return require(modeDataModule) end)
+                            
+                            -- Jika berhasil parse data mode
                             if success and type(modeData) == "table" and modeData.Waves then
                                 local nextWaveData = modeData.Waves[nextWaveNum]
                                 
-                                -- Kalkulasi Cash (Mencoba menggunakan logic dari script bawaan, fallback jika gagal)
                                 local waveCash = 0
                                 local clearBonus = 0
                                 pcall(function()
                                     if modeData.ExtraOptions and type(modeData.ExtraOptions.WaveCash) == "function" then
                                         waveCash = modeData.ExtraOptions.WaveCash(nextWaveNum)
                                     else
-                                        waveCash = 200 + ((nextWaveNum - 1) * 160) -- Fallback Formula
+                                        waveCash = 200 + ((nextWaveNum - 1) * 160)
                                     end
                                     
                                     if modeData.ExtraOptions and modeData.ExtraOptions.ClearBonus then
@@ -2489,7 +2505,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 end)
                                 WaveInfoLabel.Text = string.format("💰 Cash: $%d | Bonus: $%d", waveCash, clearBonus)
 
-                                -- Load Musuh
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
                                         local eName = enemy.Name or "Unknown"
@@ -2500,24 +2515,26 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         local color = Color3.fromRGB(220, 220, 220)
                                         if eMods:find("Boss") then color = Color3.fromRGB(255, 100, 100) end
                                         if eMods:find("Hidden") then color = Color3.fromRGB(150, 150, 255) end
+                                        if eMods:find("Bloated") then color = Color3.fromRGB(255, 150, 50) end
                                         
                                         local text = string.format("<b>x%d %s</b> <font color=\"#888888\">(%.1fs)</font><font color=\"#ff8888\">%s</font>", eAmt, eName, eDelay, eMods)
                                         CreateUpcomingEntry(UpcomingScroll, text, color)
                                     end
                                     
-                                    -- Auto Resize Scroll
                                     UpcomingScroll.CanvasSize = UDim2.new(0, 0, 0, #nextWaveData.WaveTimeline.Enemies * 20)
                                 else
                                     CreateUpcomingEntry(UpcomingScroll, "No more waves or MAX Wave reached.", Color3.fromRGB(150, 150, 150))
                                 end
+                            else
+                                CreateUpcomingEntry(UpcomingScroll, "Cannot read wave data (Bypassed)", Color3.fromRGB(255, 100, 100))
                             end
                         else
-                            CreateUpcomingEntry(UpcomingScroll, "Unable to load Wave Data.", Color3.fromRGB(255, 100, 100))
+                            CreateUpcomingEntry(UpcomingScroll, "Waiting for match to start...", Color3.fromRGB(150, 150, 150))
                         end
                     end
 
                     -- ==========================================
-                    -- LOGIKA UPDATE LIVE ENEMY (Seperti sebelumnya)
+                    -- UPDATE LIVE ENEMY
                     -- ==========================================
                     local EnemyGroups = {}
                     local ProcessedEnemies = {}
