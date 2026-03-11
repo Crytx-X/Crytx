@@ -2253,7 +2253,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         if npcs then
                             for _, enemy in pairs(npcs:GetChildren()) do
-                                local hitbox = enemy:FindFirstChild("Head")
+                                local hitbox = enemy:FindFirstChild("HumanoidRootPart")
                                 local pointer = enemy:FindFirstChild("RootPointer") -- Ambil Folder Replicator Musuh
                                 
                                 -- Pastikan musuh punya hitbox dan folder info
@@ -2293,18 +2293,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         -- // LOGIKA NEMBAK (Hanya jalan jika ada target dan Ammo > 0)
                         if target then
-                            
-                            -- [!] BAGIAN YANG DIUBAH: Menambahkan offset posisi ke depan
-                            -- Silakan ubah angka "2.5" di bawah ini. Makin besar angkanya, makin ke depan nembaknya.
-                            local jarakKedepan = 0.1 
-                            
-                            -- target.CFrame.LookVector adalah arah depan dari musuh
-                            local posisiNembak = target.Position + (target.CFrame.LookVector * jarakKedepan)
-
                             for i = 1, Globals.AutoMultiply do
                                 pcall(function()
                                     fireRemote:FireServer(
-                                        posisiNembak, -- Menggunakan posisi baru yang agak ke depan
+                                        target.Position,
                                         workspace:GetAttribute("Sync"),
                                         workspace:GetServerTimeNow()
                                     )
@@ -2329,7 +2321,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-    Misc:Section({Title = "Gatling Gun"})
+Misc:Section({Title = "Gatling Gun"})
     Misc:Textbox({
         Title = "Cooldown:",
         Desc = "",
