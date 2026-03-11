@@ -2295,7 +2295,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             -- MEMBARISKAN PELURU LURUS SEMPURNA
                             for i = 1, multiply_count do
                                 -- Hitung jarak peluru ke-i (dari 0 depan badan, sampai max_lead_distance)
-                                local distance_ahead = (i / multiply_count) * max_lead_distance
+                                local distance_ahead = ((i / multiply_count) * 6) - 2
                                 
                                 -- Titik tembak lurus persis ke depan jalur
                                 local shoot_pos = base_pos + (flat_dir * distance_ahead)
