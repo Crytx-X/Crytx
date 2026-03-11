@@ -506,7 +506,73 @@ local function SetSetting(name, value)
     end
 end
 
--- // VISUAL TRACER LOGIC
+-- ==========================================
+-- // VISUAL TRACER & ESP LOGIC (REWORKED)
+-- ==========================================
+Globals.CurrentTargetModel = nil
+Globals.CurrentHighlight = nil
+
+-- Fungsi untuk membersihkan ESP secara instan
+local function ClearESP()
+    if Globals.CurrentHighlight then
+        Globals.CurrentHighlight:Destroy()
+        Globals.CurrentHighlight = nil
+    end
+    Globals.CurrentTargetModel = nil
+end
+
+-- Fungsi pemanggil Highlight (Hanya update jika target berubah)
+local function ApplyTargetChams(enemyModel)
+    if not Globals.TargetChamsEnabled then 
+        ClearESP()
+        return 
+    end
+
+    if not enemyModel then 
+        ClearESP()
+        return 
+    end
+
+    if Globals.CurrentTargetModel ~= enemyModel then
+        ClearESP() -- Hapus yang lama dulu
+
+        if Globals.TargetChamsType == "Highlight" or Globals.TargetChamsType == "Both" then
+            local highlight = Instance.new("Highlight")
+            highlight.FillColor = Color3.fromRGB(255, 0, 0)
+            highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            highlight.FillTransparency = 0.5
+            highlight.OutlineTransparency = 0
+            highlight.Adornee = enemyModel -- Gunakan Adornee agar lebih stabil
+            highlight.Parent = game:GetService("CoreGui") -- Simpan di CoreGui agar tidak terhapus game
+
+            Globals.CurrentHighlight = highlight
+        end
+        Globals.CurrentTargetModel = enemyModel
+    end
+end
+
+-- Loop Real-time untuk memantau apakah musuh sudah mati / Toggle dimatikan
+RunService.Heartbeat:Connect(function()
+    -- 1. Jika Toggle ESP mati, atau (AutoGatling & SilentAim) keduanya mati -> Bersihkan
+    if not Globals.TargetChamsEnabled or (not Globals.AutoGatling and not Globals.SilentAimEnabled) then
+        ClearESP()
+        return
+    end
+
+    -- 2. Jika ada target yang sedang di-highlight, cek apakah dia masih hidup
+    if Globals.CurrentTargetModel then
+        local pointer = Globals.CurrentTargetModel:FindFirstChild("RootPointer")
+        local repFolder = pointer and pointer.Value
+        local health = repFolder and repFolder:GetAttribute("Health") or 0
+
+        -- Jika model hilang dari workspace atau darah 0 (Mati)
+        if not Globals.CurrentTargetModel.Parent or health <= 0 then
+            ClearESP()
+        end
+    end
+end)
+
+-- Visual Tracer
 local function CreateTracer(targetPos)
     local startPos = nil
     local towersFolder = workspace:FindFirstChild("Towers")
@@ -533,66 +599,14 @@ local function CreateTracer(targetPos)
     tracer.CastShadow = false
     tracer.Material = Enum.Material.Neon
     tracer.Color = Color3.fromRGB(255, 200, 50) 
-    tracer.Size = Vector3.new(0.2, 0.2, 5) 
+    tracer.Size = Vector3.new(0.1, 0.1, (targetPos - startPos).Magnitude) 
     
-    tracer.CFrame = CFrame.lookAt(startPos, targetPos)
+    tracer.CFrame = CFrame.lookAt(startPos, targetPos) * CFrame.new(0, 0, -((targetPos - startPos).Magnitude / 2))
     tracer.Parent = workspace.Terrain
 
-    local distance = (targetPos - startPos).Magnitude
-    local speed = 150 
-    local duration = distance / speed
-
-    local tweenInfo = TweenInfo.new(duration, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(tracer, tweenInfo, {
-        CFrame = CFrame.lookAt(targetPos, targetPos + (targetPos - startPos).Unit)
-    })
-
-    tween:Play()
-    tween.Completed:Connect(function()
-        tracer:Destroy()
-    end)
-end
-
--- // OPTIMASI APPLY TARGET CHAMS (Agar tidak lag saat dipanggil Silent Aim)
-Globals.CurrentTargetModel = nil
-Globals.CurrentHighlight = nil
-
-local function ApplyTargetChams(enemy)
-    if not Globals.TargetChamsEnabled then 
-        if Globals.CurrentHighlight then
-            Globals.CurrentHighlight:Destroy()
-            Globals.CurrentHighlight = nil
-            Globals.CurrentTargetModel = nil
-        end
-        return 
-    end
-
-    if not enemy then 
-        if Globals.CurrentHighlight then
-            Globals.CurrentHighlight:Destroy()
-            Globals.CurrentHighlight = nil
-            Globals.CurrentTargetModel = nil
-        end
-        return 
-    end
-
-    -- Hanya buat Highlight baru jika targetnya berganti (Anti-Lag)
-    if Globals.CurrentTargetModel ~= enemy then
-        if Globals.CurrentHighlight then
-            Globals.CurrentHighlight:Destroy()
-        end
-
-        if Globals.TargetChamsType == "Highlight" or Globals.TargetChamsType == "Both" then
-            local highlight = Instance.new("Highlight")
-            highlight.FillColor = Color3.fromRGB(255,0,0)
-            highlight.OutlineColor = Color3.fromRGB(255,255,255)
-            highlight.FillTransparency = 0.3
-            highlight.Parent = enemy
-
-            Globals.CurrentHighlight = highlight
-        end
-        Globals.CurrentTargetModel = enemy
-    end
+    -- Hilangkan perlahan agar lebih mulus
+    TweenService:Create(tracer, TweenInfo.new(0.2), {Transparency = 1}):Play()
+    game:GetService("Debris"):AddItem(tracer, 0.2)
 end
 
 -- // HOOK UNTUK TRACER & FPS
@@ -602,17 +616,16 @@ if hookmetamethod then
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         local method = getnamecallmethod()
         
-        -- Mencegat RE:Fire untuk membuat tracer (Support Auto Gatling & Silent Aim)
+        -- Mencegat RE:Fire untuk membuat tracer
         if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
             local p = self.Parent
             if p and p.Name == "GatlingGun" then
-                -- Cek apakah salah satu aktif (Auto Gatling atau Silent Aim)
                 if (Globals.AutoGatling or Globals.SilentAimEnabled) and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
                     local args = {...}
                     local targetPos = args[1]
                     if typeof(targetPos) == "Vector3" then
                         local now = os.clock()
-                        if now - lastTracerTime >= 0.03 then 
+                        if now - lastTracerTime >= 0.05 then -- Batasi tracer agar tidak bikin ngelag
                             lastTracerTime = now
                             task.spawn(CreateTracer, targetPos)
                         end
@@ -621,7 +634,7 @@ if hookmetamethod then
             end
         end
 
-        -- Mencegat Matikan FPS
+        -- Mencegah FPS Mati
         if method == "InvokeServer" and typeof(self) == "Instance" and self.Name == "RemoteFunction" then
             local args = {...}
             if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
@@ -2126,12 +2139,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Callback = function(state)
             Globals.TargetChamsEnabled = state
             SetSetting("TargetChamsEnabled", state) 
+            
             if not state then
-                if Globals.CurrentHighlight then
-                    Globals.CurrentHighlight:Destroy()
-                    Globals.CurrentHighlight = nil
-                end
-                Globals.CurrentTarget = nil
+                ClearESP() -- INSTAN HILANG
             end
         end
     })
@@ -2207,9 +2217,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
 
                     while Globals.AutoGatling do
+                        -- [... KODE AMMO CHECK TETAP SAMA SEPERTI SEBELUMNYA ...]
                         local myGatlingRep = nil
                         local towersFolder = workspace:FindFirstChild("Towers")
-                        
                         if towersFolder then
                             for _, tower in pairs(towersFolder:GetChildren()) do
                                 local rep = tower:FindFirstChild("TowerReplicator")
@@ -2231,24 +2241,15 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                         end
 
-                        -- ==============================================================================
-                        -- // LOGIKA MENCARI TARGET (SUDAH DIUPDATE DENGAN DROPDOWN PRIORITY)
-                        -- ==============================================================================
+                        -- MENCARI TARGET
                         local target = nil
                         local best_enemy = nil
                         local MaxDistance = -1
                         local MaxHealth = -1
                         local MinDistToTower = math.huge
-                        local towerPos = nil
-
-                        if myGatlingRep and myGatlingRep.Parent then
-                            local base = myGatlingRep.Parent:FindFirstChild("HumanoidRootPart") or myGatlingRep.Parent.PrimaryPart
-                            if base then towerPos = base.Position end
-                        end
-                        if not towerPos then towerPos = workspace.CurrentCamera.CFrame.Position end
+                        local towerPos = myGatlingRep and myGatlingRep.Parent and myGatlingRep.Parent.PrimaryPart and myGatlingRep.Parent.PrimaryPart.Position or workspace.CurrentCamera.CFrame.Position
 
                         local npcs = workspace:FindFirstChild("NPCs")
-
                         if npcs then
                             for _, enemy in pairs(npcs:GetChildren()) do
                                 local hitbox = enemy:FindFirstChild("HumanoidRootPart")
@@ -2260,7 +2261,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local pathDist = repFolder:GetAttribute("PathDistance") or 0
                                     
                                     if health and health > 0 then
-                                        -- Menggunakan Settingan Priority
                                         if Globals.AutoGatlingPriority == "First" and pathDist > MaxDistance then
                                             MaxDistance = pathDist
                                             best_enemy = enemy
@@ -2282,27 +2282,18 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                         end
 
-                        if best_enemy and target then
-                            Globals.CurrentTarget = best_enemy
-                            -- Fungsi ApplyTargetChams harus ada di global scope script Anda
-                            if ApplyTargetChams then ApplyTargetChams(best_enemy) end
+                        -- UPDATE ESP JIKA AUTO GATLING MENEMUKAN TARGET
+                        if best_enemy then
+                            ApplyTargetChams(best_enemy)
                         else
-                            if Globals.CurrentHighlight then
-                                Globals.CurrentHighlight:Destroy()
-                                Globals.CurrentHighlight = nil
-                            end
-                            Globals.CurrentTarget = nil
+                            ClearESP()
                         end
-                        -- ==============================================================================
 
+                        -- MENEMBAK
                         if target then
                             for i = 1, Globals.AutoMultiply do
                                 pcall(function()
-                                    fireRemote:FireServer(
-                                        target.Position,
-                                        workspace:GetAttribute("Sync"),
-                                        workspace:GetServerTimeNow()
-                                    )
+                                    fireRemote:FireServer(target.Position, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
                                 end)
                             end
                         end
@@ -2311,11 +2302,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     end
                 end)
             else
-                if Globals.CurrentHighlight then
-                    Globals.CurrentHighlight:Destroy()
-                    Globals.CurrentHighlight = nil
-                end
-                Globals.CurrentTarget = nil
+                ClearESP() -- INSTAN HILANG SAAT AUTO GATLING DIMATIKAN
                 FireFPSAbility(false)
             end
         end
@@ -2338,7 +2325,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
         gganim._fireGun = function(self)
             local TargetPosition = nil
-            local TargetEnemyModel = nil -- Untuk keperluan ESP
+            local TargetEnemyModel = nil
 
             if Globals.SilentAimEnabled then
                 local NPCs = workspace:FindFirstChild("NPCs")
@@ -2383,13 +2370,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 end
             end
 
-            -- // UPDATE ESP UNTUK SILENT AIM
-            -- Jika Auto Gatling mati, biarkan Silent Aim yang mengontrol Visual Highlight
-            if not Globals.AutoGatling then
+            -- // UPDATE ESP JIKA MENGGUNAKAN SILENT AIM (Jika AutoGatling mati)
+            if not Globals.AutoGatling and TargetEnemyModel then
                 ApplyTargetChams(TargetEnemyModel)
+            elseif not TargetEnemyModel and not Globals.AutoGatling then
+                ClearESP()
             end
 
-            -- Jika Silent Aim tidak nemu target (atau mati), tembak ke arah crosshair biasa
+            -- Jika target tidak ada, tembak lurus
             if not TargetPosition then
                 local CameraController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
                 TargetPosition = CameraController.result and CameraController.result.Position or CameraController.position
@@ -2437,12 +2425,18 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Desc = "Magic bullets auto-hit enemies.",
         Value = Globals.SilentAimEnabled, 
         Callback = function(state)
+            Globals.SilentAimEnabled = state
             SetSetting("SilentAimEnabled", state)
+            
+            if not state then
+                ClearESP() -- INSTAN HILANG JIKA DIMATIKAN
+            end
             
             local hooked = EnsureGatlingHook()
             if not hooked and state then
                 Window:Notify({Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error"})
-                SetSetting("SilentAimEnabled", false) -- Revert if error
+                SetSetting("SilentAimEnabled", false)
+                Globals.SilentAimEnabled = false
             else
                 Window:Notify({Title = "Silent Aim", Desc = state and "Activated!" or "Deactivated!", Time = 3, Type = "normal"})
             end
