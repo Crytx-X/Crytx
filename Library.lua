@@ -2322,6 +2322,63 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Section({Title = "Gatling Gun"})
+
+    -- 2. PURE NATIVE SILENT AIM (MAGIC BULLET)
+    Misc:Toggle({
+        Title = "Silent Aim (Pure Native)",
+        Desc = "Uses the game's built-in target finder. 100% accurate, no missed bullets, respects range/camo.",
+        Value = false,
+        Callback = function(state)
+            Globals.SilentAim = state
+            local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+            
+            -- Simpan fungsi original agar bisa dimatikan
+            if not Globals.OriginalFireGunSilent then
+                Globals.OriginalFireGunSilent = gganim._fireGun
+            end
+
+            if state then
+                -- Timpa (Hook) fungsi nembak manualnya
+                gganim._fireGun = function(self)
+                    local pos = nil
+                    
+                    -- [KUNCI RAHASIA DARI DUMP]: Gunakan fungsi native pencari target!
+                    -- Ini akan otomatis memilih musuh sesuai prioritas (First, Last, dll)
+                    -- dan memastikan musuh berada di dalam range serta bisa di-damage.
+                    local nativeTarget = self:FindTarget()
+                    
+                    if nativeTarget and nativeTarget.PrimaryPart then
+                        -- Jika menemukan target valid, belokkan peluru ke tengah badannya
+                        pos = nativeTarget.PrimaryPart.Position
+                    else
+                        -- Jika tidak ada musuh di range, tembak lurus sesuai arah crosshair layar
+                        local cam = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
+                        pos = cam.result and cam.result.Position or cam.position
+                    end
+
+                    -- Kirim tembakan ke server
+                    if pos then
+                        local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
+                        
+                        -- Fitur Multiply: Tembak berkali-kali dalam 1 klik
+                        for i = 1, (Globals.Multiply or 1) do
+                            ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+                        end
+                    end
+
+                    -- Jeda cooldown (Bisa pakai custom cooldown dari UI)
+                    self:Wait(Globals.Cooldown or self:GetCooldown())
+                end
+                
+                Window:Notify({Title = "Silent Aim", Desc = "Native Magic Bullets Enabled!", Time = 3})
+            else
+                -- Kembalikan ke normal
+                gganim._fireGun = Globals.OriginalFireGunSilent
+                Window:Notify({Title = "Silent Aim", Desc = "Disabled!", Time = 3})
+            end
+        end
+    })
+
     Misc:Textbox({
         Title = "Cooldown:",
         Desc = "",
