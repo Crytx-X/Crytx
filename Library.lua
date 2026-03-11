@@ -2216,6 +2216,127 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
+    -- // WAVE & ENEMY TRACKER UI
+    local TrackerUI = nil
+    local TrackerConnection = nil
+
+    local function CreateTrackerUI()
+        if TrackerUI then TrackerUI:Destroy() end
+        
+        TrackerUI = Instance.new("ScreenGui")
+        TrackerUI.Name = "ADS_EnemyTracker"
+        TrackerUI.ResetOnSpawn = false
+        TrackerUI.Parent = game:GetService("CoreGui")
+
+        local MainFrame = Instance.new("Frame")
+        MainFrame.Size = UDim2.new(0, 250, 0, 300)
+        MainFrame.Position = UDim2.new(1, -260, 0.5, -150)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+        MainFrame.BackgroundTransparency = 0.2
+        MainFrame.BorderSizePixel = 0
+        MainFrame.Parent = TrackerUI
+
+        local UICorner = Instance.new("UICorner")
+        UICorner.CornerRadius = UDim.new(0, 8)
+        UICorner.Parent = MainFrame
+
+        local Title = Instance.new("TextLabel")
+        Title.Size = UDim2.new(1, 0, 0, 30)
+        Title.BackgroundTransparency = 1
+        Title.Text = "📡 Live Enemy Tracker"
+        Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Title.Font = Enum.Font.GothamBold
+        Title.TextSize = 14
+        Title.Parent = MainFrame
+
+        local ScrollList = Instance.new("ScrollingFrame")
+        ScrollList.Size = UDim2.new(1, -10, 1, -40)
+        ScrollList.Position = UDim2.new(0, 5, 0, 35)
+        ScrollList.BackgroundTransparency = 1
+        ScrollList.ScrollBarThickness = 4
+        ScrollList.Parent = MainFrame
+
+        local UIListLayout = Instance.new("UIListLayout")
+        UIListLayout.Padding = UDim.new(0, 5)
+        UIListLayout.Parent = ScrollList
+
+        return ScrollList
+    end
+
+    Misc:Toggle({
+        Title = "Live Enemy Tracker",
+        Desc = "Shows alive enemies, counts, and their total HP on screen.",
+        Value = Globals.EnemyTracker or false,
+        Callback = function(v)
+            Globals.EnemyTracker = v
+            SetSetting("EnemyTracker", v)
+
+            if v then
+                local ScrollList = CreateTrackerUI()
+                
+                -- Loop Update Real-time
+                TrackerConnection = RunService.Heartbeat:Connect(function()
+                    if not Globals.EnemyTracker then return end
+                    
+                    local EnemyData = {}
+                    local NPCs = workspace:FindFirstChild("NPCs")
+                    
+                    if NPCs then
+                        for _, enemy in ipairs(NPCs:GetChildren()) do
+                            local pointer = enemy:FindFirstChild("RootPointer")
+                            if pointer and pointer.Value then
+                                local health = pointer.Value:GetAttribute("Health") or 0
+                                if health > 0 then
+                                    local name = enemy.Name
+                                    if not EnemyData[name] then
+                                        EnemyData[name] = {Count = 0, TotalHP = 0}
+                                    end
+                                    EnemyData[name].Count += 1
+                                    EnemyData[name].TotalHP += health
+                                end
+                            end
+                        end
+                    end
+
+                    -- Update UI
+                    for _, child in ipairs(ScrollList:GetChildren()) do
+                        if child:IsA("TextLabel") then child:Destroy() end
+                    end
+
+                    local totalEnemies = 0
+                    for name, data in pairs(EnemyData) do
+                        totalEnemies += data.Count
+                        
+                        local Entry = Instance.new("TextLabel")
+                        Entry.Size = UDim2.new(1, 0, 0, 20)
+                        Entry.BackgroundTransparency = 1
+                        Entry.Text = string.format(" %s (x%d) - ♥ %d", name, data.Count, math.floor(data.TotalHP))
+                        Entry.TextColor3 = Color3.fromRGB(200, 200, 200)
+                        Entry.Font = Enum.Font.GothamSemibold
+                        Entry.TextSize = 12
+                        Entry.TextXAlignment = Enum.TextXAlignment.Left
+                        Entry.Parent = ScrollList
+                    end
+
+                    if totalEnemies == 0 then
+                        local Entry = Instance.new("TextLabel")
+                        Entry.Size = UDim2.new(1, 0, 0, 20)
+                        Entry.BackgroundTransparency = 1
+                        Entry.Text = " No enemies alive."
+                        Entry.TextColor3 = Color3.fromRGB(100, 100, 100)
+                        Entry.Font = Enum.Font.GothamSemibold
+                        Entry.TextSize = 12
+                        Entry.TextXAlignment = Enum.TextXAlignment.Left
+                        Entry.Parent = ScrollList
+                    end
+                end)
+            else
+                if TrackerConnection then TrackerConnection:Disconnect() end
+                if TrackerUI then TrackerUI:Destroy() end
+            end
+        end
+    })
+
     Misc:Toggle({
         Title = "Auto Collect Pickups",
         Desc = "Collects Logbooks + Snowballs",
