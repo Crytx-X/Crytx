@@ -2167,69 +2167,58 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     -- // ==========================================
-    -- // PREMIUM LIVE ENEMY TRACKER (HP & SHIELD BARS)
+    -- // ULTIMATE THREAT RADAR (INDIVIDUAL HP, SHIELD & TARGETING)
     -- // ==========================================
     
     local TrackerUI = nil
     local TrackerConnection = nil
-    local EnemyCards = {} -- Menyimpan cache UI agar tidak lag
+    local EnemyCards = {} -- Cache menggunakan Instance Musuh sebagai Key
+    local MAX_CARDS = 15 -- Maksimal musuh di layar agar tidak lag
 
-    -- Fungsi untuk menyingkat angka besar (contoh: 1500000 -> 1.5M)
     local function FormatNumber(n)
-        if n >= 1e6 then
-            return string.format("%.1fM", n / 1e6)
-        elseif n >= 1e3 then
-            return string.format("%.1fK", n / 1e3)
-        else
-            return tostring(math.floor(n))
-        end
+        if n >= 1e6 then return string.format("%.1fM", n / 1e6)
+        elseif n >= 1e3 then return string.format("%.1fK", n / 1e3)
+        else return tostring(math.floor(n)) end
     end
 
     local function CreateTrackerUI()
         if TrackerUI then TrackerUI:Destroy() end
-        EnemyCards = {} -- Reset cache
+        EnemyCards = {} 
         
         TrackerUI = Instance.new("ScreenGui")
-        TrackerUI.Name = "ADS_PremiumTracker"
+        TrackerUI.Name = "ADS_UltimateTracker"
         TrackerUI.ResetOnSpawn = false
         TrackerUI.Parent = game:GetService("CoreGui")
 
-        -- Main Background
         local MainFrame = Instance.new("Frame")
-        MainFrame.Size = UDim2.new(0, 260, 0, 350)
-        MainFrame.Position = UDim2.new(1, -270, 0.5, -175)
-        MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-        MainFrame.BackgroundTransparency = 0.15
+        MainFrame.Size = UDim2.new(0, 270, 0, 380)
+        MainFrame.Position = UDim2.new(1, -280, 0.5, -190)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+        MainFrame.BackgroundTransparency = 0.1
         MainFrame.BorderSizePixel = 0
         MainFrame.Parent = TrackerUI
 
-        local UICorner = Instance.new("UICorner")
-        UICorner.CornerRadius = UDim.new(0, 10)
-        UICorner.Parent = MainFrame
+        Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
         local UIStroke = Instance.new("UIStroke")
-        UIStroke.Color = Color3.fromRGB(60, 60, 75)
+        UIStroke.Color = Color3.fromRGB(50, 50, 65)
         UIStroke.Thickness = 1.5
         UIStroke.Parent = MainFrame
 
         -- Top Header
         local Header = Instance.new("Frame")
         Header.Size = UDim2.new(1, 0, 0, 35)
-        Header.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        Header.BackgroundTransparency = 0.5
-        Header.BorderSizePixel = 0
+        Header.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        Header.BackgroundTransparency = 0.2
         Header.Parent = MainFrame
+        Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 10)
 
-        local HeaderCorner = Instance.new("UICorner")
-        HeaderCorner.CornerRadius = UDim.new(0, 10)
-        HeaderCorner.Parent = Header
-        
-        -- Menutupi sudut bawah header agar lurus menyatu dengan body
+        -- Penutup sudut bawah header
         local HeaderCover = Instance.new("Frame")
         HeaderCover.Size = UDim2.new(1, 0, 0, 10)
         HeaderCover.Position = UDim2.new(0, 0, 1, -10)
-        HeaderCover.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-        HeaderCover.BackgroundTransparency = 0.5
+        HeaderCover.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        HeaderCover.BackgroundTransparency = 0.2
         HeaderCover.BorderSizePixel = 0
         HeaderCover.Parent = Header
 
@@ -2237,20 +2226,19 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Title.Size = UDim2.new(1, -15, 1, 0)
         Title.Position = UDim2.new(0, 15, 0, 0)
         Title.BackgroundTransparency = 1
-        Title.Text = "📡 LIVE RADAR"
+        Title.Text = "📡 TOP THREAT RADAR"
         Title.TextColor3 = Color3.fromRGB(255, 255, 255)
         Title.Font = Enum.Font.GothamBold
-        Title.TextSize = 14
+        Title.TextSize = 13
         Title.TextXAlignment = Enum.TextXAlignment.Left
         Title.Parent = Header
 
-        -- Scrollable List
         local ScrollList = Instance.new("ScrollingFrame")
         ScrollList.Size = UDim2.new(1, -16, 1, -45)
         ScrollList.Position = UDim2.new(0, 8, 0, 40)
         ScrollList.BackgroundTransparency = 1
         ScrollList.ScrollBarThickness = 2
-        ScrollList.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
+        ScrollList.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 100)
         ScrollList.Parent = MainFrame
 
         local UIListLayout = Instance.new("UIListLayout")
@@ -2261,114 +2249,107 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return ScrollList
     end
 
-    -- Fungsi untuk membuat Kartu Musuh (UI Card)
-    local function CreateEnemyCard(enemyName, parent)
+    local function CreateEnemyCard(enemyObj, parent)
         local Card = Instance.new("Frame")
-        Card.Size = UDim2.new(1, 0, 0, 50) -- Default size (bisa membesar jika ada shield)
-        Card.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
-        Card.BackgroundTransparency = 0.3
+        Card.Size = UDim2.new(1, 0, 0, 48)
+        Card.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
         Card.Parent = parent
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
 
-        local CardCorner = Instance.new("UICorner")
-        CardCorner.CornerRadius = UDim.new(0, 6)
-        CardCorner.Parent = Card
+        -- Efek Glow/Stroke untuk target
+        local CardStroke = Instance.new("UIStroke")
+        CardStroke.Color = Color3.fromRGB(255, 50, 50)
+        CardStroke.Thickness = 2
+        CardStroke.Transparency = 1 -- Sembunyi by default
+        CardStroke.Parent = Card
 
+        -- Nama & Ikon Target
         local NameLabel = Instance.new("TextLabel")
-        NameLabel.Size = UDim2.new(1, -10, 0, 18)
+        NameLabel.Size = UDim2.new(0.6, 0, 0, 18)
         NameLabel.Position = UDim2.new(0, 8, 0, 4)
         NameLabel.BackgroundTransparency = 1
-        NameLabel.Text = enemyName
         NameLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
         NameLabel.Font = Enum.Font.GothamSemibold
         NameLabel.TextSize = 12
         NameLabel.TextXAlignment = Enum.TextXAlignment.Left
         NameLabel.Parent = Card
 
-        -- HP BAR BACKGROUND
+        -- Jarak ke markas (Path Distance)
+        local DistLabel = Instance.new("TextLabel")
+        DistLabel.Size = UDim2.new(0.4, -10, 0, 18)
+        DistLabel.Position = UDim2.new(0.6, 0, 0, 4)
+        DistLabel.BackgroundTransparency = 1
+        DistLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+        DistLabel.Font = Enum.Font.Gotham
+        DistLabel.TextSize = 10
+        DistLabel.TextXAlignment = Enum.TextXAlignment.Right
+        DistLabel.Parent = Card
+
+        -- HP BAR
         local HPBg = Instance.new("Frame")
-        HPBg.Size = UDim2.new(1, -16, 0, 12)
+        HPBg.Size = UDim2.new(1, -16, 0, 10)
         HPBg.Position = UDim2.new(0, 8, 0, 26)
         HPBg.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
         HPBg.Parent = Card
         Instance.new("UICorner", HPBg).CornerRadius = UDim.new(1, 0)
 
-        -- HP BAR FILL
         local HPFill = Instance.new("Frame")
         HPFill.Size = UDim2.new(0.5, 0, 1, 0)
         HPFill.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
         HPFill.Parent = HPBg
         Instance.new("UICorner", HPFill).CornerRadius = UDim.new(1, 0)
 
-        -- Gradient for HP
-        local HPGradient = Instance.new("UIGradient")
-        HPGradient.Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 90, 90)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 40, 40))
-        }
-        HPGradient.Parent = HPFill
-
-        -- HP TEXT
         local HPText = Instance.new("TextLabel")
         HPText.Size = UDim2.new(1, 0, 1, 0)
         HPText.BackgroundTransparency = 1
-        HPText.Text = "100 / 100"
         HPText.TextColor3 = Color3.fromRGB(255, 255, 255)
         HPText.Font = Enum.Font.GothamBold
         HPText.TextSize = 9
         HPText.ZIndex = 2
         HPText.Parent = HPBg
 
-        -- SHIELD BAR BACKGROUND (Sembunyi by default)
+        -- SHIELD BAR (Sembunyi by default)
         local ShieldBg = Instance.new("Frame")
-        ShieldBg.Size = UDim2.new(1, -16, 0, 12)
-        ShieldBg.Position = UDim2.new(0, 8, 0, 42)
+        ShieldBg.Size = UDim2.new(1, -16, 0, 10)
+        ShieldBg.Position = UDim2.new(0, 8, 0, 40)
         ShieldBg.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
         ShieldBg.Visible = false
         ShieldBg.Parent = Card
         Instance.new("UICorner", ShieldBg).CornerRadius = UDim.new(1, 0)
 
-        -- SHIELD BAR FILL
         local ShieldFill = Instance.new("Frame")
         ShieldFill.Size = UDim2.new(0.5, 0, 1, 0)
         ShieldFill.BackgroundColor3 = Color3.fromRGB(75, 180, 255)
         ShieldFill.Parent = ShieldBg
         Instance.new("UICorner", ShieldFill).CornerRadius = UDim.new(1, 0)
 
-        -- Gradient for Shield
-        local ShieldGradient = Instance.new("UIGradient")
-        ShieldGradient.Color = ColorSequence.new{
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 200, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 130, 220))
-        }
-        ShieldGradient.Parent = ShieldFill
-
-        -- SHIELD TEXT
         local ShieldText = Instance.new("TextLabel")
         ShieldText.Size = UDim2.new(1, 0, 1, 0)
         ShieldText.BackgroundTransparency = 1
-        ShieldText.Text = "50 / 50"
         ShieldText.TextColor3 = Color3.fromRGB(255, 255, 255)
         ShieldText.Font = Enum.Font.GothamBold
         ShieldText.TextSize = 9
         ShieldText.ZIndex = 2
         ShieldText.Parent = ShieldBg
 
-        -- Simpan referensi objek untuk diupdate nanti
-        EnemyCards[enemyName] = {
+        EnemyCards[enemyObj] = {
             Card = Card,
+            CardStroke = CardStroke,
             NameLabel = NameLabel,
+            DistLabel = DistLabel,
             HPFill = HPFill,
             HPText = HPText,
             ShieldBg = ShieldBg,
             ShieldFill = ShieldFill,
-            ShieldText = ShieldText
+            ShieldText = ShieldText,
+            LastUpdate = os.clock()
         }
-        return EnemyCards[enemyName]
+        return EnemyCards[enemyObj]
     end
 
     Misc:Toggle({
-        Title = "Live Enemy Tracker (Visual)",
-        Desc = "Shows beautiful health & shield bars for alive enemies.",
+        Title = "Live Threat Radar",
+        Desc = "Shows individual enemies, shields, and highlights who you are attacking.",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
             Globals.EnemyTracker = v
@@ -2380,7 +2361,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 TrackerConnection = RunService.RenderStepped:Connect(function()
                     if not Globals.EnemyTracker then return end
                     
-                    local EnemyData = {}
+                    local AliveEnemies = {}
                     local NPCs = workspace:FindFirstChild("NPCs")
                     
                     if NPCs then
@@ -2391,36 +2372,62 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local health = state:GetAttribute("Health") or 0
                                 
                                 if health > 0 then
-                                    local maxHealth = state:GetAttribute("MaxHealth") or health
-                                    local shield = state:GetAttribute("Shield") or 0
-                                    local maxShield = state:GetAttribute("MaxShield") or shield
+                                    local dist = state:GetAttribute("PathDistance") or 0
+                                    local isTargeted = (enemy == Globals.CurrentTargetModel) -- Terhubung ke sistem Radar Gatling
                                     
-                                    local name = enemy.Name
-                                    if not EnemyData[name] then
-                                        EnemyData[name] = {Count = 0, HP = 0, MaxHP = 0, Shield = 0, MaxShield = 0}
-                                    end
-                                    
-                                    EnemyData[name].Count += 1
-                                    EnemyData[name].HP += health
-                                    EnemyData[name].MaxHP += maxHealth
-                                    EnemyData[name].Shield += shield
-                                    EnemyData[name].MaxShield += maxShield
+                                    table.insert(AliveEnemies, {
+                                        Instance = enemy,
+                                        Name = enemy.Name,
+                                        HP = health,
+                                        MaxHP = state:GetAttribute("MaxHealth") or health,
+                                        Shield = state:GetAttribute("Shield") or 0,
+                                        MaxShield = state:GetAttribute("MaxShield") or 0,
+                                        Distance = dist,
+                                        IsTargeted = isTargeted
+                                    })
                                 end
                             end
                         end
                     end
 
-                    -- Update UI Cache
-                    for name, data in pairs(EnemyData) do
-                        local cardUI = EnemyCards[name] or CreateEnemyCard(name, ScrollList)
-                        
+                    -- Prioritas Sorting: 1. Yang Sedang Diserang -> 2. Darah Tertebal
+                    table.sort(AliveEnemies, function(a, b)
+                        if a.IsTargeted and not b.IsTargeted then return true end
+                        if b.IsTargeted and not a.IsTargeted then return false end
+                        return a.HP > b.HP
+                    end)
+
+                    -- Menandai musuh mana saja yang diproses frame ini
+                    local ProcessedEnemies = {}
+
+                    -- Update UI Card (Maksimal 15 musuh teratas)
+                    local loopCount = math.min(#AliveEnemies, MAX_CARDS)
+                    for i = 1, loopCount do
+                        local data = AliveEnemies[i]
+                        local enemyObj = data.Instance
+                        ProcessedEnemies[enemyObj] = true
+
+                        local cardUI = EnemyCards[enemyObj] or CreateEnemyCard(enemyObj, ScrollList)
+                        cardUI.LastUpdate = os.clock()
                         cardUI.Card.Visible = true
-                        
-                        -- Cek jika boss (biasanya namanya mengandung 'Boss' atau MaxHP nya gila-gilaan)
-                        local isBoss = string.find(string.lower(name), "boss") or data.MaxHP > 10000
-                        local icon = isBoss and "💀" or "👾"
-                        
-                        cardUI.NameLabel.Text = string.format("%s %s (x%d)", icon, name, data.Count)
+                        cardUI.Card.LayoutOrder = i
+
+                        -- Visual Indikator Target 🎯
+                        if data.IsTargeted then
+                            cardUI.NameLabel.Text = "🎯 " .. data.Name
+                            cardUI.NameLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+                            cardUI.CardStroke.Transparency = 0 -- Glow Merah menyala
+                            -- Efek denyut (Pulse)
+                            cardUI.CardStroke.Thickness = 2 + math.sin(os.clock() * 10) * 1.5 
+                        else
+                            local isBoss = data.MaxHP > 10000
+                            cardUI.NameLabel.Text = (isBoss and "💀 " or "👾 ") .. data.Name
+                            cardUI.NameLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+                            cardUI.CardStroke.Transparency = 1 -- Sembunyikan Glow
+                        end
+
+                        -- Jarak ke markas (Membantu tahu musuh mana yang paling dekat ujung)
+                        cardUI.DistLabel.Text = string.format("🚩 %.0f", data.Distance)
 
                         -- Kalkulasi Health Bar
                         local hpPercent = math.clamp(data.HP / math.max(1, data.MaxHP), 0, 1)
@@ -2430,24 +2437,22 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         -- Kalkulasi Shield Bar
                         if data.MaxShield > 0 then
                             cardUI.ShieldBg.Visible = true
-                            cardUI.Card.Size = UDim2.new(1, 0, 0, 62) -- Perlebar kartu ke bawah untuk menampung shield
+                            cardUI.Card.Size = UDim2.new(1, 0, 0, 56) -- Perlebar untuk shield
                             
                             local shieldPercent = math.clamp(data.Shield / math.max(1, data.MaxShield), 0, 1)
                             cardUI.ShieldFill.Size = UDim2.new(shieldPercent, 0, 1, 0)
                             cardUI.ShieldText.Text = string.format("🛡️ %s / %s", FormatNumber(data.Shield), FormatNumber(data.MaxShield))
                         else
                             cardUI.ShieldBg.Visible = false
-                            cardUI.Card.Size = UDim2.new(1, 0, 0, 45) -- Ukuran normal tanpa shield
+                            cardUI.Card.Size = UDim2.new(1, 0, 0, 42) -- Normal
                         end
-                        
-                        -- LayoutOrder: Urutkan boss/musuh terkuat di atas
-                        cardUI.Card.LayoutOrder = -math.floor(data.MaxHP)
                     end
 
-                    -- Sembunyikan kartu musuh yang sudah mati / tidak ada
-                    for name, cardUI in pairs(EnemyCards) do
-                        if not EnemyData[name] then
-                            cardUI.Card.Visible = false
+                    -- Cleanup: Hapus Kartu musuh yang mati / di luar Top 15
+                    for enemyObj, cardUI in pairs(EnemyCards) do
+                        if not ProcessedEnemies[enemyObj] then
+                            cardUI.Card:Destroy()
+                            EnemyCards[enemyObj] = nil
                         end
                     end
                 end)
