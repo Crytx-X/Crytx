@@ -1494,6 +1494,56 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
+    -- // PLACE ANYWHERE FEATURE
+    local SharedGameFuncs = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Modules"):WaitForChild("SharedGameFunctions")
+    local successShared, SharedModule = pcall(require, SharedGameFuncs)
+    local OriginalCheckCollisions = nil
+
+    if successShared and type(SharedModule) == "table" and SharedModule.CheckTowerCollisions then
+        OriginalCheckCollisions = SharedModule.CheckTowerCollisions
+    end
+
+    Main:Toggle({
+        Title = "Place Anywhere",
+        Desc = "Bypasses local placement restrictions (Towers always glow green).",
+        Value = Globals.PlaceAnywhere or false,
+        Callback = function(v)
+            Globals.PlaceAnywhere = v
+            SetSetting("PlaceAnywhere", v)
+
+            if successShared and OriginalCheckCollisions then
+                if v then
+                    -- Override fungsi pengecekan tabrakan menjadi selalu VALID (true)
+                    SharedModule.CheckTowerCollisions = function(...)
+                        return true, nil 
+                    end
+                    Window:Notify({
+                        Title = "Place Anywhere",
+                        Desc = "Enabled! You can now place towers anywhere.",
+                        Time = 3,
+                        Type = "normal"
+                    })
+                else
+                    -- Kembalikan ke fungsi aslinya
+                    SharedModule.CheckTowerCollisions = OriginalCheckCollisions
+                    Window:Notify({
+                        Title = "Place Anywhere",
+                        Desc = "Disabled! Normal placement restored.",
+                        Time = 3,
+                        Type = "normal"
+                    })
+                end
+            else
+                Window:Notify({
+                    Title = "Error",
+                    Desc = "Failed to hook placement module!",
+                    Time = 3,
+                    Type = "error"
+                })
+            end
+        end
+    })
+
     Main:Button({
         Title = "Upgrade Selected",
         Desc = "",
