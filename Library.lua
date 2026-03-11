@@ -2187,24 +2187,51 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         else return tostring(math.floor(n)) end
     end
 
-    -- Mencari ModuleScript Mode di ReplicatedStorage (Client-side)
+    -- Sistem Pencarian Module Wave yang Sangat Agresif & Pintar
     local function GetModeDataModule()
-        if CachedModeModule then return CachedModeModule end
+        if CachedModeModule then return CachedModeModule, "Cached" end
         
-        local state = ReplicatedStorage:FindFirstChild("State")
-        local difficulty = state and state:FindFirstChild("Difficulty") and state.Difficulty.Value
-        if not difficulty then return nil end
-
-        for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
-            if obj:IsA("ModuleScript") and obj.Name == difficulty then
-                CachedModeModule = obj
-                return CachedModeModule
+        -- 1. Coba ambil nama difficulty dari State
+        local difficulty = "Unknown"
+        local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
+        
+        if state then
+            local diffObj = state:FindFirstChild("Difficulty")
+            if diffObj and diffObj.Value and diffObj.Value ~= "" then 
+                difficulty = diffObj.Value 
+            else
+                local modeObj = state:FindFirstChild("Mode")
+                if modeObj and modeObj.Value and modeObj.Value ~= "" then
+                    difficulty = modeObj.Value
+                end
             end
         end
-        return nil
+
+        if difficulty == "Unknown" then return nil, "State Not Found" end
+
+        -- 2. Cari ModuleScript yang namanya cocok dengan difficulty (Case-Insensitive)
+        local targetName = difficulty:lower()
+        
+        for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+            if obj:IsA("ModuleScript") then
+                local objName = obj.Name:lower()
+                
+                -- Jika namanya persis sama, atau ketambahan kata "mode"
+                if objName == targetName or objName == targetName .. "mode" then
+                    -- Validasi apakah module ini benar-benar punya tabel "Waves"
+                    local success, data = pcall(function() return require(obj) end)
+                    if success and type(data) == "table" and data.Waves then
+                        CachedModeModule = obj
+                        return CachedModeModule, difficulty
+                    end
+                end
+            end
+        end
+        
+        return nil, difficulty
     end
 
-    -- FUNGSI BARU: Ambil wave instan tanpa task.wait (Mencegah Lag/Crash & Nil error)
+    -- FUNGSI: Ambil wave instan tanpa task.wait
     local function GetFastWave()
         local pg = LocalPlayer:FindFirstChild("PlayerGui")
         if not pg then return 0 end
@@ -2455,7 +2482,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Toggle({
         Title = "Advanced Enemy Radar",
-        Desc = "Displays Upcoming Waves and Live Enemy Tracker",
+        Desc = "Displays Upcoming Waves and Live Enemy Trackers",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
             Globals.EnemyTracker = v
@@ -2481,11 +2508,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             if child:IsA("TextLabel") then child:Destroy() end
                         end
 
-                        local modeDataModule = GetModeDataModule()
+                        local modeDataModule, stateDiffName = GetModeDataModule()
                         if modeDataModule then
                             local success, modeData = pcall(function() return require(modeDataModule) end)
                             
-                            -- Jika berhasil parse data mode
                             if success and type(modeData) == "table" and modeData.Waves then
                                 local nextWaveData = modeData.Waves[nextWaveNum]
                                 
@@ -2526,15 +2552,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     CreateUpcomingEntry(UpcomingScroll, "No more waves or MAX Wave reached.", Color3.fromRGB(150, 150, 150))
                                 end
                             else
-                                CreateUpcomingEntry(UpcomingScroll, "Cannot read wave data (Bypassed)", Color3.fromRGB(255, 100, 100))
+                                CreateUpcomingEntry(UpcomingScroll, "Cannot read wave data (Data Corrupted)", Color3.fromRGB(255, 100, 100))
                             end
                         else
-                            CreateUpcomingEntry(UpcomingScroll, "Waiting for match to start...", Color3.fromRGB(150, 150, 150))
+                            -- Debug text, biar kita tahu apa yang dibaca oleh script dari gamenya!
+                            CreateUpcomingEntry(UpcomingScroll, "Searching for Mode: " .. tostring(stateDiffName) .. "...", Color3.fromRGB(150, 150, 150))
                         end
                     end
 
                     -- ==========================================
-                    -- UPDATE LIVE ENEMY
+                    -- UPDATE LIVE ENEMY (Clean & Optimize)
                     -- ==========================================
                     local EnemyGroups = {}
                     local ProcessedEnemies = {}
@@ -2548,7 +2575,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local health = state:GetAttribute("Health") or 0
                                 
                                 if health > 0 then
-                                    local name = enemy.Name
+                                    -- Menghilangkan tulisan "Enemy" yang aneh dari nama internal gamenya
+                                    local name = enemy.Name:gsub("Enemy$", "")
+                                    
                                     local shield = state:GetAttribute("Shield") or 0
                                     local maxShield = state:GetAttribute("MaxShield") or shield
                                     local maxHP = state:GetAttribute("MaxHealth") or health
