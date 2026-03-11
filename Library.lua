@@ -2164,7 +2164,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatling",
+        Title = "Enable Auto Gatlingfix",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
@@ -2244,7 +2244,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
 
                         -- ==============================================================================
-                        -- // LOGIKA MENCARI TARGET (DIUPDATE: Cek Darah & Prioritas Target Paling Depan)
+                        -- // LOGIKA MENCARI TARGET
                         -- ==============================================================================
                         local target = nil
                         local best_enemy = nil
@@ -2292,11 +2292,32 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         -- ==============================================================================
 
                         -- // LOGIKA NEMBAK (Hanya jalan jika ada target dan Ammo > 0)
-                        if target then
+                        if target and best_enemy then
+                            -- [PERBAIKAN] PREDIKSI POSISI (Lead Aim) untuk musuh cepat
+                            local predictedPos = target.Position
+                            local velocity = target.AssemblyLinearVelocity
+                            
+                            -- Kompensasi Ping (Jika tembakan terasa kekecepatan / mendahului musuh, kurangi nilai ini jadi 0.1 atau 0.08)
+                            local pingCompensation = 0.15 
+
+                            if velocity and velocity.Magnitude > 1 then
+                                -- Jika enemy bergerak menggunakan physics
+                                predictedPos = target.Position + (velocity * pingCompensation)
+                            else
+                                -- Jika enemy bergerak menggunakan CFrame (TDS menggunakan sistem ini)
+                                local speed = 15 -- Base speed
+                                local pointer = best_enemy:FindFirstChild("RootPointer")
+                                if pointer and pointer.Value then
+                                    speed = pointer.Value:GetAttribute("Speed") or 15
+                                end
+                                -- Geser titik tembak ke depan musuh sesuai arah hadap dan kecepatannya
+                                predictedPos = target.Position + (target.CFrame.LookVector * (speed * pingCompensation))
+                            end
+
                             for i = 1, Globals.AutoMultiply do
                                 pcall(function()
                                     fireRemote:FireServer(
-                                        target.Position,
+                                        predictedPos, -- MENEMBAK KE POSISI PREDIKSI (Bukan posisi asli)
                                         workspace:GetAttribute("Sync"),
                                         workspace:GetServerTimeNow()
                                     )
