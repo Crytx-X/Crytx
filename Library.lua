@@ -2195,7 +2195,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if state then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Auto Gatling: Perfect Laser Beam Enabled",
+                    Desc = "Auto Gatling: Velocity Prediction Active!",
                     Time = 3
                 })
 
@@ -2271,34 +2271,33 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
 
                         -- ==============================================================================
-                        -- // PERFECT LASER BEAM AIMBOT (Lurus & Presisi Tinggi)
+                        -- // PHYSICS VELOCITY AIMBOT (100% Akurat anti belokan & anti lag)
                         -- ==============================================================================
                         if best_enemy and target then
                             Globals.CurrentTarget = best_enemy
                             ApplyTargetChams(best_enemy)
 
                             local base_pos = target.Position
-                            -- Ambil arah hadap musuh
-                            local look_dir = target.CFrame.LookVector
-                            
-                            -- KUNCI PENTING: Datar-kan arah (Hilangkan sumbu Y) agar tembakan tidak menembus ke dalam tanah saat di jalan menanjak/menurun
-                            local flat_dir = Vector3.new(look_dir.X, 0, look_dir.Z).Unit
+                            -- Membaca seberapa cepat dan kemana arah musuh meluncur dari physics engine Roblox
+                            local velocity = target.AssemblyLinearVelocity
                             
                             local sync_time = workspace:GetAttribute("Sync")
                             local s_time_now = workspace:GetServerTimeNow()
 
-                            -- Panjang garis laser (dalam studs). 
-                            -- 5 studs sudah cukup untuk meng-cover ping 100-200ms dan musuh lari cepat.
-                            local max_lead_distance = 5 
                             local multiply_count = Globals.AutoMultiply or 60
+                            -- Memprediksi posisi musuh untuk mengakali lag server (hingga 0.4 detik ke depan)
+                            local ping_compensation = 0.4 
 
-                            -- MEMBARISKAN PELURU LURUS SEMPURNA
+                            -- MEMBARISKAN PELURU LURUS SEMPURNA SESUAI JALUR LUNCURAN
                             for i = 1, multiply_count do
-                                -- Hitung jarak peluru ke-i (dari 0 depan badan, sampai max_lead_distance)
-                                local distance_ahead = ((i / multiply_count) * 6) - 2
+                                -- Menghitung waktu peluru dari 0 detik (saat ini) hingga 0.4 detik ke depan
+                                local time_ahead = (i / multiply_count) * ping_compensation
                                 
-                                -- Titik tembak lurus persis ke depan jalur
-                                local shoot_pos = base_pos + (flat_dir * distance_ahead)
+                                -- Rumus Fisika: Posisi Target = Posisi Saat Ini + (Kecepatan * Waktu)
+                                local shoot_pos = base_pos + (velocity * time_ahead)
+                                
+                                -- Mengunci tinggi peluru ke badan musuh agar tidak menembus tanah
+                                shoot_pos = Vector3.new(shoot_pos.X, base_pos.Y, shoot_pos.Z)
 
                                 pcall(function()
                                     ggchannel:fireServer("Fire", shoot_pos, sync_time, s_time_now)
