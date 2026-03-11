@@ -2164,7 +2164,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatlings",
+        Title = "Enable Auto Gatlingbeta",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
@@ -2195,14 +2195,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if state then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Auto Gatling: Hitbox Sweeping Enabled",
+                    Desc = "Auto Gatling: Aimbot LookVector Enabled",
                     Time = 3
                 })
 
                 FireFPSAbility(true)
 
                 task.spawn(function()
-                    -- MENGGUNAKAN NETWORK MODULE LANGSUNG AGAR LEBIH CEPAT & TIDAK KENA RATE LIMIT
                     local NetSuccess, NetworkModule = pcall(function()
                         return require(game.ReplicatedStorage.Resources.Universal.NewNetwork)
                     end)
@@ -2213,15 +2212,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     end
 
                     local ggchannel = NetworkModule.Channel("GatlingGun")
-                    
-                    local last_target_id = nil
-                    local last_target_pos = nil
 
                     while Globals.AutoGatling do
                         local myGatlingRep = nil
                         local towersFolder = workspace:FindFirstChild("Towers")
                         
-                        -- Cek status ammo Gatling
+                        -- Cek status Gatling Gun
                         if towersFolder then
                             for _, tower in pairs(towersFolder:GetChildren()) do
                                 local rep = tower:FindFirstChild("TowerReplicator")
@@ -2240,13 +2236,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 if not isReloading then
                                     pcall(function() ggchannel:fireServer("Reload") end)
                                 end
-                                task.wait(0.1)
+                                task.wait(0.2) -- Beri jeda agak lama saat reload agar server tidak rate-limit
                                 continue 
                             end
                         end
 
                         -- ==============================================================================
-                        -- // MENCARI TARGET (Prioritas PathDistance Tertinggi)
+                        -- // MENCARI TARGET (Prioritas PathDistance Tertinggi / Paling Depan)
                         -- ==============================================================================
                         local target = nil
                         local best_enemy = nil
@@ -2275,46 +2271,47 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
 
                         -- ==============================================================================
-                        -- // HITBOX SWEEPING LOGIC (Untuk Musuh Cepat & Ngelag)
+                        -- // LOOKVECTOR AIMBOT (Mengunci Arah Depan Musuh)
                         -- ==============================================================================
                         if best_enemy and target then
                             Globals.CurrentTarget = best_enemy
                             ApplyTargetChams(best_enemy)
 
-                            local current_pos = target.Position
-                            -- Turunkan aim sedikit ke arah pinggang/kaki karena posisi path lebih akurat di bawah
-                            current_pos = current_pos - Vector3.new(0, 1.5, 0) 
+                            -- Posisi target saat ini
+                            local base_pos = target.Position
+                            -- Arah wajah musuh (kemana dia akan berjalan)
+                            local forward_dir = target.CFrame.LookVector
                             
-                            local velocity = Vector3.new(0, 0, 0)
-                            if best_enemy == last_target_id and last_target_pos then
-                                velocity = current_pos - last_target_pos
-                            end
-
-                            last_target_id = best_enemy
-                            last_target_pos = current_pos
-
                             local sync_time = workspace:GetAttribute("Sync")
                             local s_time_now = workspace:GetServerTimeNow()
 
-                            -- MENYAPUKAN 60 PELURU SEPANJANG ARAH LARI MUSUH
+                            -- TEMBAKAN MENYEBAR KE ARAH DEPAN MUSUH
                             for i = 1, Globals.AutoMultiply do
-                                -- Mengatur posisi dari -0.5 (belakang musuh) ke +1.0 (depan musuh)
-                                local sweep_factor = (i / Globals.AutoMultiply) * 1.5 - 0.5 
-                                local sweep_pos = current_pos + (velocity * sweep_factor)
+                                -- Mengambil angka random dari 0.0 sampai 4.5
+                                -- (Tembakan akan bervariasi dari tepat di badan musuh, hingga sejauh 4.5 stud ke depannya)
+                                local random_lead = math.random() * 4.5 
+                                
+                                -- Tambahkan offset mikro X, Y, Z agar peluru mengenai kaki, badan, kepala (menghindari anticheat 1 titik)
+                                local random_spread = Vector3.new(
+                                    (math.random() - 0.5) * 1.5,
+                                    (math.random() - 0.5) * 1.5,
+                                    (math.random() - 0.5) * 1.5
+                                )
+                                
+                                -- Titik tembak final
+                                local shoot_pos = base_pos + (forward_dir * random_lead) + random_spread
 
                                 pcall(function()
-                                    ggchannel:fireServer("Fire", sweep_pos, sync_time, s_time_now)
+                                    ggchannel:fireServer("Fire", shoot_pos, sync_time, s_time_now)
                                 end)
                             end
                         else
-                            -- Reset tracker jika tidak ada musuh
+                            -- Bersihkan tracker jika tidak ada musuh
                             if Globals.CurrentHighlight then
                                 Globals.CurrentHighlight:Destroy()
                                 Globals.CurrentHighlight = nil
                             end
                             Globals.CurrentTarget = nil
-                            last_target_id = nil
-                            last_target_pos = nil
                         end
 
                         task.wait(Globals.AutoCooldown or 0.05)
