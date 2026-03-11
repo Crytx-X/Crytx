@@ -2164,7 +2164,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatlinga",
+        Title = "Enable Auto Gatling",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
@@ -2253,7 +2253,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         if npcs then
                             for _, enemy in pairs(npcs:GetChildren()) do
-                                local hitbox = enemy:FindFirstChild("Hitbox")
+                                local hitbox = enemy:FindFirstChild("HumanoidRootPart")
                                 local pointer = enemy:FindFirstChild("RootPointer") -- Ambil Folder Replicator Musuh
                                 
                                 -- Pastikan musuh punya hitbox dan folder info
