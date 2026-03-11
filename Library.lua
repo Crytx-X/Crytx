@@ -2167,15 +2167,15 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     -- // ==========================================
-    -- // COMPACT ENEMY TRACKER (HORIZONTAL MINI-BARS)
+    -- // PERFECT COMPACT ENEMY TRACKER (DYNAMIC SHIELD PILLS)
     -- // ==========================================
     
     local TweenService = game:GetService("TweenService")
     local TrackerUI = nil
     local TrackerConnection = nil
     
-    local GroupCards = {} -- Cache untuk Kategori Nama (ex: Brute, Boss)
-    local EnemyPills = {} -- Cache untuk masing-masing individu (Kapsul HP)
+    local GroupCards = {} 
+    local EnemyPills = {} 
 
     -- Format Angka (1500 -> 1.5K)
     local function FormatNumber(n)
@@ -2194,7 +2194,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         TrackerUI.ResetOnSpawn = false
         TrackerUI.Parent = game:GetService("CoreGui")
 
-        -- Main UI (Lebih kecil dan ringkas)
+        -- Main UI Background
         local MainFrame = Instance.new("Frame")
         MainFrame.Size = UDim2.new(0, 240, 0, 300)
         MainFrame.Position = UDim2.new(1, -250, 0.5, -150)
@@ -2229,13 +2229,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Title.Size = UDim2.new(1, -10, 1, 0)
         Title.Position = UDim2.new(0, 10, 0, 0)
         Title.BackgroundTransparency = 1
-        Title.Text = "📡 LIVE RADAR"
+        Title.Text = "📡 THREAT RADAR"
         Title.TextColor3 = Color3.fromRGB(255, 255, 255)
         Title.Font = Enum.Font.GothamBold
         Title.TextSize = 12
         Title.TextXAlignment = Enum.TextXAlignment.Left
         Title.Parent = Header
 
+        -- Scrollable List
         local ScrollList = Instance.new("ScrollingFrame")
         ScrollList.Size = UDim2.new(1, -10, 1, -35)
         ScrollList.Position = UDim2.new(0, 5, 0, 30)
@@ -2252,10 +2253,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return ScrollList
     end
 
-    -- Membuat Frame Kategori (Misal: 👾 Brute (x10))
+    -- Frame Kategori (Misal: 👾 Brute (x10))
     local function CreateGroupCard(groupName, parent)
         local Card = Instance.new("Frame")
-        Card.Size = UDim2.new(1, 0, 0, 40) -- Tinggi awal, akan auto-resize
+        Card.Size = UDim2.new(1, 0, 0, 40)
         Card.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
         Card.BackgroundTransparency = 0.5
         Card.Parent = parent
@@ -2271,7 +2272,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Title.TextXAlignment = Enum.TextXAlignment.Left
         Title.Parent = Card
 
-        -- Wadah untuk Kapsul-kapsul HP mini (Disusun Horizontal / Menyamping)
+        -- Wadah untuk Kapsul HP
         local PillContainer = Instance.new("Frame")
         PillContainer.Size = UDim2.new(1, -12, 1, -22)
         PillContainer.Position = UDim2.new(0, 6, 0, 20)
@@ -2279,82 +2280,81 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         PillContainer.Parent = Card
 
         local UIGridLayout = Instance.new("UIGridLayout")
-        UIGridLayout.CellSize = UDim2.new(0, 42, 0, 14) -- Ukuran tiap Kapsul HP
-        UIGridLayout.CellPadding = UDim2.new(0, 4, 0, 4) -- Jarak antar Kapsul
+        UIGridLayout.CellSize = UDim2.new(0, 48, 0, 16) -- KAPSUL DIPERBESAR AGAR SHIELD JELAS
+        UIGridLayout.CellPadding = UDim2.new(0, 4, 0, 4)
         UIGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
         UIGridLayout.Parent = PillContainer
 
-        GroupCards[groupName] = {
-            Card = Card,
-            Title = Title,
-            Container = PillContainer,
-            Grid = UIGridLayout
-        }
+        GroupCards[groupName] = { Card = Card, Title = Title, Container = PillContainer, Grid = UIGridLayout }
         return GroupCards[groupName]
     end
 
-    -- Membuat "Kapsul HP" Individual (Mini Bar)
+    -- Membuat Kapsul HP (Mini Bar Individual)
     local function CreatePill(enemyObj, parentContainer)
         local PillBg = Instance.new("Frame")
         PillBg.BackgroundColor3 = Color3.fromRGB(45, 20, 20)
         PillBg.Parent = parentContainer
-        Instance.new("UICorner", PillBg).CornerRadius = UDim.new(0, 3)
+        Instance.new("UICorner", PillBg).CornerRadius = UDim.new(0, 4)
 
+        -- Glow Target 🎯
         local TargetStroke = Instance.new("UIStroke")
         TargetStroke.Color = Color3.fromRGB(255, 50, 50)
         TargetStroke.Thickness = 1.5
-        TargetStroke.Transparency = 1 -- Sembunyi by default
+        TargetStroke.Transparency = 1 
         TargetStroke.Parent = PillBg
 
-        local PillFill = Instance.new("Frame")
-        PillFill.Size = UDim2.new(1, 0, 1, 0)
-        PillFill.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
-        PillFill.Parent = PillBg
-        Instance.new("UICorner", PillFill).CornerRadius = UDim.new(0, 3)
+        -- HP BAR (Merah)
+        local HPFill = Instance.new("Frame")
+        HPFill.Size = UDim2.new(1, 0, 1, 0)
+        HPFill.BackgroundColor3 = Color3.fromRGB(235, 50, 50)
+        HPFill.ZIndex = 1
+        HPFill.Parent = PillBg
+        Instance.new("UICorner", HPFill).CornerRadius = UDim.new(0, 4)
 
-        -- Overlay putih untuk efek berkedip saat kena damage
+        -- SHIELD BAR (Biru - Menimpa di atas Bar Merah)
+        local ShieldFill = Instance.new("Frame")
+        ShieldFill.Size = UDim2.new(0, 0, 1, 0)
+        ShieldFill.BackgroundColor3 = Color3.fromRGB(40, 160, 255)
+        ShieldFill.ZIndex = 2
+        ShieldFill.Visible = false
+        ShieldFill.Parent = PillBg
+        Instance.new("UICorner", ShieldFill).CornerRadius = UDim.new(0, 4)
+
+        -- EFEK FLASH (Putih - Saat kena damage)
         local HitOverlay = Instance.new("Frame")
         HitOverlay.Size = UDim2.new(1, 0, 1, 0)
         HitOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         HitOverlay.Transparency = 1
+        HitOverlay.ZIndex = 3
         HitOverlay.Parent = PillBg
-        Instance.new("UICorner", HitOverlay).CornerRadius = UDim.new(0, 3)
+        Instance.new("UICorner", HitOverlay).CornerRadius = UDim.new(0, 4)
 
-        -- Indikator Shield (Garis Biru di bawah kapsul)
-        local ShieldLine = Instance.new("Frame")
-        ShieldLine.Size = UDim2.new(1, 0, 0, 2)
-        ShieldLine.Position = UDim2.new(0, 0, 1, -2)
-        ShieldLine.BackgroundColor3 = Color3.fromRGB(0, 180, 255)
-        ShieldLine.BorderSizePixel = 0
-        ShieldLine.Visible = false
-        ShieldLine.ZIndex = 2
-        ShieldLine.Parent = PillBg
-        Instance.new("UICorner", ShieldLine).CornerRadius = UDim.new(0, 2)
-
+        -- TEKS ANGKA (Darah / Shield)
         local HPText = Instance.new("TextLabel")
         HPText.Size = UDim2.new(1, 0, 1, 0)
         HPText.BackgroundTransparency = 1
         HPText.TextColor3 = Color3.fromRGB(255, 255, 255)
         HPText.Font = Enum.Font.GothamBold
-        HPText.TextSize = 9
-        HPText.ZIndex = 3
+        HPText.TextSize = 10
+        HPText.ZIndex = 4
         HPText.Parent = PillBg
 
         EnemyPills[enemyObj] = {
             Pill = PillBg,
-            Fill = PillFill,
+            HPFill = HPFill,
+            ShieldFill = ShieldFill,
             HitOverlay = HitOverlay,
             TargetStroke = TargetStroke,
-            ShieldLine = ShieldLine,
             Text = HPText,
-            LastHP = 0
+            LastHP = 0,
+            LastShield = 0
         }
         return EnemyPills[enemyObj]
     end
 
     Misc:Toggle({
         Title = "Compact Threat Radar (Pills)",
-        Desc = "Groups enemies neatly. Individual HPs are shown as side-by-side pills.",
+        Desc = "Displays individual HP and Shield in smart compact pills.",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
             Globals.EnemyTracker = v
@@ -2370,7 +2370,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     local ProcessedEnemies = {}
                     local NPCs = workspace:FindFirstChild("NPCs")
                     
-                    -- 1. Mengumpulkan dan Mengelompokkan Data Musuh
+                    -- 1. Kumpulkan Data dari Map
                     if NPCs then
                         for _, enemy in ipairs(NPCs:GetChildren()) do
                             local pointer = enemy:FindFirstChild("RootPointer")
@@ -2380,22 +2380,20 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 
                                 if health > 0 then
                                     local name = enemy.Name
+                                    local shield = state:GetAttribute("Shield") or 0
+                                    local maxShield = state:GetAttribute("MaxShield") or shield
+                                    local maxHP = state:GetAttribute("MaxHealth") or health
+
                                     if not EnemyGroups[name] then
-                                        EnemyGroups[name] = { 
-                                            Name = name, 
-                                            Count = 0, 
-                                            MaxHP_Sample = state:GetAttribute("MaxHealth") or health,
-                                            Individuals = {} 
-                                        }
+                                        EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} }
                                     end
                                     
                                     local isTargeted = (enemy == Globals.CurrentTargetModel)
                                     EnemyGroups[name].Count += 1
                                     table.insert(EnemyGroups[name].Individuals, {
                                         Obj = enemy,
-                                        HP = health,
-                                        MaxHP = state:GetAttribute("MaxHealth") or health,
-                                        HasShield = (state:GetAttribute("Shield") or 0) > 0,
+                                        HP = health, MaxHP = maxHP,
+                                        Shield = shield, MaxShield = maxShield,
                                         IsTargeted = isTargeted
                                     })
                                     ProcessedEnemies[enemy] = true
@@ -2404,18 +2402,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
 
-                    -- 2. Mengubah Data Dictionary menjadi Array untuk diurutkan
+                    -- 2. Sortir Group (Boss / MaxHP Tertinggi ada di atas)
                     local SortedGroups = {}
-                    for _, groupData in pairs(EnemyGroups) do
-                        table.insert(SortedGroups, groupData)
-                    end
-                    
-                    -- Urutkan grup berdasarkan Musuh Paling Tebal (Boss di atas)
+                    for _, groupData in pairs(EnemyGroups) do table.insert(SortedGroups, groupData) end
                     table.sort(SortedGroups, function(a, b) return a.MaxHP_Sample > b.MaxHP_Sample end)
 
                     local ProcessedGroups = {}
 
-                    -- 3. Update UI Kategori (Groups) & Kapsul (Pills)
+                    -- 3. Update UI Visual
                     for groupOrder, groupData in ipairs(SortedGroups) do
                         ProcessedGroups[groupData.Name] = true
                         
@@ -2426,27 +2420,28 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local isBoss = groupData.MaxHP_Sample > 10000
                         groupUI.Title.Text = string.format("%s %s (x%d)", isBoss and "💀" or "👾", groupData.Name, groupData.Count)
 
-                        -- Urutkan individu di dalam grup (Yang sedang dikunci peluru ada di kiri atas)
+                        -- Urutkan individu di grup (Targeted selalu di kiri atas)
                         table.sort(groupData.Individuals, function(a, b)
                             if a.IsTargeted and not b.IsTargeted then return true end
                             if b.IsTargeted and not a.IsTargeted then return false end
                             return a.HP > b.HP
                         end)
 
-                        -- Render Kapsul Individu
+                        -- Update masing-masing Kapsul
                         for pillOrder, indv in ipairs(groupData.Individuals) do
                             local pillUI = EnemyPills[indv.Obj] or CreatePill(indv.Obj, groupUI.Container)
                             pillUI.Pill.Visible = true
                             pillUI.Pill.LayoutOrder = pillOrder
 
-                            -- DETEKSI DAMAGE (Flash Putih)
-                            if pillUI.LastHP > 0 and indv.HP < pillUI.LastHP then
+                            -- DETEKSI DAMAGE FLASH (Nyala putih saat kena damage HP ATAU Shield)
+                            if (pillUI.LastHP > 0 and indv.HP < pillUI.LastHP) or (pillUI.LastShield > 0 and indv.Shield < pillUI.LastShield) then
                                 pillUI.HitOverlay.Transparency = 0
                                 TweenService:Create(pillUI.HitOverlay, TweenInfo.new(0.3), {Transparency = 1}):Play()
                             end
                             pillUI.LastHP = indv.HP
+                            pillUI.LastShield = indv.Shield
 
-                            -- INDIKATOR TARGET 🎯 (Stroke Merah)
+                            -- EFEK GLOW TARGET 🎯
                             if indv.IsTargeted then
                                 pillUI.TargetStroke.Transparency = 0
                                 pillUI.TargetStroke.Thickness = 1.5 + math.sin(os.clock() * 15) * 1
@@ -2454,20 +2449,34 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 pillUI.TargetStroke.Transparency = 1
                             end
 
-                            -- Update Visual Kapsul (Bar HP)
+                            -- UPDATE BAR DARAH (Merah)
                             local hpPercent = math.clamp(indv.HP / math.max(1, indv.MaxHP), 0, 1)
-                            pillUI.Fill.Size = UDim2.new(hpPercent, 0, 1, 0)
-                            pillUI.Text.Text = FormatNumber(indv.HP)
-                            pillUI.ShieldLine.Visible = indv.HasShield
+                            pillUI.HPFill.Size = UDim2.new(hpPercent, 0, 1, 0)
+
+                            -- UPDATE BAR SHIELD (Biru - Menimpa Merah)
+                            if indv.MaxShield > 0 and indv.Shield > 0 then
+                                pillUI.ShieldFill.Visible = true
+                                local shieldPercent = math.clamp(indv.Shield / indv.MaxShield, 0, 1)
+                                pillUI.ShieldFill.Size = UDim2.new(shieldPercent, 0, 1, 0)
+                                
+                                -- Ubah teks menjadi Shield
+                                pillUI.Text.Text = string.format("🛡️ %s", FormatNumber(indv.Shield))
+                                pillUI.Text.TextColor3 = Color3.fromRGB(180, 230, 255) -- Warna Biru Terang
+                            else
+                                pillUI.ShieldFill.Visible = false
+                                -- Ubah teks kembali jadi HP Normal
+                                pillUI.Text.Text = FormatNumber(indv.HP)
+                                pillUI.Text.TextColor3 = Color3.fromRGB(255, 255, 255) -- Warna Putih
+                            end
                         end
 
-                        -- Sesuaikan tinggi Card berdasarkan jumlah baris Kapsul
-                        local rows = math.ceil(#groupData.Individuals / 5) -- Asumsi muat 5 kapsul sebaris
-                        local newHeight = 25 + (rows * 18)
+                        -- Auto Resize Ketinggian Kotak Kategori (Maksimal 4 kapsul sebaris)
+                        local rows = math.ceil(#groupData.Individuals / 4)
+                        local newHeight = 25 + (rows * 20) -- 16px kapsul + 4px jarak
                         groupUI.Card.Size = UDim2.new(1, 0, 0, newHeight)
                     end
 
-                    -- 4. CLEANUP (Hapus Kapsul / Grup musuh yang sudah mati)
+                    -- 4. CLEANUP CACHE
                     for enemyObj, pillUI in pairs(EnemyPills) do
                         if not ProcessedEnemies[enemyObj] then
                             pillUI.Pill:Destroy()
