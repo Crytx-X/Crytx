@@ -2322,13 +2322,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Section({Title = "Gatling Gun"})
-
-    -- Variables State
-    Globals.TargetPriority = "First"
-    Globals.SilentAimEnabled = false
     Globals.CustomGatlingApplied = false
 
-    -- // FUNGSI UNIFIED HOOK (Menggabungkan Silent Aim & Custom Modifiers)
+    -- // FUNGSI HOOK: MURNI BERDASARKAN DUMP TDS
     local function EnsureGatlingHook()
         local success, gganim = pcall(function()
             return require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
@@ -2336,56 +2332,23 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
         if not success or not gganim then return false end
 
-        -- Backup fungsi original hanya sekali
+        -- Backup fungsi aslinya
         if not Globals.OriginalFireGun then
             Globals.OriginalFireGun = gganim._fireGun
         end
 
-        -- Timpa fungsi dengan Smart Hook
         gganim._fireGun = function(self)
             local TargetPosition = nil
 
-            -- 1. LOGIKA SILENT AIM (Hanya mencari posisi target)
+            -- 1. PURE SILENT AIM (Memakai fungsi pencari target bawaan game dari Dump)
             if Globals.SilentAimEnabled then
-                local NPCs = workspace:FindFirstChild("NPCs")
-                if NPCs then
-                    local BestTarget = nil
-                    local MaxDistance = -1
-                    local MaxHealth = -1
-                    local MinDistToPlayer = math.huge
-                    local camPos = workspace.CurrentCamera.CFrame.Position
-
-                    for _, enemy in ipairs(NPCs:GetChildren()) do
-                        local HRP = enemy:FindFirstChild("HumanoidRootPart")
-                        local Pointer = enemy:FindFirstChild("RootPointer")
-                        
-                        if HRP and Pointer and Pointer.Value then
-                            local RepFolder = Pointer.Value
-                            local Health = RepFolder:GetAttribute("Health")
-                            local PathDist = RepFolder:GetAttribute("PathDistance") or 0
-                            
-                            if Health and Health > 0 then
-                                if Globals.TargetPriority == "First" and PathDist > MaxDistance then
-                                    MaxDistance = PathDist
-                                    BestTarget = HRP
-                                elseif Globals.TargetPriority == "Strongest" and Health > MaxHealth then
-                                    MaxHealth = Health
-                                    BestTarget = HRP
-                                elseif Globals.TargetPriority == "Close" then
-                                    local dist = (HRP.Position - camPos).Magnitude
-                                    if dist < MinDistToPlayer then
-                                        MinDistToPlayer = dist
-                                        BestTarget = HRP
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    if BestTarget then TargetPosition = BestTarget.Position end
+                local nativeTarget = self:FindTarget()
+                if nativeTarget and nativeTarget.PrimaryPart then
+                    TargetPosition = nativeTarget.PrimaryPart.Position
                 end
             end
 
-            -- Jika Silent Aim mati atau musuh tidak ada, tembak lurus ke crosshair
+            -- Jika Silent Aim mati atau musuh di luar range, arahkan ke crosshair kamera
             if not TargetPosition then
                 local CameraController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
                 TargetPosition = CameraController.result and CameraController.result.Position or CameraController.position
@@ -2393,26 +2356,26 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
             if not TargetPosition then return end
 
-            -- Visual Nembak Bawaan Game
+            -- 2. VISUAL PELURU & ANIMASI (Murni dari Dump)
             local isMinigun = self.Replicator:Get("Minigun")
             local canFire = self.Replicator:Get("CanFire")
             if not isMinigun and true or canFire then
                 pcall(function() self:_fire(TargetPosition) end)
             end
 
-            -- 2. LOGIKA KIRIM DAMAGE & COOLDOWN (Tergantung Tombol Apply Gatling)
+            -- 3. KIRIM DAMAGE & COOLDOWN
             local GatlingChannel = require(game.ReplicatedStorage.Shared.Modules.NewNetwork).Channel("GatlingGun")
             local sync = workspace:GetAttribute("Sync")
             local serverTime = workspace:GetServerTimeNow()
 
             if Globals.CustomGatlingApplied then
-                -- [PAKAI KODEMU LAMA] Mode brutal: Multiply & Cooldown custom
+                -- [KODE LAMA MU] Mode Speedhack: Multiply dan Cooldown Custom
                 for i = 1, (Globals.Multiply or 1) do
                     GatlingChannel:fireServer("Fire", TargetPosition, sync, serverTime)
                 end
                 self:Wait(Globals.Cooldown or 0.01)
             else
-                -- Mode normal murni bawaan game
+                -- [MURNI DUMP] Mode Normal: 1 Peluru, Cooldown bawaan game
                 GatlingChannel:fireServer("Fire", TargetPosition, sync, serverTime)
                 self:Wait(self:GetCooldown())
             end
@@ -2421,63 +2384,60 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return true
     end
 
-    -- // UI ELEMENTS
-    Misc:Dropdown({
-        Title = "Silent Aim Priority",
-        Desc = "Choose target priority for Silent Aim",
-        List = {"First", "Strongest", "Close"},
-        Value = "First",
-        Callback = function(choice)
-            local selected = type(choice) == "table" and choice[1] or choice
-            Globals.TargetPriority = selected
-        end
-    })
-
+    -- // UI ELEMENTS (Membaca & Menyimpan State)
     Misc:Toggle({
-        Title = "Enable Silent Aim",
-        Desc = "Magic bullets auto-hit enemies.",
-        Value = false,
+        Title = "Enable Silent Aim (Pure Native)",
+        Desc = "Magic bullets auto-hit enemies using TDS native target finder.",
+        Value = Globals.SilentAimEnabled, -- Load dari config
         Callback = function(state)
             Globals.SilentAimEnabled = state
+            SetSetting("SilentAimEnabled", state) -- Simpan ke config
             
-            local hooked = EnsureGatlingHook()
-            if not hooked and state then
-                Window:Notify({Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error"})
-                Globals.SilentAimEnabled = false
+            if state then
+                local hooked = EnsureGatlingHook()
+                if not hooked then
+                    Window:Notify({Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error"})
+                    Globals.SilentAimEnabled = false
+                    SetSetting("SilentAimEnabled", false)
+                else
+                    Window:Notify({Title = "Silent Aim", Desc = "Native Aim Activated!", Time = 3, Type = "normal"})
+                end
             else
-                Window:Notify({Title = "Silent Aim", Desc = state and "Activated!" or "Deactivated!", Time = 3, Type = "normal"})
+                Window:Notify({Title = "Silent Aim", Desc = "Deactivated!", Time = 3, Type = "normal"})
             end
         end
     })
 
     Misc:Textbox({
         Title = "Cooldown:",
-        Desc = "",
+        Desc = "Custom firing speed",
         Placeholder = "0.01",
-        Value = Globals.Cooldown,
+        Value = tostring(Globals.Cooldown), -- Load dari config
         ClearTextOnFocus = true,
         Callback = function(value)
-            if value ~= 0 then
-                SetSetting("Cooldown", value)
+            local num = tonumber(value)
+            if num and num ~= 0 then
+                SetSetting("Cooldown", num) -- Simpan ke config
             end
         end
     })
 
     Misc:Textbox({
         Title = "Multiply:",
-        Desc = "",
+        Desc = "Custom bullets per shot",
         Placeholder = "1",
-        Value = Globals.Multiply,
+        Value = tostring(Globals.Multiply), -- Load dari config
         ClearTextOnFocus = true,
         Callback = function(value)
-            if value ~= 0 then
-                SetSetting("Multiply", value)
+            local num = tonumber(value)
+            if num and num ~= 0 then
+                SetSetting("Multiply", num) -- Simpan ke config
             end
         end
     })
 
     Misc:Button({
-        Title = "Apply Gatling",
+        Title = "Apply Gatling Speedhack",
         Callback = function()
             Globals.CustomGatlingApplied = true
             local hooked = EnsureGatlingHook()
@@ -2485,7 +2445,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if hooked then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Successfully applied Custom Cooldown & Multiply!",
+                    Desc = "Custom Cooldown & Multiply Applied!",
                     Time = 3,
                     Type = "normal"
                 })
@@ -2501,13 +2461,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Button({
-        Title = "Reset Gatling",
+        Title = "Reset Gatling Speedhack",
         Callback = function()
             Globals.CustomGatlingApplied = false
-            
             Window:Notify({
                 Title = "ADS",
-                Desc = "Gatling speed & multiply reset to normal!",
+                Desc = "Gatling speed & bullets reset to normal!",
                 Time = 3,
                 Type = "normal"
             })
