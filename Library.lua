@@ -553,77 +553,31 @@ local function CreateTracer(targetPos)
     end)
 end
 
--- // FUNGSI MENCARI MUSUH TERDEPAN UNTUK SILENT AIM
-local function GetBestGatlingTarget()
-    local best_pos = nil
-    local max_distance = -1
-    local npcs = workspace:FindFirstChild("NPCs")
-
-    if npcs then
-        for _, enemy in pairs(npcs:GetChildren()) do
-            local hitbox = enemy:FindFirstChild("HumanoidRootPart")
-            local pointer = enemy:FindFirstChild("RootPointer")
-            
-            if hitbox and pointer and pointer.Value then
-                local repFolder = pointer.Value
-                local health = repFolder:GetAttribute("Health")
-                local pathDist = repFolder:GetAttribute("PathDistance") or 0
-                
-                -- Jika musuh hidup, cari yang paling depan
-                if health and health > 0 then
-                    if pathDist > max_distance then
-                        max_distance = pathDist
-                        best_pos = hitbox.Position
-                    end
-                end
-            end
-        end
-    end
-    return best_pos
-end
-
--- // HOOK UNTUK MENCEGAT FIRESERVER DAN MEMBLOKIR FPS
+-- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire DAN MEMBLOKIR FPS (false) JADI true
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         local method = getnamecallmethod()
         
-        -- // 1. Mencegat Tembakan Gatling Gun (RE:Fire)
+        -- // 1. Mencegat Remote Gatling Gun (RE:Fire)
         if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
             local p = self.Parent
             if p and p.Name == "GatlingGun" then
                 local args = {...}
                 
-                -- ==========================================
-                -- [NEW] SILENT AIM / MAGIC BULLETS
-                -- ==========================================
-                if Globals.GatlingSilentAim then
-                    local magicTarget = GetBestGatlingTarget()
-                    if magicTarget then
-                        -- Cari argumen yang berupa Vector3 secara dinamis, lalu ganti dengan posisi musuh
-                        for i, v in ipairs(args) do
-                            if typeof(v) == "Vector3" then
-                                args[i] = magicTarget
-                                break
-                            end
-                        end
+                -- Fitur Silent Aim / Magic Bullet (Jika AutoGatling Mati, tapi player main manual)
+                if Globals.SilentAim then
+                    if Globals.CurrentTarget and Globals.CurrentTarget:FindFirstChild("HumanoidRootPart") then
+                        -- Belokkan target tembakan secara gaib ke musuh
+                        args[1] = Globals.CurrentTarget.HumanoidRootPart.Position
                     end
                 end
-                
-                -- ==========================================
-                -- TRACER PELURU (Untuk Visual)
-                -- ==========================================
-                if Globals.AutoGatling and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
-                    local targetPos = nil
-                    for i, v in ipairs(args) do
-                        if typeof(v) == "Vector3" then
-                            targetPos = v
-                            break
-                        end
-                    end
-                    
-                    if targetPos then
+
+                local targetPos = args[1]
+                if typeof(targetPos) == "Vector3" then
+                    -- Tracer Visual Logic
+                    if Globals.AutoGatling and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
                         local now = os.clock()
                         if now - lastTracerTime >= 0.03 then 
                             lastTracerTime = now
@@ -632,6 +586,7 @@ if hookmetamethod then
                     end
                 end
                 
+                -- Kembalikan args yang mungkin sudah diubah oleh Silent Aim
                 return oldNamecall(self, unpack(args))
             end
         end
@@ -642,8 +597,11 @@ if hookmetamethod then
             if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
                 local payload = args[4]
                 if type(payload) == "table" and payload.Name == "FPS" then
+                    -- Jika ada yang mencoba mengirim enabled = false
                     if payload.Data and payload.Data.enabled == false then
+                        -- Dan jika Toggle Auto Gatling kita masih Aktif (ON)
                         if Globals.AutoGatling then
+                            -- Kita timpa args-nya menjadi true tanpa perlu ngespam
                             args[4] = {
                                 Troop = payload.Troop,
                                 Name = payload.Name,
@@ -2378,12 +2336,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Section({Title = "Gatling Gun"})
     Misc:Toggle({
-        Title = "Gatling Silent Aim (Magic Bullets)",
-        Desc = "Saat main FPS manual, tembak ke arah manapun peluru akan mengenai musuh terdepan!",
-        Value = Globals.GatlingSilentAim or false,
-        Callback = function(state)
-            Globals.GatlingSilentAim = state
-            SetSetting("GatlingSilentAim", state)
+        Title = "Silent Aim (Manual Play)",
+        Desc = "Bullets automatically hit enemies even if you miss (Must have Target Visual ON)",
+        Value = Globals.SilentAim,
+        Callback = function(v)
+            Globals.SilentAim = v
+            SetSetting("SilentAim", v)
         end
     })
 
