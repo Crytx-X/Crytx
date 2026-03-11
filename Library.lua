@@ -386,6 +386,7 @@ local DefaultSettings = {
     WebhookURL = "",
     Cooldown = 0.01,
     Multiply = 1,
+    SilentAim = false,
     AutoCooldown = 0.01,
     AutoMultiply = 1,
     AutoGatling = false,
@@ -553,30 +554,58 @@ local function CreateTracer(targetPos)
     end)
 end
 
--- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire DAN MEMBLOKIR FPS (false) JADI true
+-- // FUNGSI PENCARI TARGET MANDIRI UNTUK SILENT AIM
+local function GetBestEnemyTarget()
+    local best_enemy = nil
+    local max_distance = -1
+    local npcs = workspace:FindFirstChild("NPCs")
+
+    if npcs then
+        for _, enemy in pairs(npcs:GetChildren()) do
+            local hitbox = enemy:FindFirstChild("HumanoidRootPart")
+            local pointer = enemy:FindFirstChild("RootPointer")
+            
+            if hitbox and pointer and pointer.Value then
+                local repFolder = pointer.Value
+                local health = repFolder:GetAttribute("Health")
+                local pathDist = repFolder:GetAttribute("PathDistance") or 0
+                
+                if health and health > 0 then
+                    if pathDist > max_distance then
+                        max_distance = pathDist
+                        best_enemy = hitbox
+                    end
+                end
+            end
+        end
+    end
+    return best_enemy
+end
+
+-- // HOOK NETWORK (SILENT AIM & FPS OVERRIDE)
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         local method = getnamecallmethod()
+        local args = {...}
         
-        -- // 1. Mencegat Remote Gatling Gun (RE:Fire)
+        -- // 1. MENCEGAT REMOTE TEMBAKAN GATLING (RE:Fire)
         if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
             local p = self.Parent
             if p and p.Name == "GatlingGun" then
-                local args = {...}
                 
-                -- Fitur Silent Aim / Magic Bullet (Jika AutoGatling Mati, tapi player main manual)
+                -- FITUR SILENT AIM MANDIRI (Tidak butuh target visual)
                 if Globals.SilentAim then
-                    if Globals.CurrentTarget and Globals.CurrentTarget:FindFirstChild("HumanoidRootPart") then
-                        -- Belokkan target tembakan secara gaib ke musuh
-                        args[1] = Globals.CurrentTarget.HumanoidRootPart.Position
+                    local targetHitbox = GetBestEnemyTarget()
+                    if targetHitbox then
+                        args[1] = targetHitbox.Position -- Ubah arah peluru ke musuh terdepan
                     end
                 end
 
                 local targetPos = args[1]
                 if typeof(targetPos) == "Vector3" then
-                    -- Tracer Visual Logic
+                    -- Tracer Visual Logic (Kalau auto gatling / tracer nyala)
                     if Globals.AutoGatling and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
                         local now = os.clock()
                         if now - lastTracerTime >= 0.03 then 
@@ -586,22 +615,31 @@ if hookmetamethod then
                     end
                 end
                 
-                -- Kembalikan args yang mungkin sudah diubah oleh Silent Aim
                 return oldNamecall(self, unpack(args))
             end
         end
 
-        -- // 2. Mencegat Remote Function (Mencegah FPS dimatikan)
+        -- // 2. MEMBUAT LARAS GATLING MENGHADAP MUSUH DI LAYAR ORANG LAIN (Silent Aim Visual Sync)
+        if method == "FireServer" and typeof(self) == "Instance" and self.Name == "URE:ReplicateAimPosition" then
+            local p = self.Parent
+            if p and p.Name == "GatlingGun" then
+                if Globals.SilentAim then
+                    local targetHitbox = GetBestEnemyTarget()
+                    if targetHitbox then
+                        args[1] = targetHitbox.Position
+                        return oldNamecall(self, unpack(args))
+                    end
+                end
+            end
+        end
+
+        -- // 3. MENCEGAH GAME MEMATIKAN MODE FPS SAAT AUTO GATLING NYALA
         if method == "InvokeServer" and typeof(self) == "Instance" and self.Name == "RemoteFunction" then
-            local args = {...}
             if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
                 local payload = args[4]
                 if type(payload) == "table" and payload.Name == "FPS" then
-                    -- Jika ada yang mencoba mengirim enabled = false
                     if payload.Data and payload.Data.enabled == false then
-                        -- Dan jika Toggle Auto Gatling kita masih Aktif (ON)
                         if Globals.AutoGatling then
-                            -- Kita timpa args-nya menjadi true tanpa perlu ngespam
                             args[4] = {
                                 Troop = payload.Troop,
                                 Name = payload.Name,
@@ -2334,10 +2372,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-    Misc:Section({Title = "Gatling Gun"})
+    Misc:Section({Title = "Gatling Gun (Manual Play)"})
+
     Misc:Toggle({
-        Title = "Silent Aim (Manual Play)",
-        Desc = "Bullets automatically hit enemies even if you miss (Must have Target Visual ON)",
+        Title = "Silent Aim (Magic Bullet)",
+        Desc = "Bullets automatically hit the furthest enemy even if you miss.",
         Value = Globals.SilentAim,
         Callback = function(v)
             Globals.SilentAim = v
@@ -2352,8 +2391,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Value = Globals.Cooldown,
         ClearTextOnFocus = true,
         Callback = function(value)
-            if value ~= 0 then
-                SetSetting("Cooldown", value)
+            local num = tonumber(value)
+            if num and num ~= 0 then
+                Globals.Cooldown = num
+                SetSetting("Cooldown", num)
             end
         end
     })
@@ -2365,8 +2406,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Value = Globals.Multiply,
         ClearTextOnFocus = true,
         Callback = function(value)
-            if value ~= 0 then
-                SetSetting("Multiply", value)
+            local num = tonumber(value)
+            if num and num ~= 0 then
+                Globals.Multiply = num
+                SetSetting("Multiply", num)
             end
         end
     })
@@ -2376,11 +2419,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Button({
         Title = "Apply Gatling",
+        Desc = "Applies Cooldown, Multiply, and removes Recoil/Spread",
         Callback = function()
             if hookmetamethod then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Successfully applied Gatling Gun Settings",
+                    Desc = "Successfully applied Gatling Gun Settings (No Recoil Included)!",
                     Time = 3,
                     Type = "normal"
                 })
@@ -2397,10 +2441,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     local cam = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
                     local pos = cam.result and cam.result.Position or cam.position
 
+                    -- Loop tembakan sesuai jumlah Multiply
                     for i = 1, Globals.Multiply do
                         ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
                     end
 
+                    -- Jeda menembak sesuai Cooldown
                     self:Wait(Globals.Cooldown)
                 end
             else
