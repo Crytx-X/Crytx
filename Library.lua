@@ -2523,6 +2523,39 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Button({
+        Title = "Open Inventory",
+        Desc = "Open Inventory",
+        Callback = function()
+            local RS = game:GetService("ReplicatedStorage")
+
+            -- 1. Memberi tahu server bahwa kita membuka inventory (Sama seperti fungsi aslinya)
+            pcall(function()
+                local NewNetwork = require(RS.Shared.Modules.NewNetwork)
+                NewNetwork.Channel("Inventory"):fireUnreliableServer("OpenInventory")
+            end)
+
+            -- 2. Memaksa UI Client untuk Muncul di Layar
+            local foundStore = false
+            for _, module in ipairs(getloadedmodules()) do
+                -- Mencari module "View" yang ada di dalam folder "Stores"
+                if module.Name == "View" and module.Parent and module.Parent.Name == "Stores" then
+                    local Store = require(module)
+                    
+                    -- Mengubah tampilan layar langsung ke Inventory (Bypass fungsi setView)
+                    Store:commit("setView", "Inventory")
+                    foundStore = true
+                    print("Berhasil membuka UI Inventory secara paksa!")
+                    break
+                end
+            end
+
+            if not foundStore then
+                warn("Gagal menemukan Module Store UI. Pastikan game sudah loading sepenuhnya.")
+            end
+        end
+    })
+
+    Misc:Button({
         Title = "Unlock Admin+ (Sandbox)",
         Desc = "Keep in mind that some features such as selecting maps, spawning in enemies and changing tower stats will not work!",
         Callback = function()
