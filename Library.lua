@@ -553,20 +553,63 @@ local function CreateTracer(targetPos)
     end)
 end
 
--- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire DAN MEMBLOKIR FPS (false) JADI true
+-- // FUNGSI MENCARI MUSUH TERDEPAN UNTUK SILENT AIM
+local function GetBestGatlingTarget()
+    local best_pos = nil
+    local max_distance = -1
+    local npcs = workspace:FindFirstChild("NPCs")
+
+    if npcs then
+        for _, enemy in pairs(npcs:GetChildren()) do
+            local hitbox = enemy:FindFirstChild("HumanoidRootPart")
+            local pointer = enemy:FindFirstChild("RootPointer")
+            
+            if hitbox and pointer and pointer.Value then
+                local repFolder = pointer.Value
+                local health = repFolder:GetAttribute("Health")
+                local pathDist = repFolder:GetAttribute("PathDistance") or 0
+                
+                -- Jika musuh hidup, cari yang paling depan
+                if health and health > 0 then
+                    if pathDist > max_distance then
+                        max_distance = pathDist
+                        best_pos = hitbox.Position
+                    end
+                end
+            end
+        end
+    end
+    return best_pos
+end
+
+-- // HOOK UNTUK MENCEGAT FIRESERVER RE:Fire DAN MEMBLOKIR FPS
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         local method = getnamecallmethod()
         
-        -- // 1. Mencegat Tracer Peluru (RE:Fire)
+        -- // 1. Mencegat Tembakan Gatling Gun (RE:Fire)
         if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
             local p = self.Parent
             if p and p.Name == "GatlingGun" then
+                local args = {...}
+                
+                -- ==========================================
+                -- [NEW] LOGIKA SILENT AIM / MAGIC BULLETS
+                -- ==========================================
+                if Globals.GatlingSilentAim then
+                    local magicTarget = GetBestGatlingTarget()
+                    if magicTarget then
+                        args[1] = magicTarget -- Timpa arah tembakan manualmu (crosshair) ke arah musuh!
+                    end
+                end
+                
+                -- ==========================================
+                -- LOGIKA TRACER PELURU
+                -- ==========================================
                 if Globals.AutoGatling and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
-                    local args = {...}
-                    local targetPos = args[1]
+                    local targetPos = args[1] -- Menggunakan args[1] yang mungkin sudah diubah oleh Silent Aim
                     if typeof(targetPos) == "Vector3" then
                         local now = os.clock()
                         if now - lastTracerTime >= 0.03 then 
@@ -575,6 +618,9 @@ if hookmetamethod then
                         end
                     end
                 end
+                
+                -- JANGAN LUPA: Return menggunakan args yang sudah dimodifikasi!
+                return oldNamecall(self, unpack(args))
             end
         end
 
@@ -584,11 +630,8 @@ if hookmetamethod then
             if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
                 local payload = args[4]
                 if type(payload) == "table" and payload.Name == "FPS" then
-                    -- Jika ada yang mencoba mengirim enabled = false
                     if payload.Data and payload.Data.enabled == false then
-                        -- Dan jika Toggle Auto Gatling kita masih Aktif (ON)
                         if Globals.AutoGatling then
-                            -- Kita timpa args-nya menjadi true tanpa perlu ngespam
                             args[4] = {
                                 Troop = payload.Troop,
                                 Name = payload.Name,
@@ -2324,43 +2367,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Section({Title = "Gatling Gun"})
     Misc:Toggle({
         Title = "Gatling Silent Aim (Magic Bullets)",
-        Desc = "Peluru otomatis mengejar musuh meskipun tembakan meleset (Khusus saat manual FPS)",
-        Value = false,
+        Desc = "Tembak manual ke arah manapun, peluru otomatis membelok ke musuh terdepan!",
+        Value = Globals.GatlingSilentAim or false,
         Callback = function(state)
             Globals.GatlingSilentAim = state
-            
-            if state then
-                local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
-                
-                -- Menyimpan fungsi original
-                if not Globals.OriginalGatlingFire then
-                    Globals.OriginalGatlingFire = ggchannel.fireServer
-                end
-                
-                -- Hook fungsi fireServer khusus untuk Gatling
-                ggchannel.fireServer = function(self, eventName, ...)
-                    local args = {...}
-                    if Globals.GatlingSilentAim and eventName == "Fire" then
-                        -- Cari musuh (menggunakan logic Auto Gatling kamu)
-                        local targetPos = nil
-                        if Globals.CurrentTarget and Globals.CurrentTarget:FindFirstChild("HumanoidRootPart") then
-                            targetPos = Globals.CurrentTarget.HumanoidRootPart.Position
-                        end
-                        
-                        -- Jika ada musuh, ganti target tembakan (args[1]) ke posisi musuh
-                        if targetPos then
-                            args[1] = targetPos
-                        end
-                    end
-                    return Globals.OriginalGatlingFire(self, eventName, unpack(args))
-                end
-            else
-                -- Kembalikan fungsi normal jika dimatikan
-                if Globals.OriginalGatlingFire then
-                    local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
-                    ggchannel.fireServer = Globals.OriginalGatlingFire
-                end
-            end
+            SetSetting("GatlingSilentAim", state) -- Agar tersimpan di Load/Save Settings
         end
     })
 
