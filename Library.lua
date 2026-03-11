@@ -2188,64 +2188,69 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         else return tostring(math.floor(n)) end
     end
 
-    -- Sistem Pencarian Module SUPER AGRESIF (Support Sandbox)
+    -- Sistem Pencarian Module SUPER AKURAT (Prioritas Path Survival)
     local function GetModeDataModule()
         if CachedModeModule then return CachedModeModule, CachedModeName end
         
         local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        local primaryDiff = "Unknown"
-        local searchTerms = {}
-        local stateDump = ""
+        local difficulty = "Easy" -- Default Fallback
+        local modeName = "Survival" -- Default Game Mode
         
         if state then
-            -- Kumpulkan semua StringValue di State untuk mencari difficulty asli yang disembunyikan
-            for _, child in ipairs(state:GetChildren()) do
-                if child:IsA("StringValue") and child.Value ~= "" then
-                    table.insert(searchTerms, child.Value)
-                    stateDump = stateDump .. child.Name .. "=" .. child.Value .. " | "
-                    if child.Name == "Difficulty" then
-                        primaryDiff = child.Value
-                        table.insert(searchTerms, 1, child.Value) -- Prioritaskan Difficulty
-                    end
-                end
+            local diffObj = state:FindFirstChild("Difficulty")
+            if diffObj and diffObj.Value and diffObj.Value ~= "" then 
+                difficulty = diffObj.Value 
+            end
+            
+            local modeObj = state:FindFirstChild("Mode")
+            if modeObj and modeObj.Value and modeObj.Value ~= "" then 
+                modeName = modeObj.Value 
             end
         end
 
-        if primaryDiff == "Unknown" then return nil, "State Not Found" end
+        -- Jika sedang di Sandbox, kita paksa ngambil data dari "Easy" (karena Sandbox basicnya dari Easy/Normal)
+        if difficulty:lower() == "sandbox" then
+            difficulty = "Easy"
+            CachedModeName = "Sandbox"
+        else
+            CachedModeName = difficulty
+        end
 
         local gamemodes = ReplicatedStorage:FindFirstChild("Content") and ReplicatedStorage.Content:FindFirstChild("Gamemodes")
         
         if gamemodes then
-            -- 1. Coba cari folder berdasarkan semua term yang ada di State
-            for _, term in ipairs(searchTerms) do
-                for _, folder in ipairs(gamemodes:GetDescendants()) do
-                    if folder:IsA("Folder") and folder.Name:lower() == term:lower() then
-                        local wavesMod = folder:FindFirstChild("Waves")
-                        if wavesMod and wavesMod:IsA("ModuleScript") then
-                            CachedModeModule = wavesMod
-                            CachedModeName = term
-                            return CachedModeModule, CachedModeName
+            -- 1. MENEMBAK LURUS KE PATH YANG BENAR (Survival -> Difficulties -> [Difficulty] -> Waves)
+            -- Ini mencegah script salah mengambil folder event seperti Pizza Party
+            local targetModeFolder = gamemodes:FindFirstChild(modeName) or gamemodes:FindFirstChild("Survival")
+            
+            if targetModeFolder then
+                local diffFolder = targetModeFolder:FindFirstChild("Difficulties")
+                if diffFolder then
+                    for _, diff in ipairs(diffFolder:GetChildren()) do
+                        if diff.Name:lower() == difficulty:lower() then
+                            local wavesMod = diff:FindFirstChild("Waves")
+                            if wavesMod and wavesMod:IsA("ModuleScript") then
+                                CachedModeModule = wavesMod
+                                return CachedModeModule, CachedModeName
+                            end
                         end
                     end
                 end
             end
             
-            -- 2. FALLBACK KHUSUS SANDBOX (Jika tidak ketemu, paksa baca module Easy)
-            if primaryDiff:lower() == "sandbox" then
-                for _, folder in ipairs(gamemodes:GetDescendants()) do
-                    if folder:IsA("Folder") and folder.Name:lower() == "easy" then
-                        local wavesMod = folder:FindFirstChild("Waves")
-                        if wavesMod and wavesMod:IsA("ModuleScript") then
-                            CachedModeModule = wavesMod
-                            CachedModeName = "Easy (Sandbox Fallback)"
-                            return CachedModeModule, CachedModeName
-                        end
+            -- 2. Jika tidak ketemu di Survival, baru kita cari di seluruh folder (Fallback Darurat)
+            for _, folder in ipairs(gamemodes:GetDescendants()) do
+                if folder:IsA("Folder") and folder.Name:lower() == difficulty:lower() then
+                    local wavesMod = folder:FindFirstChild("Waves")
+                    if wavesMod and wavesMod:IsA("ModuleScript") then
+                        CachedModeModule = wavesMod
+                        return CachedModeModule, CachedModeName .. " (Fallback)"
                     end
                 end
             end
         end
         
-        return nil, "Missing Data. Dump: " .. stateDump
+        return nil, "Missing Data"
     end
 
     -- Ambil wave instan tanpa task.wait (Anti Lag)
@@ -2268,15 +2273,37 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return 0
     end
 
-    -- Parser untuk Modifier (Menjadikan Boss/Bloated mudah dibaca)
+    -- Penerjemah Angka Modifier menjadi Teks Asli (Boss, Lead, Flying, dll)
+    local function GetModifierName(val)
+        if type(val) == "string" then return val:gsub("Modifier%.", "") end
+        if typeof(val) == "EnumItem" then return val.Name end
+        
+        -- Hack: Mengambil module Enum bawaan game untuk mencocokkan angka dengan nama Modifier
+        local success, result = pcall(function()
+            local TDSEnum = require(game:GetService("ReplicatedStorage").Shared.Modules.Enum)
+            if TDSEnum and TDSEnum.Modifier then
+                for name, enumVal in pairs(TDSEnum.Modifier) do
+                    -- Jika cocok, kembalikan namanya (Contoh: value 20 -> kembalikan "Boss")
+                    if enumVal == val or (type(enumVal) == "table" and enumVal.Value == val) then
+                        return name
+                    end
+                end
+            end
+            return nil
+        end)
+
+        if success and result then return result end
+        return tostring(val) -- Fallback ke angka jika gagal
+    end
+
+    -- Parser untuk Modifier
     local function ParseModifiers(modTable)
         if type(modTable) ~= "table" then return "" end
         local mods = {}
         for k, v in pairs(modTable) do
             if v then
-                local str = tostring(k)
-                str = str:gsub("Modifier%.", "") 
-                table.insert(mods, str)
+                local modName = GetModifierName(k)
+                table.insert(mods, modName)
             end
         end
         if #mods > 0 then
@@ -2501,7 +2528,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Toggle({
         Title = "Advanced Enemy Radar",
-        Desc = "Displays Upcoming Waves and Live Enemy Trackers",
+        Desc = "Displays Upcoming Waves and Live Enemy Tracker",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
             Globals.EnemyTracker = v
@@ -2561,9 +2588,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         local eMods = ParseModifiers(enemy.Modifiers)
                                         
                                         local color = Color3.fromRGB(220, 220, 220)
+                                        -- Warna Berdasarkan Modifier
                                         if eMods:find("Boss") then color = Color3.fromRGB(255, 100, 100) end
                                         if eMods:find("Hidden") then color = Color3.fromRGB(150, 150, 255) end
                                         if eMods:find("Bloated") then color = Color3.fromRGB(255, 150, 50) end
+                                        if eMods:find("Lead") then color = Color3.fromRGB(150, 150, 150) end
+                                        if eMods:find("Flying") then color = Color3.fromRGB(150, 255, 255) end
                                         
                                         local text = string.format("<b>x%d %s</b> <font color=\"#888888\">(%.1fs)</font><font color=\"#ff8888\">%s</font>", eAmt, eName, eDelay, eMods)
                                         CreateUpcomingEntry(UpcomingScroll, text, color)
