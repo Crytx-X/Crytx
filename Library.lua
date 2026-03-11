@@ -2323,9 +2323,105 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Section({Title = "Gatling Gun"})
 
-    -- // 1. STANDALONE SILENT AIM (PURE AIM ONLY)
+    -- Variables State
     Globals.TargetPriority = "First"
+    Globals.SilentAimEnabled = false
+    Globals.CustomGatlingApplied = false
 
+    -- // FUNGSI UNIFIED HOOK (Menggabungkan Silent Aim & Custom Modifiers)
+    local function EnsureGatlingHook()
+        local success, gganim = pcall(function()
+            return require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+        end)
+
+        if not success or not gganim then return false end
+
+        -- Backup fungsi original hanya sekali
+        if not Globals.OriginalFireGun then
+            Globals.OriginalFireGun = gganim._fireGun
+        end
+
+        -- Timpa fungsi dengan Smart Hook
+        gganim._fireGun = function(self)
+            local TargetPosition = nil
+
+            -- 1. LOGIKA SILENT AIM (Hanya mencari posisi target)
+            if Globals.SilentAimEnabled then
+                local NPCs = workspace:FindFirstChild("NPCs")
+                if NPCs then
+                    local BestTarget = nil
+                    local MaxDistance = -1
+                    local MaxHealth = -1
+                    local MinDistToPlayer = math.huge
+                    local camPos = workspace.CurrentCamera.CFrame.Position
+
+                    for _, enemy in ipairs(NPCs:GetChildren()) do
+                        local HRP = enemy:FindFirstChild("HumanoidRootPart")
+                        local Pointer = enemy:FindFirstChild("RootPointer")
+                        
+                        if HRP and Pointer and Pointer.Value then
+                            local RepFolder = Pointer.Value
+                            local Health = RepFolder:GetAttribute("Health")
+                            local PathDist = RepFolder:GetAttribute("PathDistance") or 0
+                            
+                            if Health and Health > 0 then
+                                if Globals.TargetPriority == "First" and PathDist > MaxDistance then
+                                    MaxDistance = PathDist
+                                    BestTarget = HRP
+                                elseif Globals.TargetPriority == "Strongest" and Health > MaxHealth then
+                                    MaxHealth = Health
+                                    BestTarget = HRP
+                                elseif Globals.TargetPriority == "Close" then
+                                    local dist = (HRP.Position - camPos).Magnitude
+                                    if dist < MinDistToPlayer then
+                                        MinDistToPlayer = dist
+                                        BestTarget = HRP
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    if BestTarget then TargetPosition = BestTarget.Position end
+                end
+            end
+
+            -- Jika Silent Aim mati atau musuh tidak ada, tembak lurus ke crosshair
+            if not TargetPosition then
+                local CameraController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
+                TargetPosition = CameraController.result and CameraController.result.Position or CameraController.position
+            end
+
+            if not TargetPosition then return end
+
+            -- Visual Nembak Bawaan Game
+            local isMinigun = self.Replicator:Get("Minigun")
+            local canFire = self.Replicator:Get("CanFire")
+            if not isMinigun and true or canFire then
+                pcall(function() self:_fire(TargetPosition) end)
+            end
+
+            -- 2. LOGIKA KIRIM DAMAGE & COOLDOWN (Tergantung Tombol Apply Gatling)
+            local GatlingChannel = require(game.ReplicatedStorage.Shared.Modules.NewNetwork).Channel("GatlingGun")
+            local sync = workspace:GetAttribute("Sync")
+            local serverTime = workspace:GetServerTimeNow()
+
+            if Globals.CustomGatlingApplied then
+                -- [PAKAI KODEMU LAMA] Mode brutal: Multiply & Cooldown custom
+                for i = 1, (Globals.Multiply or 1) do
+                    GatlingChannel:fireServer("Fire", TargetPosition, sync, serverTime)
+                end
+                self:Wait(Globals.Cooldown or 0.01)
+            else
+                -- Mode normal murni bawaan game
+                GatlingChannel:fireServer("Fire", TargetPosition, sync, serverTime)
+                self:Wait(self:GetCooldown())
+            end
+        end
+
+        return true
+    end
+
+    -- // UI ELEMENTS
     Misc:Dropdown({
         Title = "Silent Aim Priority",
         Desc = "Choose target priority for Silent Aim",
@@ -2338,121 +2434,22 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Silent Aim (Pure)",
-        Desc = "Magic bullets that auto-hit enemies. Uses default game cooldown & speed.",
+        Title = "Enable Silent Aim",
+        Desc = "Magic bullets auto-hit enemies.",
         Value = false,
         Callback = function(state)
             Globals.SilentAimEnabled = state
             
-            local success, gganim = pcall(function()
-                return require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
-            end)
-
-            if not success or not gganim then
-                Window:Notify({Title = "Error", Desc = "Gatling Gun module not found! Equip it first.", Time = 3, Type = "error"})
-                return
-            end
-
-            -- Simpan fungsi original secara global agar tidak tertimpa
-            if not Globals.OriginalFireGun then
-                Globals.OriginalFireGun = gganim._fireGun
-            end
-
-            if state then
-                local CameraController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
-                local Stores = require(game.ReplicatedStorage.Client.Interfaces.Stores)
-                local NewNetwork = require(game.ReplicatedStorage.Shared.Modules.NewNetwork)
-                
-                gganim._fireGun = function(self)
-                    local TargetPosition = nil
-                    local NPCs = workspace:FindFirstChild("NPCs")
-
-                    -- Pencari Target (Smart AI)
-                    if NPCs then
-                        local BestTarget = nil
-                        local MaxDistance = -1
-                        local MaxHealth = -1
-                        local MinDistToPlayer = math.huge
-                        local camPos = workspace.CurrentCamera.CFrame.Position
-
-                        for _, enemy in ipairs(NPCs:GetChildren()) do
-                            local HRP = enemy:FindFirstChild("HumanoidRootPart")
-                            local Pointer = enemy:FindFirstChild("RootPointer")
-                            
-                            if HRP and Pointer and Pointer.Value then
-                                local RepFolder = Pointer.Value
-                                local Health = RepFolder:GetAttribute("Health")
-                                local PathDist = RepFolder:GetAttribute("PathDistance") or 0
-                                
-                                if Health and Health > 0 then
-                                    if Globals.TargetPriority == "First" then
-                                        if PathDist > MaxDistance then
-                                            MaxDistance = PathDist
-                                            BestTarget = HRP
-                                        end
-                                    elseif Globals.TargetPriority == "Strongest" then
-                                        if Health > MaxHealth then
-                                            MaxHealth = Health
-                                            BestTarget = HRP
-                                        end
-                                    elseif Globals.TargetPriority == "Close" then
-                                        local dist = (HRP.Position - camPos).Magnitude
-                                        if dist < MinDistToPlayer then
-                                            MinDistToPlayer = dist
-                                            BestTarget = HRP
-                                        end
-                                    end
-                                end
-                            end
-                        end
-
-                        if BestTarget then
-                            TargetPosition = BestTarget.Position
-                        end
-                    end
-
-                    -- Jika tidak ada target musuh, tembak lurus ke arah crosshair kamera (Normal)
-                    local finalPos = TargetPosition or (CameraController.result and CameraController.result.Position or CameraController.position)
-                    if not finalPos then return end
-
-                    -- Logic Menembak Bawaan Game (Visual, Spread, Recoil tetap ada supaya natural)
-                    local isMinigun = self.Replicator:Get("Minigun")
-                    local canFire = self.Replicator:Get("CanFire")
-
-                    if not isMinigun and true or canFire then
-                        -- Tembakkan laras secara visual ke posisi akhir
-                        pcall(function() self:_fire(finalPos) end)
-                        
-                        -- Tambahkan animasi recoil dan spread bawaan game
-                        pcall(function()
-                            Stores.CrosshairStore.store:dispatch({
-                                ["type"] = "addSpread",
-                                ["spread"] = self.Stats.Attributes.SpreadAdd or 10
-                            })
-                            CameraController.recoil(self.Stats.Attributes.Recoil or 0.03)
-                        end)
-                    end
-
-                    -- Kirim 1 tembakan damage ke server (Pure bawaan, no multiply)
-                    pcall(function()
-                        local GatlingChannel = NewNetwork.Channel("GatlingGun")
-                        GatlingChannel:fireServer("Fire", finalPos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
-                    end)
-
-                    -- Cooldown bawaan game (Pure, mengabaikan custom textbox cooldown)
-                    self:Wait(self:GetCooldown())
-                end
-
-                Window:Notify({Title = "Silent Aim", Desc = "Activated! Pure Magic Bullets ON.", Time = 3, Type = "normal"})
+            local hooked = EnsureGatlingHook()
+            if not hooked and state then
+                Window:Notify({Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error"})
+                Globals.SilentAimEnabled = false
             else
-                -- Kembalikan ke fungsi normal jika toggle dimatikan
-                gganim._fireGun = Globals.OriginalFireGun
-                Window:Notify({Title = "Silent Aim", Desc = "Deactivated!", Time = 3, Type = "normal"})
+                Window:Notify({Title = "Silent Aim", Desc = state and "Activated!" or "Deactivated!", Time = 3, Type = "normal"})
             end
         end
     })
 
-    -- // 2. SETTINGAN LAMA MILIKMU (Manual Gatling Speedhack)
     Misc:Textbox({
         Title = "Cooldown:",
         Desc = "",
@@ -2482,39 +2479,22 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Button({
         Title = "Apply Gatling",
         Callback = function()
-            if hookmetamethod then
+            Globals.CustomGatlingApplied = true
+            local hooked = EnsureGatlingHook()
+            
+            if hooked then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Successfully applied Gatling Gun Settings",
+                    Desc = "Successfully applied Custom Cooldown & Multiply!",
                     Time = 3,
                     Type = "normal"
                 })
-
-                local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
-                local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
-
-                if not Globals.OriginalFireGun then
-                    Globals.OriginalFireGun = gganim._fireGun
-                end
-
-                gganim._fireGun = function(self)
-                    local cam = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
-                    local pos = cam.result and cam.result.Position or cam.position
-
-                    -- Menggunakan logic Multiply dari UI
-                    for i = 1, Globals.Multiply do
-                        ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
-                    end
-
-                    -- Menggunakan logic Cooldown dari UI
-                    self:Wait(Globals.Cooldown)
-                end
             else
                 Window:Notify({
-                    Title = "ADS",
-                    Desc = "Your executor is not supported, please use a different one!",
+                    Title = "Error",
+                    Desc = "Equip Gatling Gun first!",
                     Time = 3,
-                    Type = "normal"
+                    Type = "error"
                 })
             end
         end
@@ -2523,29 +2503,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Button({
         Title = "Reset Gatling",
         Callback = function()
-            if Globals.OriginalFireGun then
-                local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
-                
-                -- Kembalikan ke fungsi original
-                gganim._fireGun = Globals.OriginalFireGun
-                
-                -- Memastikan toggle ikut mereset state-nya secara visual jika sedang hidup
-                Globals.SilentAimEnabled = false 
-
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Successfully reset Gatling Gun to normal!",
-                    Time = 3,
-                    Type = "normal"
-                })
-            else
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Gatling Gun is already normal!",
-                    Time = 3,
-                    Type = "error"
-                })
-            end
+            Globals.CustomGatlingApplied = false
+            
+            Window:Notify({
+                Title = "ADS",
+                Desc = "Gatling speed & multiply reset to normal!",
+                Time = 3,
+                Type = "normal"
+            })
         end
     })
 
