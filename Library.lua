@@ -2296,7 +2296,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             
                             -- [!] BAGIAN YANG DIUBAH: Menambahkan offset posisi ke depan
                             -- Silakan ubah angka "2.5" di bawah ini. Makin besar angkanya, makin ke depan nembaknya.
-                            local jarakKedepan = 3 
+                            local jarakKedepan = 2 
                             
                             -- target.CFrame.LookVector adalah arah depan dari musuh
                             local posisiNembak = target.Position + (target.CFrame.LookVector * jarakKedepan)
