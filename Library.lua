@@ -639,16 +639,35 @@ local function CreateTracer(targetPos)
     if towersFolder then
         for _, tower in pairs(towersFolder:GetChildren()) do
             local rep = tower:FindFirstChild("TowerReplicator")
+            -- Pastikan ini tower Gatling Gun milik kita
             if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                
+                -- Mencari Path: Weapon -> Main -> Barrel (Berdasarkan path yang Anda berikan)
                 local weapon = tower:FindFirstChild("Weapon")
-                if weapon and weapon.PrimaryPart then
-                    startPos = weapon.PrimaryPart.Position
+                if weapon then
+                    local main = weapon:FindFirstChild("Main")
+                    local barrel = main and main:FindFirstChild("Barrel")
+                    
+                    if barrel then
+                        startPos = barrel.Position
+                    elseif weapon.PrimaryPart then
+                        startPos = weapon.PrimaryPart.Position
+                    end
+                end
+                
+                -- Fallback: Jika Barrel tidak ditemukan (misal lag render), ambil posisi tengah tower
+                if not startPos and tower.PrimaryPart then
+                    startPos = tower.PrimaryPart.Position
+                end
+                
+                if startPos then
                     break
                 end
             end
         end
     end
 
+    -- Jika masih tidak ketemu titik awalnya, batalkan
     if not startPos then return end
 
     local tracer = Instance.new("Part")
@@ -658,11 +677,15 @@ local function CreateTracer(targetPos)
     tracer.CastShadow = false
     tracer.Material = Enum.Material.Neon
     tracer.Color = Color3.fromRGB(255, 200, 50) 
-    tracer.Size = Vector3.new(0.15, 0.15, (targetPos - startPos).Magnitude) 
     
-    tracer.CFrame = CFrame.lookAt(startPos, targetPos) * CFrame.new(0, 0, -((targetPos - startPos).Magnitude / 2))
+    local distance = (targetPos - startPos).Magnitude
+    tracer.Size = Vector3.new(0.15, 0.15, distance) 
+    
+    -- Memposisikan tracer tepat di antara moncong senjata (Barrel) dan Musuh
+    tracer.CFrame = CFrame.lookAt(startPos, targetPos) * CFrame.new(0, 0, -(distance / 2))
     tracer.Parent = workspace.Terrain
 
+    -- Animasi pudar (Fade out)
     TweenService:Create(tracer, TweenInfo.new(0.15), {Transparency = 1}):Play()
     game:GetService("Debris"):AddItem(tracer, 0.15)
 end
