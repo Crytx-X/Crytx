@@ -2164,7 +2164,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatling",
+        Title = "Enable Auto Gatlings",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
@@ -2184,9 +2184,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             {
                                 Troop = defaultTroop,
                                 Name = "FPS",
-                                Data = {
-                                    enabled = isEnabled
-                                }
+                                Data = { enabled = isEnabled }
                             }
                         }
                         game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
@@ -2197,20 +2195,25 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if state then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Auto Gatling Enabled (With Prediction)",
+                    Desc = "Auto Gatling: Hitbox Sweeping Enabled",
                     Time = 3
                 })
 
-                -- 1. Jalankan FPS menjadi 'true' HANYA SATU KALI SAAT DINYALAKAN
                 FireFPSAbility(true)
 
                 task.spawn(function()
-                    local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
-                    local gatlingNetwork = network:WaitForChild("GatlingGun")
-                    local fireRemote = gatlingNetwork:WaitForChild("RE:Fire")
-                    local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
+                    -- MENGGUNAKAN NETWORK MODULE LANGSUNG AGAR LEBIH CEPAT & TIDAK KENA RATE LIMIT
+                    local NetSuccess, NetworkModule = pcall(function()
+                        return require(game.ReplicatedStorage.Resources.Universal.NewNetwork)
+                    end)
+                    
+                    if not NetSuccess or not NetworkModule then
+                        Window:Notify({Title = "Error", Desc = "Failed to load Network Module", Time = 3})
+                        return
+                    end
 
-                    -- Variabel untuk menyimpan posisi sebelumnya agar bisa memprediksi gerakan musuh
+                    local ggchannel = NetworkModule.Channel("GatlingGun")
+                    
                     local last_target_id = nil
                     local last_target_pos = nil
 
@@ -2218,7 +2221,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local myGatlingRep = nil
                         local towersFolder = workspace:FindFirstChild("Towers")
                         
-                        -- Cari Gatling Gun milik player untuk dicek amunisinya
+                        -- Cek status ammo Gatling
                         if towersFolder then
                             for _, tower in pairs(towersFolder:GetChildren()) do
                                 local rep = tower:FindFirstChild("TowerReplicator")
@@ -2229,15 +2232,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                         end
 
-                        -- // LOGIKA AUTO RELOAD
                         if myGatlingRep then
                             local currentAmmo = myGatlingRep:GetAttribute("Ammo")
                             local isReloading = myGatlingRep:GetAttribute("Reloading")
 
-                            -- Jika peluru 0 atau sedang dalam proses reload
                             if (currentAmmo ~= nil and currentAmmo <= 0) or isReloading then
                                 if not isReloading then
-                                    pcall(function() reloadRemote:FireServer() end)
+                                    pcall(function() ggchannel:fireServer("Reload") end)
                                 end
                                 task.wait(0.1)
                                 continue 
@@ -2245,7 +2246,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
 
                         -- ==============================================================================
-                        -- // LOGIKA MENCARI TARGET (Prioritas Paling Depan)
+                        -- // MENCARI TARGET (Prioritas PathDistance Tertinggi)
                         -- ==============================================================================
                         local target = nil
                         local best_enemy = nil
@@ -2259,7 +2260,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 
                                 if hitbox and pointer and pointer.Value then
                                     local repFolder = pointer.Value
-                                    
                                     local health = repFolder:GetAttribute("Health")
                                     local pathDist = repFolder:GetAttribute("PathDistance") or 0
                                     
@@ -2274,45 +2274,40 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                         end
 
-                        -- Set target visual & hit prediction
+                        -- ==============================================================================
+                        -- // HITBOX SWEEPING LOGIC (Untuk Musuh Cepat & Ngelag)
+                        -- ==============================================================================
                         if best_enemy and target then
                             Globals.CurrentTarget = best_enemy
                             ApplyTargetChams(best_enemy)
 
-                            -- // PREDICTION LOGIC (Mengatasi musuh cepat & Ping desync)
-                            local predicted_pos = target.Position
-
+                            local current_pos = target.Position
+                            -- Turunkan aim sedikit ke arah pinggang/kaki karena posisi path lebih akurat di bawah
+                            current_pos = current_pos - Vector3.new(0, 1.5, 0) 
+                            
+                            local velocity = Vector3.new(0, 0, 0)
                             if best_enemy == last_target_id and last_target_pos then
-                                -- Hitung arah & kecepatan musuh per-tick
-                                local delta_pos = target.Position - last_target_pos
-                                -- Tembak sedikit di "DEPAN" musuh (Multiplier 2.0 sampai 3.0 sangat optimal untuk Roblox)
-                                predicted_pos = target.Position + (delta_pos * 2.5) 
+                                velocity = current_pos - last_target_pos
                             end
 
                             last_target_id = best_enemy
-                            last_target_pos = target.Position
+                            last_target_pos = current_pos
 
-                            -- // LOGIKA NEMBAK DENGAN MICRO-SPREAD (Mencegah peluru diblokir Anti-Cheat server)
+                            local sync_time = workspace:GetAttribute("Sync")
+                            local s_time_now = workspace:GetServerTimeNow()
+
+                            -- MENYAPUKAN 60 PELURU SEPANJANG ARAH LARI MUSUH
                             for i = 1, Globals.AutoMultiply do
-                                -- Menambahkan radius acak kecil agar 60 tembakan tidak di koordinat x,y,z yang sama persis
-                                local spread_offset = Vector3.new(
-                                    (math.random() - 0.5) * 1.5,
-                                    (math.random() - 0.5) * 1.5,
-                                    (math.random() - 0.5) * 1.5
-                                )
-                                
-                                local final_shoot_pos = predicted_pos + spread_offset
+                                -- Mengatur posisi dari -0.5 (belakang musuh) ke +1.0 (depan musuh)
+                                local sweep_factor = (i / Globals.AutoMultiply) * 1.5 - 0.5 
+                                local sweep_pos = current_pos + (velocity * sweep_factor)
 
                                 pcall(function()
-                                    fireRemote:FireServer(
-                                        final_shoot_pos,
-                                        workspace:GetAttribute("Sync"),
-                                        workspace:GetServerTimeNow()
-                                    )
+                                    ggchannel:fireServer("Fire", sweep_pos, sync_time, s_time_now)
                                 end)
                             end
                         else
-                            -- Bersihkan visual target & Reset tracker
+                            -- Reset tracker jika tidak ada musuh
                             if Globals.CurrentHighlight then
                                 Globals.CurrentHighlight:Destroy()
                                 Globals.CurrentHighlight = nil
@@ -2326,14 +2321,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     end
                 end)
             else
-                -- CLEANUP HIGHLIGHT SAAT MATIKAN AUTO GATLING
                 if Globals.CurrentHighlight then
                     Globals.CurrentHighlight:Destroy()
                     Globals.CurrentHighlight = nil
                 end
                 Globals.CurrentTarget = nil
                 
-                -- Jalankan FPS menjadi 'false' saat toggle dimatikan
                 FireFPSAbility(false)
             end
         end
