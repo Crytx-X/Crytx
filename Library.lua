@@ -2167,7 +2167,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     -- // ==========================================
-    -- // PERFECT COMPACT ENEMY TRACKER (DYNAMIC SHIELD PILLS)
+    -- // ADVANCED RADAR: UPCOMING WAVE & LIVE ENEMY
     -- // ==========================================
     
     local TweenService = game:GetService("TweenService")
@@ -2176,28 +2176,67 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     
     local GroupCards = {} 
     local EnemyPills = {} 
+    local CachedModeModule = nil
+    local LastProcessedWave = -1
 
     -- Format Angka (1500 -> 1.5K)
     local function FormatNumber(n)
+        if type(n) ~= "number" then return "0" end
         if n >= 1e6 then return string.format("%.1fM", n / 1e6)
         elseif n >= 1e3 then return string.format("%.1fK", n / 1e3)
         else return tostring(math.floor(n)) end
+    end
+
+    -- Mencari ModuleScript Mode di ReplicatedStorage (Client-side)
+    local function GetModeDataModule()
+        if CachedModeModule then return CachedModeModule end
+        
+        local state = ReplicatedStorage:FindFirstChild("State")
+        local difficulty = state and state:FindFirstChild("Difficulty") and state.Difficulty.Value
+        if not difficulty then return nil end
+
+        -- Cari module yang namanya sama dengan difficulty saat ini
+        for _, obj in ipairs(ReplicatedStorage:GetDescendants()) do
+            if obj:IsA("ModuleScript") and obj.Name == difficulty then
+                CachedModeModule = obj
+                return CachedModeModule
+            end
+        end
+        return nil
+    end
+
+    -- Parser untuk Modifier (Mengubah table modifier menjadi string yang bisa dibaca)
+    local function ParseModifiers(modTable)
+        if type(modTable) ~= "table" then return "" end
+        local mods = {}
+        for k, v in pairs(modTable) do
+            if v then
+                local str = tostring(k)
+                str = str:gsub("Modifier%.", "") -- Menghapus prefix Enum jika ada
+                table.insert(mods, str)
+            end
+        end
+        if #mods > 0 then
+            return " | ⚠️ " .. table.concat(mods, ", ")
+        end
+        return ""
     end
 
     local function CreateTrackerUI()
         if TrackerUI then TrackerUI:Destroy() end
         GroupCards = {} 
         EnemyPills = {}
+        LastProcessedWave = -1 -- Reset cache wave
         
         TrackerUI = Instance.new("ScreenGui")
-        TrackerUI.Name = "ADS_CompactTracker"
+        TrackerUI.Name = "ADS_AdvancedTracker"
         TrackerUI.ResetOnSpawn = false
         TrackerUI.Parent = game:GetService("CoreGui")
 
-        -- Main UI Background
+        -- Main UI Background (Diperpanjang untuk 2 sesi)
         local MainFrame = Instance.new("Frame")
-        MainFrame.Size = UDim2.new(0, 240, 0, 300)
-        MainFrame.Position = UDim2.new(1, -250, 0.5, -150)
+        MainFrame.Size = UDim2.new(0, 260, 0, 480)
+        MainFrame.Position = UDim2.new(1, -270, 0.5, -240)
         MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
         MainFrame.BackgroundTransparency = 0.2
         MainFrame.BorderSizePixel = 0
@@ -2209,51 +2248,110 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         UIStroke.Thickness = 1
         UIStroke.Parent = MainFrame
 
-        -- Header
-        local Header = Instance.new("Frame")
-        Header.Size = UDim2.new(1, 0, 0, 28)
-        Header.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        Header.BackgroundTransparency = 0.3
-        Header.Parent = MainFrame
-        Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 8)
+        -- =======================================
+        -- 1. BAGIAN ATAS: UPCOMING WAVE RADAR
+        -- =======================================
+        local UpcomingHeader = Instance.new("Frame")
+        UpcomingHeader.Size = UDim2.new(1, 0, 0, 28)
+        UpcomingHeader.BackgroundColor3 = Color3.fromRGB(40, 30, 15)
+        UpcomingHeader.BackgroundTransparency = 0.3
+        UpcomingHeader.Parent = MainFrame
+        Instance.new("UICorner", UpcomingHeader).CornerRadius = UDim.new(0, 8)
 
-        local HeaderCover = Instance.new("Frame")
-        HeaderCover.Size = UDim2.new(1, 0, 0, 5)
-        HeaderCover.Position = UDim2.new(0, 0, 1, -5)
-        HeaderCover.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        HeaderCover.BackgroundTransparency = 0.3
-        HeaderCover.BorderSizePixel = 0
-        HeaderCover.Parent = Header
+        local UpcomingTitle = Instance.new("TextLabel")
+        UpcomingTitle.Size = UDim2.new(1, -10, 1, 0)
+        UpcomingTitle.Position = UDim2.new(0, 10, 0, 0)
+        UpcomingTitle.BackgroundTransparency = 1
+        UpcomingTitle.Text = "🔮 UPCOMING WAVE (Loading...)"
+        UpcomingTitle.TextColor3 = Color3.fromRGB(255, 200, 100)
+        UpcomingTitle.Font = Enum.Font.GothamBold
+        UpcomingTitle.TextSize = 12
+        UpcomingTitle.TextXAlignment = Enum.TextXAlignment.Left
+        UpcomingTitle.Parent = UpcomingHeader
 
-        local Title = Instance.new("TextLabel")
-        Title.Size = UDim2.new(1, -10, 1, 0)
-        Title.Position = UDim2.new(0, 10, 0, 0)
-        Title.BackgroundTransparency = 1
-        Title.Text = "📡 THREAT RADAR"
-        Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Title.Font = Enum.Font.GothamBold
-        Title.TextSize = 12
-        Title.TextXAlignment = Enum.TextXAlignment.Left
-        Title.Parent = Header
+        local WaveInfoLabel = Instance.new("TextLabel")
+        WaveInfoLabel.Size = UDim2.new(1, -20, 0, 20)
+        WaveInfoLabel.Position = UDim2.new(0, 10, 0, 30)
+        WaveInfoLabel.BackgroundTransparency = 1
+        WaveInfoLabel.Text = "Cash: $0 | Bonus: $0"
+        WaveInfoLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
+        WaveInfoLabel.Font = Enum.Font.GothamSemibold
+        WaveInfoLabel.TextSize = 11
+        WaveInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+        WaveInfoLabel.Parent = MainFrame
 
-        -- Scrollable List
-        local ScrollList = Instance.new("ScrollingFrame")
-        ScrollList.Size = UDim2.new(1, -10, 1, -35)
-        ScrollList.Position = UDim2.new(0, 5, 0, 30)
-        ScrollList.BackgroundTransparency = 1
-        ScrollList.ScrollBarThickness = 2
-        ScrollList.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
-        ScrollList.Parent = MainFrame
+        local UpcomingScroll = Instance.new("ScrollingFrame")
+        UpcomingScroll.Size = UDim2.new(1, -10, 0, 160)
+        UpcomingScroll.Position = UDim2.new(0, 5, 0, 50)
+        UpcomingScroll.BackgroundTransparency = 1
+        UpcomingScroll.ScrollBarThickness = 2
+        UpcomingScroll.Parent = MainFrame
 
-        local UIListLayout = Instance.new("UIListLayout")
-        UIListLayout.Padding = UDim.new(0, 6)
-        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        UIListLayout.Parent = ScrollList
+        local UpcomingLayout = Instance.new("UIListLayout")
+        UpcomingLayout.Padding = UDim.new(0, 2)
+        UpcomingLayout.Parent = UpcomingScroll
 
-        return ScrollList
+        -- Garis Pemisah
+        local Divider = Instance.new("Frame")
+        Divider.Size = UDim2.new(1, -20, 0, 2)
+        Divider.Position = UDim2.new(0, 10, 0, 215)
+        Divider.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+        Divider.BorderSizePixel = 0
+        Divider.Parent = MainFrame
+
+        -- =======================================
+        -- 2. BAGIAN BAWAH: LIVE THREAT RADAR
+        -- =======================================
+        local LiveHeader = Instance.new("Frame")
+        LiveHeader.Size = UDim2.new(1, 0, 0, 28)
+        LiveHeader.Position = UDim2.new(0, 0, 0, 225)
+        LiveHeader.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        LiveHeader.BackgroundTransparency = 0.3
+        LiveHeader.Parent = MainFrame
+        Instance.new("UICorner", LiveHeader).CornerRadius = UDim.new(0, 8)
+
+        local LiveTitle = Instance.new("TextLabel")
+        LiveTitle.Size = UDim2.new(1, -10, 1, 0)
+        LiveTitle.Position = UDim2.new(0, 10, 0, 0)
+        LiveTitle.BackgroundTransparency = 1
+        LiveTitle.Text = "📡 LIVE THREAT RADAR"
+        LiveTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        LiveTitle.Font = Enum.Font.GothamBold
+        LiveTitle.TextSize = 12
+        LiveTitle.TextXAlignment = Enum.TextXAlignment.Left
+        LiveTitle.Parent = LiveHeader
+
+        local LiveScroll = Instance.new("ScrollingFrame")
+        LiveScroll.Size = UDim2.new(1, -10, 1, -260)
+        LiveScroll.Position = UDim2.new(0, 5, 0, 255)
+        LiveScroll.BackgroundTransparency = 1
+        LiveScroll.ScrollBarThickness = 2
+        LiveScroll.Parent = MainFrame
+
+        local LiveLayout = Instance.new("UIListLayout")
+        LiveLayout.Padding = UDim.new(0, 6)
+        LiveLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        LiveLayout.Parent = LiveScroll
+
+        return LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel
     end
 
-    -- Frame Kategori (Misal: 👾 Brute (x10))
+    -- Membuat Frame List Musuh Selanjutnya
+    local function CreateUpcomingEntry(parent, text, color)
+        local Entry = Instance.new("TextLabel")
+        Entry.Size = UDim2.new(1, 0, 0, 18)
+        Entry.BackgroundTransparency = 1
+        Entry.Text = text
+        Entry.TextColor3 = color or Color3.fromRGB(220, 220, 220)
+        Entry.Font = Enum.Font.Gotham
+        Entry.TextSize = 11
+        Entry.TextXAlignment = Enum.TextXAlignment.Left
+        Entry.RichText = true
+        Entry.Parent = parent
+        return Entry
+    end
+
+    -- Group Card Live Radar (Sama seperti sebelumnya)
     local function CreateGroupCard(groupName, parent)
         local Card = Instance.new("Frame")
         Card.Size = UDim2.new(1, 0, 0, 40)
@@ -2272,7 +2370,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Title.TextXAlignment = Enum.TextXAlignment.Left
         Title.Parent = Card
 
-        -- Wadah untuk Kapsul HP
         local PillContainer = Instance.new("Frame")
         PillContainer.Size = UDim2.new(1, -12, 1, -22)
         PillContainer.Position = UDim2.new(0, 6, 0, 20)
@@ -2280,7 +2377,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         PillContainer.Parent = Card
 
         local UIGridLayout = Instance.new("UIGridLayout")
-        UIGridLayout.CellSize = UDim2.new(0, 48, 0, 16) -- KAPSUL DIPERBESAR AGAR SHIELD JELAS
+        UIGridLayout.CellSize = UDim2.new(0, 48, 0, 16)
         UIGridLayout.CellPadding = UDim2.new(0, 4, 0, 4)
         UIGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
         UIGridLayout.Parent = PillContainer
@@ -2289,21 +2386,18 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return GroupCards[groupName]
     end
 
-    -- Membuat Kapsul HP (Mini Bar Individual)
     local function CreatePill(enemyObj, parentContainer)
         local PillBg = Instance.new("Frame")
         PillBg.BackgroundColor3 = Color3.fromRGB(45, 20, 20)
         PillBg.Parent = parentContainer
         Instance.new("UICorner", PillBg).CornerRadius = UDim.new(0, 4)
 
-        -- Glow Target 🎯
         local TargetStroke = Instance.new("UIStroke")
         TargetStroke.Color = Color3.fromRGB(255, 50, 50)
         TargetStroke.Thickness = 1.5
         TargetStroke.Transparency = 1 
         TargetStroke.Parent = PillBg
 
-        -- HP BAR (Merah)
         local HPFill = Instance.new("Frame")
         HPFill.Size = UDim2.new(1, 0, 1, 0)
         HPFill.BackgroundColor3 = Color3.fromRGB(235, 50, 50)
@@ -2311,7 +2405,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HPFill.Parent = PillBg
         Instance.new("UICorner", HPFill).CornerRadius = UDim.new(0, 4)
 
-        -- SHIELD BAR (Biru - Menimpa di atas Bar Merah)
         local ShieldFill = Instance.new("Frame")
         ShieldFill.Size = UDim2.new(0, 0, 1, 0)
         ShieldFill.BackgroundColor3 = Color3.fromRGB(40, 160, 255)
@@ -2320,7 +2413,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         ShieldFill.Parent = PillBg
         Instance.new("UICorner", ShieldFill).CornerRadius = UDim.new(0, 4)
 
-        -- EFEK FLASH (Putih - Saat kena damage)
         local HitOverlay = Instance.new("Frame")
         HitOverlay.Size = UDim2.new(1, 0, 1, 0)
         HitOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
@@ -2329,7 +2421,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HitOverlay.Parent = PillBg
         Instance.new("UICorner", HitOverlay).CornerRadius = UDim.new(0, 4)
 
-        -- TEKS ANGKA (Darah / Shield)
         local HPText = Instance.new("TextLabel")
         HPText.Size = UDim2.new(1, 0, 1, 0)
         HPText.BackgroundTransparency = 1
@@ -2340,37 +2431,98 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HPText.Parent = PillBg
 
         EnemyPills[enemyObj] = {
-            Pill = PillBg,
-            HPFill = HPFill,
-            ShieldFill = ShieldFill,
-            HitOverlay = HitOverlay,
-            TargetStroke = TargetStroke,
-            Text = HPText,
-            LastHP = 0,
-            LastShield = 0
+            Pill = PillBg, HPFill = HPFill, ShieldFill = ShieldFill,
+            HitOverlay = HitOverlay, TargetStroke = TargetStroke, Text = HPText,
+            LastHP = 0, LastShield = 0
         }
         return EnemyPills[enemyObj]
     end
 
     Misc:Toggle({
-        Title = "Compact Threat Radar (Pills)",
-        Desc = "Displays individual HP and Shield in smart compact pills.",
+        Title = "Advanced Enemy Radar",
+        Desc = "Displays Upcoming Waves and Live Enemy Tracker",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
             Globals.EnemyTracker = v
             SetSetting("EnemyTracker", v)
 
             if v then
-                local ScrollList = CreateTrackerUI()
+                local LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
                 
                 TrackerConnection = RunService.RenderStepped:Connect(function()
                     if not Globals.EnemyTracker then return end
                     
+                    -- ==========================================
+                    -- LOGIKA UPDATE UPCOMING WAVE
+                    -- ==========================================
+                    local currentWave = GetCurrentWave()
+                    if currentWave ~= LastProcessedWave then
+                        LastProcessedWave = currentWave
+                        local nextWaveNum = currentWave + 1
+                        UpcomingTitle.Text = "🔮 UPCOMING WAVE (" .. nextWaveNum .. ")"
+                        
+                        -- Bersihkan list upcoming lama
+                        for _, child in ipairs(UpcomingScroll:GetChildren()) do
+                            if child:IsA("TextLabel") then child:Destroy() end
+                        end
+
+                        local modeDataModule = GetModeDataModule()
+                        if modeDataModule then
+                            local success, modeData = pcall(function() return require(modeDataModule) end)
+                            if success and type(modeData) == "table" and modeData.Waves then
+                                local nextWaveData = modeData.Waves[nextWaveNum]
+                                
+                                -- Kalkulasi Cash (Mencoba menggunakan logic dari script bawaan, fallback jika gagal)
+                                local waveCash = 0
+                                local clearBonus = 0
+                                pcall(function()
+                                    if modeData.ExtraOptions and type(modeData.ExtraOptions.WaveCash) == "function" then
+                                        waveCash = modeData.ExtraOptions.WaveCash(nextWaveNum)
+                                    else
+                                        waveCash = 200 + ((nextWaveNum - 1) * 160) -- Fallback Formula
+                                    end
+                                    
+                                    if modeData.ExtraOptions and modeData.ExtraOptions.ClearBonus then
+                                        local pct = modeData.ExtraOptions.ClearBonus.Percentage or 0.2
+                                        clearBonus = waveCash * pct
+                                    end
+                                end)
+                                WaveInfoLabel.Text = string.format("💰 Cash: $%d | Bonus: $%d", waveCash, clearBonus)
+
+                                -- Load Musuh
+                                if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
+                                    for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
+                                        local eName = enemy.Name or "Unknown"
+                                        local eAmt = enemy.Amount or 1
+                                        local eDelay = enemy.Delay or 0
+                                        local eMods = ParseModifiers(enemy.Modifiers)
+                                        
+                                        local color = Color3.fromRGB(220, 220, 220)
+                                        if eMods:find("Boss") then color = Color3.fromRGB(255, 100, 100) end
+                                        if eMods:find("Hidden") then color = Color3.fromRGB(150, 150, 255) end
+                                        
+                                        local text = string.format("<b>x%d %s</b> <font color=\"#888888\">(%.1fs)</font><font color=\"#ff8888\">%s</font>", eAmt, eName, eDelay, eMods)
+                                        CreateUpcomingEntry(UpcomingScroll, text, color)
+                                    end
+                                    
+                                    -- Auto Resize Scroll
+                                    UpcomingScroll.CanvasSize = UDim2.new(0, 0, 0, #nextWaveData.WaveTimeline.Enemies * 20)
+                                else
+                                    CreateUpcomingEntry(UpcomingScroll, "No more waves or MAX Wave reached.", Color3.fromRGB(150, 150, 150))
+                                end
+                            end
+                        else
+                            CreateUpcomingEntry(UpcomingScroll, "Unable to load Wave Data.", Color3.fromRGB(255, 100, 100))
+                        end
+                    end
+
+                    -- ==========================================
+                    -- LOGIKA UPDATE LIVE ENEMY (Seperti sebelumnya)
+                    -- ==========================================
                     local EnemyGroups = {}
                     local ProcessedEnemies = {}
                     local NPCs = workspace:FindFirstChild("NPCs")
                     
-                    -- 1. Kumpulkan Data dari Map
                     if NPCs then
                         for _, enemy in ipairs(NPCs:GetChildren()) do
                             local pointer = enemy:FindFirstChild("RootPointer")
@@ -2391,10 +2543,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local isTargeted = (enemy == Globals.CurrentTargetModel)
                                     EnemyGroups[name].Count += 1
                                     table.insert(EnemyGroups[name].Individuals, {
-                                        Obj = enemy,
-                                        HP = health, MaxHP = maxHP,
-                                        Shield = shield, MaxShield = maxShield,
-                                        IsTargeted = isTargeted
+                                        Obj = enemy, HP = health, MaxHP = maxHP,
+                                        Shield = shield, MaxShield = maxShield, IsTargeted = isTargeted
                                     })
                                     ProcessedEnemies[enemy] = true
                                 end
@@ -2402,38 +2552,33 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
 
-                    -- 2. Sortir Group (Boss / MaxHP Tertinggi ada di atas)
                     local SortedGroups = {}
                     for _, groupData in pairs(EnemyGroups) do table.insert(SortedGroups, groupData) end
                     table.sort(SortedGroups, function(a, b) return a.MaxHP_Sample > b.MaxHP_Sample end)
 
                     local ProcessedGroups = {}
 
-                    -- 3. Update UI Visual
                     for groupOrder, groupData in ipairs(SortedGroups) do
                         ProcessedGroups[groupData.Name] = true
                         
-                        local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, ScrollList)
+                        local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, LiveScroll)
                         groupUI.Card.Visible = true
                         groupUI.Card.LayoutOrder = groupOrder
 
                         local isBoss = groupData.MaxHP_Sample > 10000
                         groupUI.Title.Text = string.format("%s %s (x%d)", isBoss and "💀" or "👾", groupData.Name, groupData.Count)
 
-                        -- Urutkan individu di grup (Targeted selalu di kiri atas)
                         table.sort(groupData.Individuals, function(a, b)
                             if a.IsTargeted and not b.IsTargeted then return true end
                             if b.IsTargeted and not a.IsTargeted then return false end
                             return a.HP > b.HP
                         end)
 
-                        -- Update masing-masing Kapsul
                         for pillOrder, indv in ipairs(groupData.Individuals) do
                             local pillUI = EnemyPills[indv.Obj] or CreatePill(indv.Obj, groupUI.Container)
                             pillUI.Pill.Visible = true
                             pillUI.Pill.LayoutOrder = pillOrder
 
-                            -- DETEKSI DAMAGE FLASH (Nyala putih saat kena damage HP ATAU Shield)
                             if (pillUI.LastHP > 0 and indv.HP < pillUI.LastHP) or (pillUI.LastShield > 0 and indv.Shield < pillUI.LastShield) then
                                 pillUI.HitOverlay.Transparency = 0
                                 TweenService:Create(pillUI.HitOverlay, TweenInfo.new(0.3), {Transparency = 1}):Play()
@@ -2441,7 +2586,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             pillUI.LastHP = indv.HP
                             pillUI.LastShield = indv.Shield
 
-                            -- EFEK GLOW TARGET 🎯
                             if indv.IsTargeted then
                                 pillUI.TargetStroke.Transparency = 0
                                 pillUI.TargetStroke.Thickness = 1.5 + math.sin(os.clock() * 15) * 1
@@ -2449,34 +2593,27 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 pillUI.TargetStroke.Transparency = 1
                             end
 
-                            -- UPDATE BAR DARAH (Merah)
                             local hpPercent = math.clamp(indv.HP / math.max(1, indv.MaxHP), 0, 1)
                             pillUI.HPFill.Size = UDim2.new(hpPercent, 0, 1, 0)
 
-                            -- UPDATE BAR SHIELD (Biru - Menimpa Merah)
                             if indv.MaxShield > 0 and indv.Shield > 0 then
                                 pillUI.ShieldFill.Visible = true
                                 local shieldPercent = math.clamp(indv.Shield / indv.MaxShield, 0, 1)
                                 pillUI.ShieldFill.Size = UDim2.new(shieldPercent, 0, 1, 0)
-                                
-                                -- Ubah teks menjadi Shield
                                 pillUI.Text.Text = string.format("🛡️ %s", FormatNumber(indv.Shield))
-                                pillUI.Text.TextColor3 = Color3.fromRGB(180, 230, 255) -- Warna Biru Terang
+                                pillUI.Text.TextColor3 = Color3.fromRGB(180, 230, 255) 
                             else
                                 pillUI.ShieldFill.Visible = false
-                                -- Ubah teks kembali jadi HP Normal
                                 pillUI.Text.Text = FormatNumber(indv.HP)
-                                pillUI.Text.TextColor3 = Color3.fromRGB(255, 255, 255) -- Warna Putih
+                                pillUI.Text.TextColor3 = Color3.fromRGB(255, 255, 255) 
                             end
                         end
 
-                        -- Auto Resize Ketinggian Kotak Kategori (Maksimal 4 kapsul sebaris)
                         local rows = math.ceil(#groupData.Individuals / 4)
-                        local newHeight = 25 + (rows * 20) -- 16px kapsul + 4px jarak
+                        local newHeight = 25 + (rows * 20) 
                         groupUI.Card.Size = UDim2.new(1, 0, 0, newHeight)
                     end
 
-                    -- 4. CLEANUP CACHE
                     for enemyObj, pillUI in pairs(EnemyPills) do
                         if not ProcessedEnemies[enemyObj] then
                             pillUI.Pill:Destroy()
