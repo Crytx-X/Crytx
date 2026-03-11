@@ -690,18 +690,18 @@ local function CreateTracer(targetPos)
     game:GetService("Debris"):AddItem(tracer, 0.15)
 end
 
--- Hook Remote Terpusat (Tracer, Gatling, & Place Anywhere Bypass)
+-- Hook Remote
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
     oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
         local method = getnamecallmethod()
-        local args = {...}
         
         if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
             local p = self.Parent
             if p and p.Name == "GatlingGun" then
                 if (Globals.AutoGatling or Globals.SilentAimEnabled) and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
+                    local args = {...}
                     local targetPos = args[1]
                     if typeof(targetPos) == "Vector3" then
                         local now = os.clock()
@@ -715,7 +715,7 @@ if hookmetamethod then
         end
 
         if method == "InvokeServer" and typeof(self) == "Instance" and self.Name == "RemoteFunction" then
-            -- 1. Auto Gatling FPS Ability
+            local args = {...}
             if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
                 local payload = args[4]
                 if type(payload) == "table" and payload.Name == "FPS" then
@@ -725,18 +725,6 @@ if hookmetamethod then
                             return oldNamecall(self, unpack(args))
                         end
                     end
-                end
-            end
-            
-            -- 2. SERVER ANTI-STACK BYPASS (PLACE ANYWHERE)
-            if Globals.PlaceAnywhere and args[1] == "Troops" and (args[2] == "Place" or args[2] == "Pl\208\176ce") then
-                local placementData = args[3]
-                if type(placementData) == "table" and placementData.Position then
-                    -- Menambahkan offset sangat kecil agar server mengira lokasinya beda (Bypass Stacking)
-                    local offsetX = math.random(-25, 25) / 1000
-                    local offsetZ = math.random(-25, 25) / 1000
-                    args[3].Position = args[3].Position + Vector3.new(offsetX, 0, offsetZ)
-                    return oldNamecall(self, unpack(args))
                 end
             end
         end
@@ -1506,55 +1494,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    -- // ULTIMATE PLACE ANYWHERE (Client Bypass)
-    local SharedGameFuncs = ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Modules"):WaitForChild("SharedGameFunctions")
-    local successShared, SharedModule = pcall(require, SharedGameFuncs)
-    local OriginalCollisionFuncs = {}
-
-    Main:Toggle({
-        Title = "Place Anywhere & Stack",
-        Desc = "Bypasses collision bounds and allows stacking/path placement.",
-        Value = Globals.PlaceAnywhere or false,
-        Callback = function(v)
-            Globals.PlaceAnywhere = v
-            SetSetting("PlaceAnywhere", v)
-
-            if successShared and type(SharedModule) == "table" then
-                if v then
-                    -- Ambil dan timpa semua fungsi yang mengandung kata "Collision" (Tower, Environment, Path)
-                    for funcName, func in pairs(SharedModule) do
-                        if type(func) == "function" and string.find(funcName, "Collision") then
-                            if not OriginalCollisionFuncs[funcName] then
-                                OriginalCollisionFuncs[funcName] = func
-                            end
-                            -- Memaksa script TDS menganggap posisi selalu valid
-                            SharedModule[funcName] = function(...)
-                                return true, nil
-                            end
-                        end
-                    end
-                    Window:Notify({
-                        Title = "Place Anywhere",
-                        Desc = "Advanced bypass enabled! You can now stack towers anywhere.",
-                        Time = 3,
-                        Type = "normal"
-                    })
-                else
-                    -- Kembalikan fungsi TDS ke kondisi normal
-                    for funcName, originalFunc in pairs(OriginalCollisionFuncs) do
-                        SharedModule[funcName] = originalFunc
-                    end
-                    Window:Notify({
-                        Title = "Place Anywhere",
-                        Desc = "Disabled! Normal placement restored.",
-                        Time = 3,
-                        Type = "normal"
-                    })
-                end
-            end
-        end
-    })
-
     Main:Button({
         Title = "Upgrade Selected",
         Desc = "",
@@ -2224,6 +2163,298 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Callback = function(v)
             SetSetting("Disable3DRendering", v)
             Apply3dRendering()
+        end
+    })
+
+    -- // ==========================================
+    -- // PREMIUM LIVE ENEMY TRACKER (HP & SHIELD BARS)
+    -- // ==========================================
+    
+    local TrackerUI = nil
+    local TrackerConnection = nil
+    local EnemyCards = {} -- Menyimpan cache UI agar tidak lag
+
+    -- Fungsi untuk menyingkat angka besar (contoh: 1500000 -> 1.5M)
+    local function FormatNumber(n)
+        if n >= 1e6 then
+            return string.format("%.1fM", n / 1e6)
+        elseif n >= 1e3 then
+            return string.format("%.1fK", n / 1e3)
+        else
+            return tostring(math.floor(n))
+        end
+    end
+
+    local function CreateTrackerUI()
+        if TrackerUI then TrackerUI:Destroy() end
+        EnemyCards = {} -- Reset cache
+        
+        TrackerUI = Instance.new("ScreenGui")
+        TrackerUI.Name = "ADS_PremiumTracker"
+        TrackerUI.ResetOnSpawn = false
+        TrackerUI.Parent = game:GetService("CoreGui")
+
+        -- Main Background
+        local MainFrame = Instance.new("Frame")
+        MainFrame.Size = UDim2.new(0, 260, 0, 350)
+        MainFrame.Position = UDim2.new(1, -270, 0.5, -175)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+        MainFrame.BackgroundTransparency = 0.15
+        MainFrame.BorderSizePixel = 0
+        MainFrame.Parent = TrackerUI
+
+        local UICorner = Instance.new("UICorner")
+        UICorner.CornerRadius = UDim.new(0, 10)
+        UICorner.Parent = MainFrame
+
+        local UIStroke = Instance.new("UIStroke")
+        UIStroke.Color = Color3.fromRGB(60, 60, 75)
+        UIStroke.Thickness = 1.5
+        UIStroke.Parent = MainFrame
+
+        -- Top Header
+        local Header = Instance.new("Frame")
+        Header.Size = UDim2.new(1, 0, 0, 35)
+        Header.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        Header.BackgroundTransparency = 0.5
+        Header.BorderSizePixel = 0
+        Header.Parent = MainFrame
+
+        local HeaderCorner = Instance.new("UICorner")
+        HeaderCorner.CornerRadius = UDim.new(0, 10)
+        HeaderCorner.Parent = Header
+        
+        -- Menutupi sudut bawah header agar lurus menyatu dengan body
+        local HeaderCover = Instance.new("Frame")
+        HeaderCover.Size = UDim2.new(1, 0, 0, 10)
+        HeaderCover.Position = UDim2.new(0, 0, 1, -10)
+        HeaderCover.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+        HeaderCover.BackgroundTransparency = 0.5
+        HeaderCover.BorderSizePixel = 0
+        HeaderCover.Parent = Header
+
+        local Title = Instance.new("TextLabel")
+        Title.Size = UDim2.new(1, -15, 1, 0)
+        Title.Position = UDim2.new(0, 15, 0, 0)
+        Title.BackgroundTransparency = 1
+        Title.Text = "📡 LIVE RADAR"
+        Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Title.Font = Enum.Font.GothamBold
+        Title.TextSize = 14
+        Title.TextXAlignment = Enum.TextXAlignment.Left
+        Title.Parent = Header
+
+        -- Scrollable List
+        local ScrollList = Instance.new("ScrollingFrame")
+        ScrollList.Size = UDim2.new(1, -16, 1, -45)
+        ScrollList.Position = UDim2.new(0, 8, 0, 40)
+        ScrollList.BackgroundTransparency = 1
+        ScrollList.ScrollBarThickness = 2
+        ScrollList.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 120)
+        ScrollList.Parent = MainFrame
+
+        local UIListLayout = Instance.new("UIListLayout")
+        UIListLayout.Padding = UDim.new(0, 6)
+        UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+        UIListLayout.Parent = ScrollList
+
+        return ScrollList
+    end
+
+    -- Fungsi untuk membuat Kartu Musuh (UI Card)
+    local function CreateEnemyCard(enemyName, parent)
+        local Card = Instance.new("Frame")
+        Card.Size = UDim2.new(1, 0, 0, 50) -- Default size (bisa membesar jika ada shield)
+        Card.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+        Card.BackgroundTransparency = 0.3
+        Card.Parent = parent
+
+        local CardCorner = Instance.new("UICorner")
+        CardCorner.CornerRadius = UDim.new(0, 6)
+        CardCorner.Parent = Card
+
+        local NameLabel = Instance.new("TextLabel")
+        NameLabel.Size = UDim2.new(1, -10, 0, 18)
+        NameLabel.Position = UDim2.new(0, 8, 0, 4)
+        NameLabel.BackgroundTransparency = 1
+        NameLabel.Text = enemyName
+        NameLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
+        NameLabel.Font = Enum.Font.GothamSemibold
+        NameLabel.TextSize = 12
+        NameLabel.TextXAlignment = Enum.TextXAlignment.Left
+        NameLabel.Parent = Card
+
+        -- HP BAR BACKGROUND
+        local HPBg = Instance.new("Frame")
+        HPBg.Size = UDim2.new(1, -16, 0, 12)
+        HPBg.Position = UDim2.new(0, 8, 0, 26)
+        HPBg.BackgroundColor3 = Color3.fromRGB(50, 20, 20)
+        HPBg.Parent = Card
+        Instance.new("UICorner", HPBg).CornerRadius = UDim.new(1, 0)
+
+        -- HP BAR FILL
+        local HPFill = Instance.new("Frame")
+        HPFill.Size = UDim2.new(0.5, 0, 1, 0)
+        HPFill.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
+        HPFill.Parent = HPBg
+        Instance.new("UICorner", HPFill).CornerRadius = UDim.new(1, 0)
+
+        -- Gradient for HP
+        local HPGradient = Instance.new("UIGradient")
+        HPGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 90, 90)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 40, 40))
+        }
+        HPGradient.Parent = HPFill
+
+        -- HP TEXT
+        local HPText = Instance.new("TextLabel")
+        HPText.Size = UDim2.new(1, 0, 1, 0)
+        HPText.BackgroundTransparency = 1
+        HPText.Text = "100 / 100"
+        HPText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        HPText.Font = Enum.Font.GothamBold
+        HPText.TextSize = 9
+        HPText.ZIndex = 2
+        HPText.Parent = HPBg
+
+        -- SHIELD BAR BACKGROUND (Sembunyi by default)
+        local ShieldBg = Instance.new("Frame")
+        ShieldBg.Size = UDim2.new(1, -16, 0, 12)
+        ShieldBg.Position = UDim2.new(0, 8, 0, 42)
+        ShieldBg.BackgroundColor3 = Color3.fromRGB(20, 40, 60)
+        ShieldBg.Visible = false
+        ShieldBg.Parent = Card
+        Instance.new("UICorner", ShieldBg).CornerRadius = UDim.new(1, 0)
+
+        -- SHIELD BAR FILL
+        local ShieldFill = Instance.new("Frame")
+        ShieldFill.Size = UDim2.new(0.5, 0, 1, 0)
+        ShieldFill.BackgroundColor3 = Color3.fromRGB(75, 180, 255)
+        ShieldFill.Parent = ShieldBg
+        Instance.new("UICorner", ShieldFill).CornerRadius = UDim.new(1, 0)
+
+        -- Gradient for Shield
+        local ShieldGradient = Instance.new("UIGradient")
+        ShieldGradient.Color = ColorSequence.new{
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 200, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 130, 220))
+        }
+        ShieldGradient.Parent = ShieldFill
+
+        -- SHIELD TEXT
+        local ShieldText = Instance.new("TextLabel")
+        ShieldText.Size = UDim2.new(1, 0, 1, 0)
+        ShieldText.BackgroundTransparency = 1
+        ShieldText.Text = "50 / 50"
+        ShieldText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        ShieldText.Font = Enum.Font.GothamBold
+        ShieldText.TextSize = 9
+        ShieldText.ZIndex = 2
+        ShieldText.Parent = ShieldBg
+
+        -- Simpan referensi objek untuk diupdate nanti
+        EnemyCards[enemyName] = {
+            Card = Card,
+            NameLabel = NameLabel,
+            HPFill = HPFill,
+            HPText = HPText,
+            ShieldBg = ShieldBg,
+            ShieldFill = ShieldFill,
+            ShieldText = ShieldText
+        }
+        return EnemyCards[enemyName]
+    end
+
+    Misc:Toggle({
+        Title = "Live Enemy Tracker (Visual)",
+        Desc = "Shows beautiful health & shield bars for alive enemies.",
+        Value = Globals.EnemyTracker or false,
+        Callback = function(v)
+            Globals.EnemyTracker = v
+            SetSetting("EnemyTracker", v)
+
+            if v then
+                local ScrollList = CreateTrackerUI()
+                
+                TrackerConnection = RunService.RenderStepped:Connect(function()
+                    if not Globals.EnemyTracker then return end
+                    
+                    local EnemyData = {}
+                    local NPCs = workspace:FindFirstChild("NPCs")
+                    
+                    if NPCs then
+                        for _, enemy in ipairs(NPCs:GetChildren()) do
+                            local pointer = enemy:FindFirstChild("RootPointer")
+                            if pointer and pointer.Value then
+                                local state = pointer.Value
+                                local health = state:GetAttribute("Health") or 0
+                                
+                                if health > 0 then
+                                    local maxHealth = state:GetAttribute("MaxHealth") or health
+                                    local shield = state:GetAttribute("Shield") or 0
+                                    local maxShield = state:GetAttribute("MaxShield") or shield
+                                    
+                                    local name = enemy.Name
+                                    if not EnemyData[name] then
+                                        EnemyData[name] = {Count = 0, HP = 0, MaxHP = 0, Shield = 0, MaxShield = 0}
+                                    end
+                                    
+                                    EnemyData[name].Count += 1
+                                    EnemyData[name].HP += health
+                                    EnemyData[name].MaxHP += maxHealth
+                                    EnemyData[name].Shield += shield
+                                    EnemyData[name].MaxShield += maxShield
+                                end
+                            end
+                        end
+                    end
+
+                    -- Update UI Cache
+                    for name, data in pairs(EnemyData) do
+                        local cardUI = EnemyCards[name] or CreateEnemyCard(name, ScrollList)
+                        
+                        cardUI.Card.Visible = true
+                        
+                        -- Cek jika boss (biasanya namanya mengandung 'Boss' atau MaxHP nya gila-gilaan)
+                        local isBoss = string.find(string.lower(name), "boss") or data.MaxHP > 10000
+                        local icon = isBoss and "💀" or "👾"
+                        
+                        cardUI.NameLabel.Text = string.format("%s %s (x%d)", icon, name, data.Count)
+
+                        -- Kalkulasi Health Bar
+                        local hpPercent = math.clamp(data.HP / math.max(1, data.MaxHP), 0, 1)
+                        cardUI.HPFill.Size = UDim2.new(hpPercent, 0, 1, 0)
+                        cardUI.HPText.Text = string.format("%s / %s", FormatNumber(data.HP), FormatNumber(data.MaxHP))
+
+                        -- Kalkulasi Shield Bar
+                        if data.MaxShield > 0 then
+                            cardUI.ShieldBg.Visible = true
+                            cardUI.Card.Size = UDim2.new(1, 0, 0, 62) -- Perlebar kartu ke bawah untuk menampung shield
+                            
+                            local shieldPercent = math.clamp(data.Shield / math.max(1, data.MaxShield), 0, 1)
+                            cardUI.ShieldFill.Size = UDim2.new(shieldPercent, 0, 1, 0)
+                            cardUI.ShieldText.Text = string.format("🛡️ %s / %s", FormatNumber(data.Shield), FormatNumber(data.MaxShield))
+                        else
+                            cardUI.ShieldBg.Visible = false
+                            cardUI.Card.Size = UDim2.new(1, 0, 0, 45) -- Ukuran normal tanpa shield
+                        end
+                        
+                        -- LayoutOrder: Urutkan boss/musuh terkuat di atas
+                        cardUI.Card.LayoutOrder = -math.floor(data.MaxHP)
+                    end
+
+                    -- Sembunyikan kartu musuh yang sudah mati / tidak ada
+                    for name, cardUI in pairs(EnemyCards) do
+                        if not EnemyData[name] then
+                            cardUI.Card.Visible = false
+                        end
+                    end
+                end)
+            else
+                if TrackerConnection then TrackerConnection:Disconnect() end
+                if TrackerUI then TrackerUI:Destroy() end
+            end
         end
     })
 
