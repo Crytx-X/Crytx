@@ -2322,6 +2322,48 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Section({Title = "Gatling Gun"})
+    Misc:Toggle({
+        Title = "Gatling Silent Aim (Magic Bullets)",
+        Desc = "Peluru otomatis mengejar musuh meskipun tembakan meleset (Khusus saat manual FPS)",
+        Value = false,
+        Callback = function(state)
+            Globals.GatlingSilentAim = state
+            
+            if state then
+                local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
+                
+                -- Menyimpan fungsi original
+                if not Globals.OriginalGatlingFire then
+                    Globals.OriginalGatlingFire = ggchannel.fireServer
+                end
+                
+                -- Hook fungsi fireServer khusus untuk Gatling
+                ggchannel.fireServer = function(self, eventName, ...)
+                    local args = {...}
+                    if Globals.GatlingSilentAim and eventName == "Fire" then
+                        -- Cari musuh (menggunakan logic Auto Gatling kamu)
+                        local targetPos = nil
+                        if Globals.CurrentTarget and Globals.CurrentTarget:FindFirstChild("HumanoidRootPart") then
+                            targetPos = Globals.CurrentTarget.HumanoidRootPart.Position
+                        end
+                        
+                        -- Jika ada musuh, ganti target tembakan (args[1]) ke posisi musuh
+                        if targetPos then
+                            args[1] = targetPos
+                        end
+                    end
+                    return Globals.OriginalGatlingFire(self, eventName, unpack(args))
+                end
+            else
+                -- Kembalikan fungsi normal jika dimatikan
+                if Globals.OriginalGatlingFire then
+                    local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
+                    ggchannel.fireServer = Globals.OriginalGatlingFire
+                end
+            end
+        end
+    })
+
     Misc:Textbox({
         Title = "Cooldown:",
         Desc = "",
