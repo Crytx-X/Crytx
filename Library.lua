@@ -2164,7 +2164,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatlingbeta",
+        Title = "Enable Auto Gatling",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
@@ -2195,7 +2195,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if state then
                 Window:Notify({
                     Title = "ADS",
-                    Desc = "Auto Gatling: Aimbot LookVector Enabled",
+                    Desc = "Auto Gatling: Perfect Laser Beam Enabled",
                     Time = 3
                 })
 
@@ -2236,7 +2236,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 if not isReloading then
                                     pcall(function() ggchannel:fireServer("Reload") end)
                                 end
-                                task.wait(0.2) -- Beri jeda agak lama saat reload agar server tidak rate-limit
+                                task.wait(0.2) 
                                 continue 
                             end
                         end
@@ -2271,42 +2271,40 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
 
                         -- ==============================================================================
-                        -- // LOOKVECTOR AIMBOT (Mengunci Arah Depan Musuh)
+                        -- // PERFECT LASER BEAM AIMBOT (Lurus & Presisi Tinggi)
                         -- ==============================================================================
                         if best_enemy and target then
                             Globals.CurrentTarget = best_enemy
                             ApplyTargetChams(best_enemy)
 
-                            -- Posisi target saat ini
                             local base_pos = target.Position
-                            -- Arah wajah musuh (kemana dia akan berjalan)
-                            local forward_dir = target.CFrame.LookVector
+                            -- Ambil arah hadap musuh
+                            local look_dir = target.CFrame.LookVector
+                            
+                            -- KUNCI PENTING: Datar-kan arah (Hilangkan sumbu Y) agar tembakan tidak menembus ke dalam tanah saat di jalan menanjak/menurun
+                            local flat_dir = Vector3.new(look_dir.X, 0, look_dir.Z).Unit
                             
                             local sync_time = workspace:GetAttribute("Sync")
                             local s_time_now = workspace:GetServerTimeNow()
 
-                            -- TEMBAKAN MENYEBAR KE ARAH DEPAN MUSUH
-                            for i = 1, Globals.AutoMultiply do
-                                -- Mengambil angka random dari 0.0 sampai 4.5
-                                -- (Tembakan akan bervariasi dari tepat di badan musuh, hingga sejauh 4.5 stud ke depannya)
-                                local random_lead = math.random() * 4.5 
+                            -- Panjang garis laser (dalam studs). 
+                            -- 5 studs sudah cukup untuk meng-cover ping 100-200ms dan musuh lari cepat.
+                            local max_lead_distance = 5 
+                            local multiply_count = Globals.AutoMultiply or 60
+
+                            -- MEMBARISKAN PELURU LURUS SEMPURNA
+                            for i = 1, multiply_count do
+                                -- Hitung jarak peluru ke-i (dari 0 depan badan, sampai max_lead_distance)
+                                local distance_ahead = (i / multiply_count) * max_lead_distance
                                 
-                                -- Tambahkan offset mikro X, Y, Z agar peluru mengenai kaki, badan, kepala (menghindari anticheat 1 titik)
-                                local random_spread = Vector3.new(
-                                    (math.random() - 0.5) * 1.5,
-                                    (math.random() - 0.5) * 1.5,
-                                    (math.random() - 0.5) * 1.5
-                                )
-                                
-                                -- Titik tembak final
-                                local shoot_pos = base_pos + (forward_dir * random_lead) + random_spread
+                                -- Titik tembak lurus persis ke depan jalur
+                                local shoot_pos = base_pos + (flat_dir * distance_ahead)
 
                                 pcall(function()
                                     ggchannel:fireServer("Fire", shoot_pos, sync_time, s_time_now)
                                 end)
                             end
                         else
-                            -- Bersihkan tracker jika tidak ada musuh
                             if Globals.CurrentHighlight then
                                 Globals.CurrentHighlight:Destroy()
                                 Globals.CurrentHighlight = nil
