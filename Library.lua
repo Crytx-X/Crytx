@@ -2177,6 +2177,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local GroupCards = {} 
     local EnemyPills = {} 
     local CachedModeModule = nil
+    local CachedModeName = nil
     local LastProcessedWave = -1
 
     -- Format Angka (1500 -> 1.5K)
@@ -2187,40 +2188,64 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         else return tostring(math.floor(n)) end
     end
 
-    -- Sistem Pencarian Module Sesuai Path Asli:
-    -- ReplicatedStorage.Content.Gamemodes.[Mode].Difficulties.[Difficulty].Waves
+    -- Sistem Pencarian Module SUPER AGRESIF (Support Sandbox)
     local function GetModeDataModule()
-        if CachedModeModule then return CachedModeModule, "Cached" end
+        if CachedModeModule then return CachedModeModule, CachedModeName end
         
         local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        local difficulty = "Unknown"
+        local primaryDiff = "Unknown"
+        local searchTerms = {}
+        local stateDump = ""
         
         if state then
-            local diffObj = state:FindFirstChild("Difficulty")
-            if diffObj and diffObj.Value and diffObj.Value ~= "" then 
-                difficulty = diffObj.Value 
+            -- Kumpulkan semua StringValue di State untuk mencari difficulty asli yang disembunyikan
+            for _, child in ipairs(state:GetChildren()) do
+                if child:IsA("StringValue") and child.Value ~= "" then
+                    table.insert(searchTerms, child.Value)
+                    stateDump = stateDump .. child.Name .. "=" .. child.Value .. " | "
+                    if child.Name == "Difficulty" then
+                        primaryDiff = child.Value
+                        table.insert(searchTerms, 1, child.Value) -- Prioritaskan Difficulty
+                    end
+                end
             end
         end
 
-        if difficulty == "Unknown" then return nil, "State Not Found" end
+        if primaryDiff == "Unknown" then return nil, "State Not Found" end
 
         local gamemodes = ReplicatedStorage:FindFirstChild("Content") and ReplicatedStorage.Content:FindFirstChild("Gamemodes")
         
         if gamemodes then
-            -- Mencari folder difficulty (misal: "Easy", "Hardcore", dll)
-            for _, folder in ipairs(gamemodes:GetDescendants()) do
-                if folder:IsA("Folder") and folder.Name:lower() == difficulty:lower() then
-                    local wavesMod = folder:FindFirstChild("Waves")
-                    -- Pastikan file "Waves" ada dan merupakan ModuleScript
-                    if wavesMod and wavesMod:IsA("ModuleScript") then
-                        CachedModeModule = wavesMod
-                        return CachedModeModule, difficulty
+            -- 1. Coba cari folder berdasarkan semua term yang ada di State
+            for _, term in ipairs(searchTerms) do
+                for _, folder in ipairs(gamemodes:GetDescendants()) do
+                    if folder:IsA("Folder") and folder.Name:lower() == term:lower() then
+                        local wavesMod = folder:FindFirstChild("Waves")
+                        if wavesMod and wavesMod:IsA("ModuleScript") then
+                            CachedModeModule = wavesMod
+                            CachedModeName = term
+                            return CachedModeModule, CachedModeName
+                        end
+                    end
+                end
+            end
+            
+            -- 2. FALLBACK KHUSUS SANDBOX (Jika tidak ketemu, paksa baca module Easy)
+            if primaryDiff:lower() == "sandbox" then
+                for _, folder in ipairs(gamemodes:GetDescendants()) do
+                    if folder:IsA("Folder") and folder.Name:lower() == "easy" then
+                        local wavesMod = folder:FindFirstChild("Waves")
+                        if wavesMod and wavesMod:IsA("ModuleScript") then
+                            CachedModeModule = wavesMod
+                            CachedModeName = "Easy (Sandbox Fallback)"
+                            return CachedModeModule, CachedModeName
+                        end
                     end
                 end
             end
         end
         
-        return nil, difficulty
+        return nil, "Missing Data. Dump: " .. stateDump
     end
 
     -- Ambil wave instan tanpa task.wait (Anti Lag)
@@ -2310,11 +2335,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         WaveInfoLabel.Size = UDim2.new(1, -20, 0, 20)
         WaveInfoLabel.Position = UDim2.new(0, 10, 0, 30)
         WaveInfoLabel.BackgroundTransparency = 1
-        WaveInfoLabel.Text = "Waiting for Wave 1..."
+        WaveInfoLabel.Text = "Loading..."
         WaveInfoLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
         WaveInfoLabel.Font = Enum.Font.GothamSemibold
-        WaveInfoLabel.TextSize = 11
+        WaveInfoLabel.TextSize = 10
         WaveInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+        WaveInfoLabel.TextWrapped = true
         WaveInfoLabel.Parent = MainFrame
 
         local UpcomingScroll = Instance.new("ScrollingFrame")
@@ -2504,7 +2530,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         local modeDataModule, stateDiffName = GetModeDataModule()
                         if modeDataModule then
-                            -- Membaca ModuleScript Wave dengan pcall (agar tidak crash jika server-side protected)
                             local success, modeData = pcall(function() return require(modeDataModule) end)
                             
                             if success and type(modeData) == "table" and modeData.Waves then
@@ -2525,7 +2550,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         clearBonus = waveCash * pct
                                     end
                                 end)
-                                WaveInfoLabel.Text = string.format("💰 Cash: $%d | Bonus: $%d", math.floor(waveCash), math.floor(clearBonus))
+                                WaveInfoLabel.Text = string.format("Mode: %s | Cash: $%d | Bonus: $%d", stateDiffName, math.floor(waveCash), math.floor(clearBonus))
 
                                 -- Tampilkan Data Musuh
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
@@ -2549,14 +2574,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     CreateUpcomingEntry(UpcomingScroll, "No more waves or MAX Wave reached.", Color3.fromRGB(150, 150, 150))
                                 end
                             else
-                                -- Jika require Error (Misal terblokir security server)
                                 WaveInfoLabel.Text = "Error: Failed to read module data"
-                                CreateUpcomingEntry(UpcomingScroll, tostring(modeData), Color3.fromRGB(255, 100, 100))
+                                CreateUpcomingEntry(UpcomingScroll, "Data couldn't be loaded properly.", Color3.fromRGB(255, 100, 100))
+                                CachedModeModule = nil -- Reset Cache jika error baca tabel
                             end
                         else
-                            -- Jika module "Waves" tidak ditemukan di path ReplicatedStorage
-                            WaveInfoLabel.Text = "State: " .. tostring(stateDiffName)
-                            CreateUpcomingEntry(UpcomingScroll, "Module 'Waves' not found in ReplicatedStorage.", Color3.fromRGB(255, 100, 100))
+                            WaveInfoLabel.Text = "No Wave Data Found"
+                            CreateUpcomingEntry(UpcomingScroll, stateDiffName, Color3.fromRGB(255, 100, 100))
                         end
                     end
 
