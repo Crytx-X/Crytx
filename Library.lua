@@ -2167,14 +2167,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     -- // ==========================================
-    -- // ULTIMATE THREAT RADAR (INDIVIDUAL HP, SHIELD & TARGETING)
+    -- // ULTIMATE LIVE ENEMY TRACKER (INDIVIDUAL, DAMAGE FLASH, TARGET LOCK)
     -- // ==========================================
     
+    local TweenService = game:GetService("TweenService")
     local TrackerUI = nil
     local TrackerConnection = nil
-    local EnemyCards = {} -- Cache menggunakan Instance Musuh sebagai Key
-    local MAX_CARDS = 15 -- Maksimal musuh di layar agar tidak lag
+    local EnemyCards = {} -- Cache menggunakan Instance Musuh
+    local MAX_CARDS = 15 -- Maksimal musuh di layar agar tidak lag & penuh
 
+    -- Format Angka (1500 -> 1.5K)
     local function FormatNumber(n)
         if n >= 1e6 then return string.format("%.1fM", n / 1e6)
         elseif n >= 1e3 then return string.format("%.1fK", n / 1e3)
@@ -2191,10 +2193,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         TrackerUI.Parent = game:GetService("CoreGui")
 
         local MainFrame = Instance.new("Frame")
-        MainFrame.Size = UDim2.new(0, 270, 0, 380)
-        MainFrame.Position = UDim2.new(1, -280, 0.5, -190)
+        MainFrame.Size = UDim2.new(0, 260, 0, 380)
+        MainFrame.Position = UDim2.new(1, -270, 0.5, -190)
         MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-        MainFrame.BackgroundTransparency = 0.1
+        MainFrame.BackgroundTransparency = 0.15
         MainFrame.BorderSizePixel = 0
         MainFrame.Parent = TrackerUI
 
@@ -2256,10 +2258,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Card.Parent = parent
         Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
 
-        -- Efek Glow/Stroke untuk target
+        -- Efek Glow/Stroke untuk target yang dikunci
         local CardStroke = Instance.new("UIStroke")
         CardStroke.Color = Color3.fromRGB(255, 50, 50)
-        CardStroke.Thickness = 2
+        CardStroke.Thickness = 1.5
         CardStroke.Transparency = 1 -- Sembunyi by default
         CardStroke.Parent = Card
 
@@ -2285,7 +2287,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         DistLabel.TextXAlignment = Enum.TextXAlignment.Right
         DistLabel.Parent = Card
 
-        -- HP BAR
+        -- HP BAR BACKGROUND
         local HPBg = Instance.new("Frame")
         HPBg.Size = UDim2.new(1, -16, 0, 10)
         HPBg.Position = UDim2.new(0, 8, 0, 26)
@@ -2293,11 +2295,20 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HPBg.Parent = Card
         Instance.new("UICorner", HPBg).CornerRadius = UDim.new(1, 0)
 
+        -- HP BAR FILL
         local HPFill = Instance.new("Frame")
         HPFill.Size = UDim2.new(0.5, 0, 1, 0)
         HPFill.BackgroundColor3 = Color3.fromRGB(255, 75, 75)
         HPFill.Parent = HPBg
         Instance.new("UICorner", HPFill).CornerRadius = UDim.new(1, 0)
+
+        -- OVERLAY PUTIH (UNTUK EFEK SAAT TERKENA DAMAGE)
+        local HitOverlay = Instance.new("Frame")
+        HitOverlay.Size = UDim2.new(1, 0, 1, 0)
+        HitOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        HitOverlay.Transparency = 1 -- Sembunyi by default
+        HitOverlay.Parent = HPFill
+        Instance.new("UICorner", HitOverlay).CornerRadius = UDim.new(1, 0)
 
         local HPText = Instance.new("TextLabel")
         HPText.Size = UDim2.new(1, 0, 1, 0)
@@ -2332,24 +2343,27 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         ShieldText.ZIndex = 2
         ShieldText.Parent = ShieldBg
 
+        -- Simpan ke Cache
         EnemyCards[enemyObj] = {
             Card = Card,
             CardStroke = CardStroke,
             NameLabel = NameLabel,
             DistLabel = DistLabel,
             HPFill = HPFill,
+            HitOverlay = HitOverlay,
             HPText = HPText,
             ShieldBg = ShieldBg,
             ShieldFill = ShieldFill,
             ShieldText = ShieldText,
-            LastUpdate = os.clock()
+            LastHP = 0, -- Untuk tracking damage
+            LastShield = 0
         }
         return EnemyCards[enemyObj]
     end
 
     Misc:Toggle({
-        Title = "Live Threat Radar",
-        Desc = "Shows individual enemies, shields, and highlights who you are attacking.",
+        Title = "Live Individual Tracker",
+        Desc = "Shows Top 15 enemies individually. Flashes white when taking damage.",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
             Globals.EnemyTracker = v
@@ -2364,6 +2378,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     local AliveEnemies = {}
                     local NPCs = workspace:FindFirstChild("NPCs")
                     
+                    -- 1. Mengumpulkan data semua musuh
                     if NPCs then
                         for _, enemy in ipairs(NPCs:GetChildren()) do
                             local pointer = enemy:FindFirstChild("RootPointer")
@@ -2373,7 +2388,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 
                                 if health > 0 then
                                     local dist = state:GetAttribute("PathDistance") or 0
-                                    local isTargeted = (enemy == Globals.CurrentTargetModel) -- Terhubung ke sistem Radar Gatling
+                                    local isTargeted = (enemy == Globals.CurrentTargetModel) -- Cek apakah ini target Gatling kita
                                     
                                     table.insert(AliveEnemies, {
                                         Instance = enemy,
@@ -2390,17 +2405,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
 
-                    -- Prioritas Sorting: 1. Yang Sedang Diserang -> 2. Darah Tertebal
+                    -- 2. Sorting (Prioritas: Target Kita -> Darah Paling Banyak)
                     table.sort(AliveEnemies, function(a, b)
                         if a.IsTargeted and not b.IsTargeted then return true end
                         if b.IsTargeted and not a.IsTargeted then return false end
                         return a.HP > b.HP
                     end)
 
-                    -- Menandai musuh mana saja yang diproses frame ini
                     local ProcessedEnemies = {}
 
-                    -- Update UI Card (Maksimal 15 musuh teratas)
+                    -- 3. Mengupdate Top 15 Musuh ke UI
                     local loopCount = math.min(#AliveEnemies, MAX_CARDS)
                     for i = 1, loopCount do
                         local data = AliveEnemies[i]
@@ -2408,33 +2422,39 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         ProcessedEnemies[enemyObj] = true
 
                         local cardUI = EnemyCards[enemyObj] or CreateEnemyCard(enemyObj, ScrollList)
-                        cardUI.LastUpdate = os.clock()
                         cardUI.Card.Visible = true
                         cardUI.Card.LayoutOrder = i
 
-                        -- Visual Indikator Target 🎯
+                        -- DETEKSI DAMAGE (Flash Effect)
+                        if cardUI.LastHP > 0 and data.HP < cardUI.LastHP then
+                            -- Flash Bar Darah menjadi Putih jika darah berkurang
+                            cardUI.HitOverlay.Transparency = 0
+                            TweenService:Create(cardUI.HitOverlay, TweenInfo.new(0.3), {Transparency = 1}):Play()
+                        end
+                        cardUI.LastHP = data.HP
+
+                        -- INDIKATOR TARGET 🎯 (Glow Merah)
                         if data.IsTargeted then
                             cardUI.NameLabel.Text = "🎯 " .. data.Name
                             cardUI.NameLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-                            cardUI.CardStroke.Transparency = 0 -- Glow Merah menyala
-                            -- Efek denyut (Pulse)
-                            cardUI.CardStroke.Thickness = 2 + math.sin(os.clock() * 10) * 1.5 
+                            cardUI.CardStroke.Transparency = 0 
+                            cardUI.CardStroke.Thickness = 1.5 + math.sin(os.clock() * 10) * 1 -- Efek Denyut
                         else
                             local isBoss = data.MaxHP > 10000
                             cardUI.NameLabel.Text = (isBoss and "💀 " or "👾 ") .. data.Name
                             cardUI.NameLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-                            cardUI.CardStroke.Transparency = 1 -- Sembunyikan Glow
+                            cardUI.CardStroke.Transparency = 1
                         end
 
-                        -- Jarak ke markas (Membantu tahu musuh mana yang paling dekat ujung)
+                        -- Jarak ke markas
                         cardUI.DistLabel.Text = string.format("🚩 %.0f", data.Distance)
 
-                        -- Kalkulasi Health Bar
+                        -- Update Bar Darah
                         local hpPercent = math.clamp(data.HP / math.max(1, data.MaxHP), 0, 1)
                         cardUI.HPFill.Size = UDim2.new(hpPercent, 0, 1, 0)
                         cardUI.HPText.Text = string.format("%s / %s", FormatNumber(data.HP), FormatNumber(data.MaxHP))
 
-                        -- Kalkulasi Shield Bar
+                        -- Update Bar Perisai (Shield)
                         if data.MaxShield > 0 then
                             cardUI.ShieldBg.Visible = true
                             cardUI.Card.Size = UDim2.new(1, 0, 0, 56) -- Perlebar untuk shield
@@ -2448,7 +2468,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
 
-                    -- Cleanup: Hapus Kartu musuh yang mati / di luar Top 15
+                    -- 4. Bersihkan Cache (Hapus UI musuh yang mati / keluar dari Top 15)
                     for enemyObj, cardUI in pairs(EnemyCards) do
                         if not ProcessedEnemies[enemyObj] then
                             cardUI.Card:Destroy()
