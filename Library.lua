@@ -2293,10 +2293,18 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         -- // LOGIKA NEMBAK (Hanya jalan jika ada target dan Ammo > 0)
                         if target then
+                            
+                            -- [!] BAGIAN YANG DIUBAH: Menambahkan offset posisi ke depan
+                            -- Silakan ubah angka "2.5" di bawah ini. Makin besar angkanya, makin ke depan nembaknya.
+                            local jarakKedepan = 3 
+                            
+                            -- target.CFrame.LookVector adalah arah depan dari musuh
+                            local posisiNembak = target.Position + (target.CFrame.LookVector * jarakKedepan)
+
                             for i = 1, Globals.AutoMultiply do
                                 pcall(function()
                                     fireRemote:FireServer(
-                                        target.Position,
+                                        posisiNembak, -- Menggunakan posisi baru yang agak ke depan
                                         workspace:GetAttribute("Sync"),
                                         workspace:GetServerTimeNow()
                                     )
