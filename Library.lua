@@ -2322,8 +2322,92 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Section({Title = "Gatling Gun"})
-    
-    -- // Existing Settings (Tetap dipertahankan)
+
+    local SilentAimEnabled = false
+    local OriginalFireServer
+
+    local function GetNearestEnemy()
+
+        local cam = workspace.CurrentCamera
+        local closest = nil
+        local shortest = math.huge
+
+        local enemies = workspace:FindFirstChild("Enemies")
+        if not enemies then return end
+
+        for _,enemy in pairs(enemies:GetChildren()) do
+
+            local root = enemy:FindFirstChild("HumanoidRootPart")
+
+            if root then
+
+                local pos, visible = cam:WorldToViewportPoint(root.Position)
+
+                if visible then
+
+                    local dist = (Vector2.new(pos.X,pos.Y) -
+                    Vector2.new(cam.ViewportSize.X/2, cam.ViewportSize.Y/2)).Magnitude
+
+                    if dist < shortest then
+                        shortest = dist
+                        closest = root
+                    end
+
+                end
+
+            end
+
+        end
+
+        if closest then
+            return closest.Position
+        end
+
+    end
+
+
+    Misc:Toggle({
+        Title = "Silent Aim",
+        Desc = "Auto aim enemy",
+        Value = false,
+        Callback = function(state)
+
+            SilentAimEnabled = state
+
+            if state then
+
+                if not OriginalFireServer then
+
+                    OriginalFireServer = hookmetamethod(game, "__namecall", function(self,...)
+
+                        local args = {...}
+                        local method = getnamecallmethod()
+
+                        if SilentAimEnabled
+                        and method == "FireServer"
+                        and tostring(self) == "GatlingGun"
+                        and args[1] == "Fire" then
+
+                            local target = GetNearestEnemy()
+
+                            if target then
+                                args[2] = target
+                                return OriginalFireServer(self, unpack(args))
+                            end
+
+                        end
+
+                        return OriginalFireServer(self,...)
+
+                    end)
+
+                end
+
+            end
+
+        end
+    })
+
     Misc:Textbox({
         Title = "Cooldown:",
         Desc = "",
@@ -2331,9 +2415,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Value = Globals.Cooldown,
         ClearTextOnFocus = true,
         Callback = function(value)
-            if tonumber(value) then
-                Globals.Cooldown = tonumber(value)
-                SetSetting("Cooldown", tonumber(value))
+            if value ~= 0 then
+                SetSetting("Cooldown", value)
             end
         end
     })
@@ -2345,147 +2428,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Value = Globals.Multiply,
         ClearTextOnFocus = true,
         Callback = function(value)
-            if tonumber(value) then
-                Globals.Multiply = tonumber(value)
-                SetSetting("Multiply", tonumber(value))
+            if value ~= 0 then
+                SetSetting("Multiply", value)
             end
         end
     })
 
-    -- ========================================================
-    -- // NEW CHEAT TOGGLES (Otomatis Aktif Tanpa Tombol Apply)
-    -- ========================================================
-
-    -- Helper Function untuk mencari musuh terdepan (Untuk Silent Aim)
-    local function GetBestEnemyPos()
-        local best_enemy_pos = nil
-        local max_distance = -1
-        local npcs = workspace:FindFirstChild("NPCs")
-
-        if npcs then
-            for _, enemy in pairs(npcs:GetChildren()) do
-                local hitbox = enemy:FindFirstChild("HumanoidRootPart")
-                local pointer = enemy:FindFirstChild("RootPointer")
-                if hitbox and pointer and pointer.Value then
-                    local repFolder = pointer.Value
-                    local health = repFolder:GetAttribute("Health")
-                    local pathDist = repFolder:GetAttribute("PathDistance") or 0
-                    if health and health > 0 then
-                        if pathDist > max_distance then
-                            max_distance = pathDist
-                            best_enemy_pos = hitbox.Position
-                        end
-                    end
-                end
-            end
-        end
-        return best_enemy_pos
-    end
-
-    Misc:Toggle({
-        Title = "Silent Aim (Aimbot)",
-        Desc = "Automatically shoots the furthest enemy even if you look away.",
-        Value = Globals.SilentAim or false,
-        Callback = function(v)
-            Globals.SilentAim = v
-            SetSetting("SilentAim", v)
-            
-            pcall(function()
-                local net = require(game.ReplicatedStorage.Resources.Universal.NewNetwork)
-                local chan = net.Channel("GatlingGun")
-                
-                if not Globals.OrigFireServer then Globals.OrigFireServer = chan.fireServer end
-                
-                if v then
-                    -- Langsung bypass paket data peluru yang dikirim ke server
-                    chan.fireServer = function(self, action, pos, sync, timeNow, ...)
-                        if action == "Fire" then
-                            local autoPos = GetBestEnemyPos()
-                            if autoPos then pos = autoPos end
-                        end
-                        return Globals.OrigFireServer(self, action, pos, sync, timeNow, ...)
-                    end
-                else
-                    chan.fireServer = Globals.OrigFireServer
-                end
-            end)
-        end
-    })
-
-    Misc:Toggle({
-        Title = "Instant Wind-up",
-        Desc = "Minigun shoots instantly without spin-up delay.",
-        Value = Globals.InstaWind or false,
-        Callback = function(v)
-            Globals.InstaWind = v
-            SetSetting("InstaWind", v)
-            
-            pcall(function()
-                local anim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
-                if not Globals.OrigWind then Globals.OrigWind = anim._wind end
-                
-                if v then
-                    anim._wind = function(self, ...)
-                        self._windPercent = 1
-                        self._allowedToFire = true
-                        return Globals.OrigWind(self, ...)
-                    end
-                else
-                    anim._wind = Globals.OrigWind
-                end
-            end)
-        end
-    })
-
-    Misc:Toggle({
-        Title = "Infinite Ammo Bypass",
-        Desc = "Allows firing even when ammo is 0 (Client Side).",
-        Value = Globals.InfAmmo or false,
-        Callback = function(v)
-            Globals.InfAmmo = v
-            SetSetting("InfAmmo", v)
-            
-            pcall(function()
-                local anim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
-                if not Globals.OrigCanShoot then Globals.OrigCanShoot = anim._canShoot end
-                
-                if v then
-                    anim._canShoot = function(self, ...) return true end
-                else
-                    anim._canShoot = Globals.OrigCanShoot
-                end
-            end)
-        end
-    })
-
-    Misc:Toggle({
-        Title = "Spinbot (Anti-Aim)",
-        Desc = "Makes your character spin wildly to other players.",
-        Value = Globals.Spinbot or false,
-        Callback = function(v)
-            Globals.Spinbot = v
-            SetSetting("Spinbot", v)
-            
-            pcall(function()
-                local anim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
-                if not Globals.OrigRepPos then Globals.OrigRepPos = anim._replicatePosition end
-                
-                if v then
-                    anim._replicatePosition = function(self, posData)
-                        local fakePos = Vector3.new(math.random(-1000, 1000), math.random(-1000, 1000), math.random(-1000, 1000))
-                        return Globals.OrigRepPos(self, fakePos)
-                    end
-                else
-                    anim._replicatePosition = Globals.OrigRepPos
-                end
-            end)
-        end
-    })
-
-    -- ========================================================
-    -- // BUTTONS: KHUSUS UNTUK COOLDOWN & MULTIPLY (KODE LAMA)
-    -- ========================================================
-    
+    -- Variable untuk menyimpan fungsi original Gatling Gun
     local OriginalFireGun = nil
 
     Misc:Button({
