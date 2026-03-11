@@ -575,6 +575,7 @@ RunService.Heartbeat:Connect(function()
     local MaxDistance = -1
     local MaxHealth = -1
     local MinDist = math.huge
+    local MinDistancePath = math.huge -- Tambahan untuk target "Last"
     
     -- Auto Gatling priority menimpa Silent Aim priority jika Auto Gatling menyala
     local activePriority = Globals.AutoGatling and Globals.AutoGatlingPriority or Globals.TargetPriority
@@ -593,6 +594,10 @@ RunService.Heartbeat:Connect(function()
                 if health > 0 then
                     if activePriority == "First" and pathDist > MaxDistance then
                         MaxDistance = pathDist
+                        BestTargetEnemy = enemy
+                        TargetHitbox = hitbox
+                    elseif activePriority == "Last" and pathDist < MinDistancePath then -- Logika Target "Last"
+                        MinDistancePath = pathDist
                         BestTargetEnemy = enemy
                         TargetHitbox = hitbox
                     elseif activePriority == "Strongest" and health > MaxHealth then
@@ -2202,7 +2207,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Dropdown({
         Title = "Auto Gatling Priority",
         Desc = "Choose target priority for Auto Gatling",
-        List = {"First", "Strongest", "Close"},
+        List = {"First", "Last", "Strongest", "Close"}, -- Ditambah "Last"
         Value = Globals.AutoGatlingPriority or "First",
         Callback = function(choice)
             local selected = type(choice) == "table" and choice[1] or choice
@@ -2367,7 +2372,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Dropdown({
         Title = "Silent Aim Priority",
         Desc = "Choose target priority for Silent Aim",
-        List = {"First", "Strongest", "Close"},
+        List = {"First", "Last", "Strongest", "Close"}, -- Ditambah "Last"
         Value = Globals.TargetPriority, 
         Callback = function(choice)
             local selected = type(choice) == "table" and choice[1] or choice
@@ -2463,6 +2468,54 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             game:GetService("ReplicatedStorage"):WaitForChild("Network"):WaitForChild("Sticker"):WaitForChild("URE:Show"):FireServer(unpack(args))
                         end
                         task.wait()
+                    end
+                end)
+            end
+        end
+    })
+
+    Misc:Toggle({
+        Title = "Party Invite Spam (Lobby)",
+        Desc = "Spam invites to everyone in the lobby (Warning: annoying!)",
+        Value = false,
+        Callback = function(state)
+            Globals.PartySpamEnabled = state
+            
+            if state then
+                -- Fitur ini hanya bisa dipakai di LOBBY
+                if GameState ~= "LOBBY" then
+                    Window:Notify({
+                        Title = "Error",
+                        Desc = "You can only use this feature in the Lobby!",
+                        Time = 3,
+                        Type = "error"
+                    })
+                    Globals.PartySpamEnabled = false
+                    return
+                end
+
+                Window:Notify({Title = "ADS", Desc = "Party Spam Enabled!", Time = 3, Type = "normal"})
+                
+                task.spawn(function()
+                    local plrs = game:GetService("Players")
+                    local rfunc = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+                    
+                    while Globals.PartySpamEnabled do
+                        pcall(function()
+                            -- Buat Party
+                            rfunc:InvokeServer("Party", "CreateParty")
+                            
+                            -- Invite semua orang
+                            for _, plr in ipairs(plrs:GetPlayers()) do
+                                if plr ~= plrs.LocalPlayer then
+                                    rfunc:InvokeServer("Party", "InvitePlayer", plr)
+                                end
+                            end
+                            
+                            -- Keluar Party
+                            rfunc:InvokeServer("Party", "LeaveParty")
+                        end)
+                        task.wait(0.2) -- Diberi delay 0.2 agar kamu tidak kena kick "Error 268" dari server
                     end
                 end)
             end
