@@ -2164,7 +2164,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Toggle({
-        Title = "Enable Auto Gatlingrombak",
+        Title = "Enable Auto Gatlingrombak2",
         Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
