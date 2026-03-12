@@ -2553,7 +2553,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     Misc:Toggle({
-        Title = "Advanced Enemy Radarss",
+        Title = "Advanced Enemy Radar",
         Desc = "Displays Upcoming Waves and Live Enemy Tracker",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
@@ -2563,6 +2563,65 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if v then
                 local LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
                 
+                -- [PATCH UI]: Perbaiki padding agar outline tidak kepotong
+                local UpPad = UpcomingScroll:FindFirstChildOfClass("UIPadding")
+                if UpPad then UpPad.PaddingTop = UDim.new(0, 3) end
+                
+                local LivePad = LiveScroll:FindFirstChildOfClass("UIPadding")
+                if LivePad then LivePad.PaddingTop = UDim.new(0, 3) end
+
+                -- [PATCH MODIFIER]: Fungsi Ekstraktor Brutal untuk Live Enemy
+                local function ExtractLiveModifiers(enemyObj, stateObj)
+                    local activeMods = {}
+                    local foundMods = {}
+
+                    local function addMod(name)
+                        local str = tostring(name)
+                        local mapped = TDS_Modifiers[str] or str
+                        if mapped == "true" or mapped == "false" or tonumber(mapped) then return end
+                        
+                        if not foundMods[mapped] then
+                            foundMods[mapped] = true
+                            table.insert(activeMods, mapped)
+                        end
+                    end
+
+                    if not stateObj then return "" end
+
+                    -- 1. Cek folder "Modifiers" (TDS Update terbaru)
+                    local modFolder = stateObj:FindFirstChild("Modifiers") or enemyObj:FindFirstChild("Modifiers")
+                    if modFolder then
+                        for _, child in ipairs(modFolder:GetChildren()) do
+                            addMod(child.Name)
+                        end
+                    end
+
+                    -- 2. Cek Attributes langsung di State (TDS Update lama/standar)
+                    local attrs = stateObj:GetAttributes()
+                    for k, val in pairs(attrs) do
+                        if val == true then
+                            -- Pastikan attribute ini memang nama modifier yg valid
+                            for _, knownMod in pairs(TDS_Modifiers) do
+                                if k == knownMod then addMod(k); break end
+                            end
+                        end
+                    end
+
+                    -- 3. Cek Attribute "Modifiers" dalam format JSON (Jaga-jaga)
+                    local attrMod = stateObj:GetAttribute("Modifiers")
+                    if type(attrMod) == "string" and attrMod:sub(1,1) == "[" then
+                        pcall(function()
+                            local decoded = game:GetService("HttpService"):JSONDecode(attrMod)
+                            for _, m in pairs(decoded) do addMod(m) end
+                        end)
+                    end
+
+                    if #activeMods > 0 then
+                        return " <font color='#FFBB55'>[" .. table.concat(activeMods, ", ") .. "]</font>"
+                    end
+                    return ""
+                end
+
                 TrackerConnection = RunService.Heartbeat:Connect(function()
                     if not Globals.EnemyTracker then return end
                     
@@ -2575,7 +2634,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local nextWaveNum = currentWave + 1
                         UpcomingTitle.Text = string.format("🔮 UPCOMING WAVE <font color='#888899'>[%d]</font>", nextWaveNum)
                         
-                        -- Destroy Frames, not just TextLabels, because we use custom Frame entries now
                         for _, child in ipairs(UpcomingScroll:GetChildren()) do 
                             if child:IsA("Frame") then child:Destroy() end 
                         end
@@ -2600,7 +2658,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                             if modeData.ExtraOptions and modeData.ExtraOptions.ClearBonus then
                                                 local playersCount = #game:GetService("Players"):GetPlayers()
                                                 local bonusPct = modeData.ExtraOptions.ClearBonus.Percentage or 0.2
-                                                
                                                 if playersCount <= 1 and modeData.ExtraOptions.ClearBonus.SoloPercentage then
                                                     bonusPct = modeData.ExtraOptions.ClearBonus.SoloPercentage
                                                 end
@@ -2627,7 +2684,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
                                         local eMods = ParseModifiers(enemy.Modifiers)
-                                        -- Determine left strip color based on threat
                                         local stripColor = Color3.fromRGB(150, 150, 160)
                                         if eMods ~= "" then stripColor = Color3.fromRGB(255, 80, 80) end
                                         if enemy.Name:find("Boss") or enemy.Name:find("King") then stripColor = Color3.fromRGB(180, 80, 255) end
@@ -2663,27 +2719,17 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local health = state:GetAttribute("Health") or 0
                                 
                                 if health > 0 then
-                                    local name = enemy.Name:gsub("Enemy$", "")
+                                    local baseName = enemy.Name:gsub("Enemy$", "")
                                     local shield = state:GetAttribute("Shield") or 0
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    -- Fetch Modifiers
-                                    local activeMods = {}
-                                    local attrs = state:GetAttributes()
-                                    for _, mName in pairs(TDS_Modifiers) do
-                                        if attrs[mName] == true then
-                                            table.insert(activeMods, mName)
-                                        end
-                                    end
-
-                                    local modsText = ""
-                                    if #activeMods > 0 then
-                                        modsText = " <font color='#FFBB55'>[" .. table.concat(activeMods, ", ") .. "]</font>"
-                                    end
-
-                                    local groupKey = name .. "_" .. table.concat(activeMods, "_")
-                                    local displayName = name .. modsText
+                                    -- Inject Mods
+                                    local modsText = ExtractLiveModifiers(enemy, state)
+                                    
+                                    -- Gabungkan nama dan Modifiers agar musuh Hidden/Bloated terpisah grupnya
+                                    local displayName = baseName .. modsText
+                                    local groupKey = baseName .. "_" .. modsText
 
                                     if not EnemyGroups[groupKey] then 
                                         EnemyGroups[groupKey] = { Key = groupKey, DisplayName = displayName, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
@@ -2734,7 +2780,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                             pillUI.LastHP, pillUI.LastShield = indv.HP, indv.Shield
 
-                            -- Target Indicator Lock-on Animation
                             if indv.IsTargeted then 
                                 pillUI.TargetStroke.Transparency = 0
                                 pillUI.TargetStroke.Thickness = 1.5 + math.sin(os.clock() * 15) * 1 
