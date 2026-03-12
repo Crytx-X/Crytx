@@ -2660,7 +2660,52 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local health = state:GetAttribute("Health") or 0
                                 
                                 if health > 0 then
-                                    local name = enemy.Name:gsub("Enemy$", "")
+                                    local baseName = enemy.Name:gsub("Enemy$", "")
+                                    
+                                    -- Check Modifiers for Live Enemy
+                                    local liveMods = {}
+                                    local foundMods = {}
+                                    
+                                    local function addMod(modKey)
+                                        local modName = TDS_Modifiers[tostring(modKey)] or tostring(modKey)
+                                        if not foundMods[modName] then
+                                            foundMods[modName] = true
+                                            table.insert(liveMods, modName)
+                                        end
+                                    end
+
+                                    -- Check for Modifiers Folder
+                                    local modsFolder = state:FindFirstChild("Modifiers")
+                                    if modsFolder then
+                                        for _, mod in ipairs(modsFolder:GetChildren()) do
+                                            addMod(mod.Name)
+                                        end
+                                    end
+
+                                    -- Check for True Attributes directly on State
+                                    for attr, val in pairs(state:GetAttributes()) do
+                                        if val == true then
+                                            if TDS_Modifiers[tostring(attr)] then
+                                                addMod(attr)
+                                            else
+                                                -- Fallback match for names like "Bloated" stored directly
+                                                for _, knownMod in pairs(TDS_Modifiers) do
+                                                    if attr == knownMod then
+                                                        addMod(attr)
+                                                        break
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+
+                                    -- Append modifiers to name e.g. "Fallen (Bloated)"
+                                    local modString = ""
+                                    if #liveMods > 0 then
+                                        modString = " <font color='#FFBB55'>(" .. table.concat(liveMods, ", ") .. ")</font>"
+                                    end
+                                    
+                                    local name = baseName .. modString
                                     local shield = state:GetAttribute("Shield") or 0
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
