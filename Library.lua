@@ -2177,6 +2177,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local GroupCards = {} 
     local EnemyPills = {} 
     local CachedModeModule = nil
+    local CachedModeName = nil
     local LastProcessedWave = -1
 
     -- Format Angka (1500 -> 1.5K)
@@ -2187,40 +2188,69 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         else return tostring(math.floor(n)) end
     end
 
-    -- Sistem Pencarian Module Sesuai Path Asli:
-    -- ReplicatedStorage.Content.Gamemodes.[Mode].Difficulties.[Difficulty].Waves
+    -- Sistem Pencarian Module SUPER AKURAT (Prioritas Path Survival)
     local function GetModeDataModule()
-        if CachedModeModule then return CachedModeModule, "Cached" end
+        if CachedModeModule then return CachedModeModule, CachedModeName end
         
         local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        local difficulty = "Unknown"
+        local difficulty = "Easy" -- Default Fallback
+        local modeName = "Survival" -- Default Game Mode
         
         if state then
             local diffObj = state:FindFirstChild("Difficulty")
             if diffObj and diffObj.Value and diffObj.Value ~= "" then 
                 difficulty = diffObj.Value 
             end
+            
+            local modeObj = state:FindFirstChild("Mode")
+            if modeObj and modeObj.Value and modeObj.Value ~= "" then 
+                modeName = modeObj.Value 
+            end
         end
 
-        if difficulty == "Unknown" then return nil, "State Not Found" end
+        -- Jika sedang di Sandbox, kita paksa ngambil data dari "Easy" (karena Sandbox basicnya dari Easy/Normal)
+        if difficulty:lower() == "sandbox" then
+            difficulty = "Easy"
+            CachedModeName = "Sandbox"
+        else
+            CachedModeName = difficulty
+        end
 
         local gamemodes = ReplicatedStorage:FindFirstChild("Content") and ReplicatedStorage.Content:FindFirstChild("Gamemodes")
         
         if gamemodes then
-            -- Mencari folder difficulty (misal: "Easy", "Hardcore", dll)
+            -- 1. MENEMBAK LURUS KE PATH YANG BENAR (Survival -> Difficulties -> [Difficulty] -> Waves)
+            -- Ini mencegah script salah mengambil folder event seperti Pizza Party
+            local targetModeFolder = gamemodes:FindFirstChild(modeName) or gamemodes:FindFirstChild("Survival")
+            
+            if targetModeFolder then
+                local diffFolder = targetModeFolder:FindFirstChild("Difficulties")
+                if diffFolder then
+                    for _, diff in ipairs(diffFolder:GetChildren()) do
+                        if diff.Name:lower() == difficulty:lower() then
+                            local wavesMod = diff:FindFirstChild("Waves")
+                            if wavesMod and wavesMod:IsA("ModuleScript") then
+                                CachedModeModule = wavesMod
+                                return CachedModeModule, CachedModeName
+                            end
+                        end
+                    end
+                end
+            end
+            
+            -- 2. Jika tidak ketemu di Survival, baru kita cari di seluruh folder (Fallback Darurat)
             for _, folder in ipairs(gamemodes:GetDescendants()) do
                 if folder:IsA("Folder") and folder.Name:lower() == difficulty:lower() then
                     local wavesMod = folder:FindFirstChild("Waves")
-                    -- Pastikan file "Waves" ada dan merupakan ModuleScript
                     if wavesMod and wavesMod:IsA("ModuleScript") then
                         CachedModeModule = wavesMod
-                        return CachedModeModule, difficulty
+                        return CachedModeModule, CachedModeName .. " (Fallback)"
                     end
                 end
             end
         end
         
-        return nil, difficulty
+        return nil, "Missing Data"
     end
 
     -- Ambil wave instan tanpa task.wait (Anti Lag)
@@ -2243,15 +2273,37 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return 0
     end
 
-    -- Parser untuk Modifier (Menjadikan Boss/Bloated mudah dibaca)
+    -- Penerjemah Angka Modifier menjadi Teks Asli (Boss, Lead, Flying, dll)
+    local function GetModifierName(val)
+        if type(val) == "string" then return val:gsub("Modifier%.", "") end
+        if typeof(val) == "EnumItem" then return val.Name end
+        
+        -- Hack: Mengambil module Enum bawaan game untuk mencocokkan angka dengan nama Modifier
+        local success, result = pcall(function()
+            local TDSEnum = require(game:GetService("ReplicatedStorage").Shared.Modules.Enum)
+            if TDSEnum and TDSEnum.Modifier then
+                for name, enumVal in pairs(TDSEnum.Modifier) do
+                    -- Jika cocok, kembalikan namanya (Contoh: value 20 -> kembalikan "Boss")
+                    if enumVal == val or (type(enumVal) == "table" and enumVal.Value == val) then
+                        return name
+                    end
+                end
+            end
+            return nil
+        end)
+
+        if success and result then return result end
+        return tostring(val) -- Fallback ke angka jika gagal
+    end
+
+    -- Parser untuk Modifier
     local function ParseModifiers(modTable)
         if type(modTable) ~= "table" then return "" end
         local mods = {}
         for k, v in pairs(modTable) do
             if v then
-                local str = tostring(k)
-                str = str:gsub("Modifier%.", "") 
-                table.insert(mods, str)
+                local modName = GetModifierName(k)
+                table.insert(mods, modName)
             end
         end
         if #mods > 0 then
@@ -2310,11 +2362,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         WaveInfoLabel.Size = UDim2.new(1, -20, 0, 20)
         WaveInfoLabel.Position = UDim2.new(0, 10, 0, 30)
         WaveInfoLabel.BackgroundTransparency = 1
-        WaveInfoLabel.Text = "Waiting for Wave 1..."
+        WaveInfoLabel.Text = "Loading..."
         WaveInfoLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
         WaveInfoLabel.Font = Enum.Font.GothamSemibold
-        WaveInfoLabel.TextSize = 11
+        WaveInfoLabel.TextSize = 10
         WaveInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+        WaveInfoLabel.TextWrapped = true
         WaveInfoLabel.Parent = MainFrame
 
         local UpcomingScroll = Instance.new("ScrollingFrame")
@@ -2504,7 +2557,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         local modeDataModule, stateDiffName = GetModeDataModule()
                         if modeDataModule then
-                            -- Membaca ModuleScript Wave dengan pcall (agar tidak crash jika server-side protected)
                             local success, modeData = pcall(function() return require(modeDataModule) end)
                             
                             if success and type(modeData) == "table" and modeData.Waves then
@@ -2525,7 +2577,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         clearBonus = waveCash * pct
                                     end
                                 end)
-                                WaveInfoLabel.Text = string.format("💰 Cash: $%d | Bonus: $%d", math.floor(waveCash), math.floor(clearBonus))
+                                WaveInfoLabel.Text = string.format("Mode: %s | Cash: $%d | Bonus: $%d", stateDiffName, math.floor(waveCash), math.floor(clearBonus))
 
                                 -- Tampilkan Data Musuh
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
@@ -2536,9 +2588,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         local eMods = ParseModifiers(enemy.Modifiers)
                                         
                                         local color = Color3.fromRGB(220, 220, 220)
+                                        -- Warna Berdasarkan Modifier
                                         if eMods:find("Boss") then color = Color3.fromRGB(255, 100, 100) end
                                         if eMods:find("Hidden") then color = Color3.fromRGB(150, 150, 255) end
                                         if eMods:find("Bloated") then color = Color3.fromRGB(255, 150, 50) end
+                                        if eMods:find("Lead") then color = Color3.fromRGB(150, 150, 150) end
+                                        if eMods:find("Flying") then color = Color3.fromRGB(150, 255, 255) end
                                         
                                         local text = string.format("<b>x%d %s</b> <font color=\"#888888\">(%.1fs)</font><font color=\"#ff8888\">%s</font>", eAmt, eName, eDelay, eMods)
                                         CreateUpcomingEntry(UpcomingScroll, text, color)
@@ -2549,14 +2604,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     CreateUpcomingEntry(UpcomingScroll, "No more waves or MAX Wave reached.", Color3.fromRGB(150, 150, 150))
                                 end
                             else
-                                -- Jika require Error (Misal terblokir security server)
                                 WaveInfoLabel.Text = "Error: Failed to read module data"
-                                CreateUpcomingEntry(UpcomingScroll, tostring(modeData), Color3.fromRGB(255, 100, 100))
+                                CreateUpcomingEntry(UpcomingScroll, "Data couldn't be loaded properly.", Color3.fromRGB(255, 100, 100))
+                                CachedModeModule = nil -- Reset Cache jika error baca tabel
                             end
                         else
-                            -- Jika module "Waves" tidak ditemukan di path ReplicatedStorage
-                            WaveInfoLabel.Text = "State: " .. tostring(stateDiffName)
-                            CreateUpcomingEntry(UpcomingScroll, "Module 'Waves' not found in ReplicatedStorage.", Color3.fromRGB(255, 100, 100))
+                            WaveInfoLabel.Text = "No Wave Data Found"
+                            CreateUpcomingEntry(UpcomingScroll, stateDiffName, Color3.fromRGB(255, 100, 100))
                         end
                     end
 
