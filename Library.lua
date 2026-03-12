@@ -2550,7 +2550,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     Misc:Toggle({
-        Title = "Advanced Enemy Radars",
+        Title = "Advanced Enemy Radar",
         Desc = "Displays Upcoming Waves and Live Enemy Tracker",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
