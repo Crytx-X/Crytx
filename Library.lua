@@ -2167,7 +2167,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     -- // ==========================================
-    -- // ADVANCED RADAR: UPCOMING WAVE & LIVE ENEMY
+    -- // ADVANCED RADAR: UPCOMING WAVE & LIVE ENEMY (PREMIUM EDITION)
     -- // ==========================================
     
     local TrackerUI, TrackerConnection
@@ -2175,7 +2175,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local CachedModeModule, CachedModeName
     local LastProcessedWave = -1
 
-    -- Format Angka (1500 -> 1.5K)
     local function FormatNumber(n)
         if type(n) ~= "number" then return "0" end
         if n >= 1e6 then return string.format("%.1fM", n / 1e6)
@@ -2184,7 +2183,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return tostring(math.floor(n))
     end
 
-    -- Sistem Pencarian Module Waves (TANPA DEFAULT & TANPA SANDBOX)
     local function GetModeDataModule()
         if CachedModeModule then return CachedModeModule, CachedModeName end
         
@@ -2198,21 +2196,15 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or nil
 
         if not modeName or not diffName then return nil, "None" end
-
         CachedModeName = diffName
 
         local content = ReplicatedStorage:FindFirstChild("Content")
         local gamemodes = content and content:FindFirstChild("Gamemodes")
         if not gamemodes then return nil, "Missing Gamemodes Folder" end
 
-        local function cleanString(str)
-            return str:lower():gsub("[%s%p]", "")
-        end
+        local function cleanString(str) return str:lower():gsub("[%s%p]", "") end
+        local safeMode, safeDiff = cleanString(modeName), cleanString(diffName)
 
-        local safeMode = cleanString(modeName)
-        local safeDiff = cleanString(diffName)
-
-        -- METHOD A: Direct Path
         local mFolder = gamemodes:FindFirstChild(modeName)
         if mFolder then
             local diffsFolder = mFolder:FindFirstChild("Difficulties")
@@ -2225,7 +2217,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             end
         end
 
-        -- METHOD B: Fuzzy Search
         for _, mDir in ipairs(gamemodes:GetChildren()) do
             if cleanString(mDir.Name) == safeMode or string.find(cleanString(mDir.Name), safeMode) then
                 local diffsDir = mDir:FindFirstChild("Difficulties")
@@ -2242,7 +2233,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             end
         end
 
-        -- METHOD C: Deep Scan
         for _, folder in ipairs(gamemodes:GetDescendants()) do
             if folder:IsA("Folder") and cleanString(folder.Name) == safeDiff then
                 if folder:FindFirstChild("Waves") then
@@ -2251,7 +2241,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 end
             end
         end
-
         return nil, "Waves Not Found"
     end
 
@@ -2259,7 +2248,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local pg = LocalPlayer:FindFirstChild("PlayerGui")
         local container = pg and pg:FindFirstChild("ReactGameTopGameDisplay") 
         local waveContainer = container and container:FindFirstChild("Frame") and container.Frame:FindFirstChild("wave")
-        
         if waveContainer and waveContainer:FindFirstChild("container") then
             return tonumber(waveContainer.container.value.Text:match("^(%d+)")) or 0
         end
@@ -2297,100 +2285,138 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return #mods > 0 and " [" .. table.concat(mods, ", ") .. "]" or ""
     end
 
+    -- ==========================================
+    -- PREMIUM UI CREATION
+    -- ==========================================
     local function CreateTrackerUI()
         if TrackerUI then TrackerUI:Destroy() end
         GroupCards, EnemyPills, LastProcessedWave, CachedModeModule = {}, {}, -1, nil
         
         TrackerUI = Instance.new("ScreenGui")
-        TrackerUI.Name = "ADS_AdvancedTracker"
+        TrackerUI.Name = "ADS_PremiumTracker"
         TrackerUI.ResetOnSpawn = false
         TrackerUI.Parent = game:GetService("CoreGui")
 
+        -- MAIN GLASS PANEL
         local MainFrame = Instance.new("Frame", TrackerUI)
-        MainFrame.Size = UDim2.new(0, 260, 0, 480)
-        MainFrame.Position = UDim2.new(1, -270, 0.5, -240)
-        MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
-        MainFrame.BackgroundTransparency = 0.2
-        Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
-        Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(50, 50, 65)
+        MainFrame.Size = UDim2.new(0, 270, 0, 520)
+        MainFrame.Position = UDim2.new(1, -285, 0.5, -260)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(11, 13, 20) -- Very dark, sleek blue-grey
+        MainFrame.BackgroundTransparency = 0.15 -- Acrylic feel
+        Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+        local MainStroke = Instance.new("UIStroke", MainFrame)
+        MainStroke.Color = Color3.fromRGB(80, 85, 110)
+        MainStroke.Transparency = 0.5
+        MainStroke.Thickness = 1.2
 
+        -- ================= 1. UPCOMING WAVE SECTION =================
         local UpcomingHeader = Instance.new("Frame", MainFrame)
-        UpcomingHeader.Size = UDim2.new(1, 0, 0, 28)
-        UpcomingHeader.BackgroundColor3 = Color3.fromRGB(40, 30, 15)
-        UpcomingHeader.BackgroundTransparency = 0.3
-        Instance.new("UICorner", UpcomingHeader).CornerRadius = UDim.new(0, 8)
+        UpcomingHeader.Size = UDim2.new(1, 0, 0, 32)
+        UpcomingHeader.BackgroundColor3 = Color3.fromRGB(35, 25, 45) -- Subtle purple/gold accent
+        UpcomingHeader.BackgroundTransparency = 0.4
+        Instance.new("UICorner", UpcomingHeader).CornerRadius = UDim.new(0, 10)
+        
+        -- Fix corner bleeding at the bottom of header
+        local HeaderBlocker = Instance.new("Frame", UpcomingHeader)
+        HeaderBlocker.Size = UDim2.new(1, 0, 0, 10)
+        HeaderBlocker.Position = UDim2.new(0, 0, 1, -10)
+        HeaderBlocker.BackgroundColor3 = UpcomingHeader.BackgroundColor3
+        HeaderBlocker.BorderSizePixel = 0
+        HeaderBlocker.BackgroundTransparency = UpcomingHeader.BackgroundTransparency
 
         local UpcomingTitle = Instance.new("TextLabel", UpcomingHeader)
-        UpcomingTitle.Size = UDim2.new(1, -10, 1, 0)
-        UpcomingTitle.Position = UDim2.new(0, 10, 0, 0)
+        UpcomingTitle.Size = UDim2.new(1, -16, 1, 0)
+        UpcomingTitle.Position = UDim2.new(0, 16, 0, 0)
         UpcomingTitle.BackgroundTransparency = 1
         UpcomingTitle.Text = "🔮 UPCOMING WAVE"
-        UpcomingTitle.TextColor3 = Color3.fromRGB(255, 200, 100)
+        UpcomingTitle.TextColor3 = Color3.fromRGB(255, 190, 80)
         UpcomingTitle.Font = Enum.Font.GothamBold
-        UpcomingTitle.TextSize = 12
+        UpcomingTitle.TextSize = 13
         UpcomingTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-        -- DI SINI DIUBAH: Dibuat lebih tinggi (40) agar muat 3 baris teks
         local WaveInfoLabel = Instance.new("TextLabel", MainFrame)
-        WaveInfoLabel.Size = UDim2.new(1, -20, 0, 40)
-        WaveInfoLabel.Position = UDim2.new(0, 10, 0, 30)
+        WaveInfoLabel.Size = UDim2.new(1, -32, 0, 45)
+        WaveInfoLabel.Position = UDim2.new(0, 16, 0, 38)
         WaveInfoLabel.BackgroundTransparency = 1
-        WaveInfoLabel.TextColor3 = Color3.fromRGB(180, 255, 180)
-        WaveInfoLabel.Font = Enum.Font.GothamSemibold
-        WaveInfoLabel.TextSize = 10
+        WaveInfoLabel.Font = Enum.Font.GothamMedium
+        WaveInfoLabel.TextSize = 11
         WaveInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
         WaveInfoLabel.TextYAlignment = Enum.TextYAlignment.Top
         WaveInfoLabel.RichText = true
 
-        -- DI SINI DIUBAH: ScrollFrame diturunkan posisinya karena teks info wave lebih tinggi
+        -- UPCOMING SCROLLING FRAME (DYNAMIC SCROLLING)
         local UpcomingScroll = Instance.new("ScrollingFrame", MainFrame)
         UpcomingScroll.Size = UDim2.new(1, -10, 0, 140)
-        UpcomingScroll.Position = UDim2.new(0, 5, 0, 72)
+        UpcomingScroll.Position = UDim2.new(0, 5, 0, 85)
         UpcomingScroll.BackgroundTransparency = 1
-        UpcomingScroll.ScrollBarThickness = 2
-        Instance.new("UIListLayout", UpcomingScroll).Padding = UDim.new(0, 2)
+        UpcomingScroll.ScrollBarThickness = 3
+        UpcomingScroll.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 170)
+        UpcomingScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y -- KUNCI DYNAMIC SCROLL
+        UpcomingScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+        
+        local UpcomingPadding = Instance.new("UIPadding", UpcomingScroll)
+        UpcomingPadding.PaddingLeft = UDim.new(0, 10)
+        UpcomingPadding.PaddingRight = UDim.new(0, 10)
+        
+        local UpcomingLayout = Instance.new("UIListLayout", UpcomingScroll)
+        UpcomingLayout.Padding = UDim.new(0, 4)
+        UpcomingLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
         local Divider = Instance.new("Frame", MainFrame)
-        Divider.Size = UDim2.new(1, -20, 0, 2)
-        Divider.Position = UDim2.new(0, 10, 0, 215)
-        Divider.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+        Divider.Size = UDim2.new(1, -32, 0, 1)
+        Divider.Position = UDim2.new(0, 16, 0, 235)
+        Divider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        Divider.BackgroundTransparency = 0.8
         Divider.BorderSizePixel = 0
 
+        -- ================= 2. LIVE RADAR SECTION =================
         local LiveHeader = Instance.new("Frame", MainFrame)
-        LiveHeader.Size = UDim2.new(1, 0, 0, 28)
-        LiveHeader.Position = UDim2.new(0, 0, 0, 225)
-        LiveHeader.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-        LiveHeader.BackgroundTransparency = 0.3
-        Instance.new("UICorner", LiveHeader).CornerRadius = UDim.new(0, 8)
+        LiveHeader.Size = UDim2.new(1, 0, 0, 32)
+        LiveHeader.Position = UDim2.new(0, 0, 0, 245)
+        LiveHeader.BackgroundColor3 = Color3.fromRGB(45, 25, 30) -- Subtle red accent
+        LiveHeader.BackgroundTransparency = 0.4
+        Instance.new("UICorner", LiveHeader).CornerRadius = UDim.new(0, 10)
 
         local LiveTitle = Instance.new("TextLabel", LiveHeader)
-        LiveTitle.Size = UDim2.new(1, -10, 1, 0)
-        LiveTitle.Position = UDim2.new(0, 10, 0, 0)
+        LiveTitle.Size = UDim2.new(1, -16, 1, 0)
+        LiveTitle.Position = UDim2.new(0, 16, 0, 0)
         LiveTitle.BackgroundTransparency = 1
         LiveTitle.Text = "📡 LIVE THREAT RADAR"
-        LiveTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        LiveTitle.TextColor3 = Color3.fromRGB(255, 100, 100)
         LiveTitle.Font = Enum.Font.GothamBold
-        LiveTitle.TextSize = 12
+        LiveTitle.TextSize = 13
         LiveTitle.TextXAlignment = Enum.TextXAlignment.Left
 
+        -- LIVE SCROLLING FRAME (DYNAMIC SCROLLING)
         local LiveScroll = Instance.new("ScrollingFrame", MainFrame)
-        LiveScroll.Size = UDim2.new(1, -10, 1, -260)
-        LiveScroll.Position = UDim2.new(0, 5, 0, 255)
+        LiveScroll.Size = UDim2.new(1, -10, 1, -290)
+        LiveScroll.Position = UDim2.new(0, 5, 0, 280)
         LiveScroll.BackgroundTransparency = 1
-        LiveScroll.ScrollBarThickness = 2
-        Instance.new("UIListLayout", LiveScroll).Padding = UDim.new(0, 6)
+        LiveScroll.ScrollBarThickness = 3
+        LiveScroll.ScrollBarImageColor3 = Color3.fromRGB(150, 150, 170)
+        LiveScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y -- KUNCI DYNAMIC SCROLL
+        LiveScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+
+        local LivePadding = Instance.new("UIPadding", LiveScroll)
+        LivePadding.PaddingLeft = UDim.new(0, 10)
+        LivePadding.PaddingRight = UDim.new(0, 10)
+        LivePadding.PaddingBottom = UDim.new(0, 10)
+
+        local LiveLayout = Instance.new("UIListLayout", LiveScroll)
+        LiveLayout.Padding = UDim.new(0, 8)
+        LiveLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
         return LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel
     end
 
     local function CreateUpcomingEntry(parent, text, color)
         local Entry = Instance.new("TextLabel", parent)
-        Entry.Size = UDim2.new(1, -5, 0, 18)
+        Entry.Size = UDim2.new(1, 0, 0, 18)
         Entry.BackgroundTransparency = 1
         Entry.Text = text
         Entry.TextColor3 = color
-        Entry.Font = Enum.Font.Gotham
-        Entry.TextSize = 11
+        Entry.Font = Enum.Font.GothamMedium
+        Entry.TextSize = 12
         Entry.TextXAlignment = Enum.TextXAlignment.Left
         Entry.RichText = true
     end
@@ -2398,27 +2424,32 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local function CreateGroupCard(groupName, parent)
         local Card = Instance.new("Frame", parent)
         Card.Size = UDim2.new(1, 0, 0, 40)
-        Card.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-        Card.BackgroundTransparency = 0.5
-        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
+        Card.BackgroundColor3 = Color3.fromRGB(25, 28, 38)
+        Card.BackgroundTransparency = 0.3
+        Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 8)
+        
+        local CardStroke = Instance.new("UIStroke", Card)
+        CardStroke.Color = Color3.fromRGB(70, 75, 90)
+        CardStroke.Transparency = 0.6
+        CardStroke.Thickness = 1
 
         local Title = Instance.new("TextLabel", Card)
-        Title.Size = UDim2.new(1, -10, 0, 18)
-        Title.Position = UDim2.new(0, 8, 0, 2)
+        Title.Size = UDim2.new(1, -20, 0, 22)
+        Title.Position = UDim2.new(0, 10, 0, 2)
         Title.BackgroundTransparency = 1
-        Title.TextColor3 = Color3.fromRGB(220, 220, 220)
-        Title.Font = Enum.Font.GothamSemibold
+        Title.TextColor3 = Color3.fromRGB(230, 230, 235)
+        Title.Font = Enum.Font.GothamBold
         Title.TextSize = 11
         Title.TextXAlignment = Enum.TextXAlignment.Left
 
         local PillContainer = Instance.new("Frame", Card)
-        PillContainer.Size = UDim2.new(1, -12, 1, -22)
-        PillContainer.Position = UDim2.new(0, 6, 0, 20)
+        PillContainer.Size = UDim2.new(1, -20, 1, -26)
+        PillContainer.Position = UDim2.new(0, 10, 0, 24)
         PillContainer.BackgroundTransparency = 1
         
         local Grid = Instance.new("UIGridLayout", PillContainer)
-        Grid.CellSize = UDim2.new(0, 48, 0, 16)
-        Grid.CellPadding = UDim2.new(0, 4, 0, 4)
+        Grid.CellSize = UDim2.new(0, 50, 0, 18)
+        Grid.CellPadding = UDim2.new(0, 6, 0, 6)
         Grid.SortOrder = Enum.SortOrder.LayoutOrder
 
         GroupCards[groupName] = { Card = Card, Title = Title, Container = PillContainer }
@@ -2427,26 +2458,40 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     local function CreatePill(enemyObj, parentContainer)
         local PillBg = Instance.new("Frame", parentContainer)
-        PillBg.BackgroundColor3 = Color3.fromRGB(45, 20, 20)
+        PillBg.BackgroundColor3 = Color3.fromRGB(30, 15, 15)
         Instance.new("UICorner", PillBg).CornerRadius = UDim.new(0, 4)
 
         local TargetStroke = Instance.new("UIStroke", PillBg)
-        TargetStroke.Color = Color3.fromRGB(255, 50, 50)
+        TargetStroke.Color = Color3.fromRGB(255, 60, 60)
         TargetStroke.Thickness = 1.5
         TargetStroke.Transparency = 1 
 
         local HPFill = Instance.new("Frame", PillBg)
         HPFill.Size = UDim2.new(1, 0, 1, 0)
-        HPFill.BackgroundColor3 = Color3.fromRGB(235, 50, 50)
+        HPFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- Base color for gradient
         HPFill.ZIndex = 1
         Instance.new("UICorner", HPFill).CornerRadius = UDim.new(0, 4)
+        
+        -- PREMIUM RED GRADIENT
+        local HPGradient = Instance.new("UIGradient", HPFill)
+        HPGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 70, 70)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 20, 20))
+        })
 
         local ShieldFill = Instance.new("Frame", PillBg)
         ShieldFill.Size = UDim2.new(0, 0, 1, 0)
-        ShieldFill.BackgroundColor3 = Color3.fromRGB(40, 160, 255)
+        ShieldFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         ShieldFill.ZIndex = 2
         ShieldFill.Visible = false
         Instance.new("UICorner", ShieldFill).CornerRadius = UDim.new(0, 4)
+        
+        -- PREMIUM BLUE SHIELD GRADIENT
+        local ShieldGradient = Instance.new("UIGradient", ShieldFill)
+        ShieldGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 200, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 100, 200))
+        })
 
         local HitOverlay = Instance.new("Frame", PillBg)
         HitOverlay.Size = UDim2.new(1, 0, 1, 0)
@@ -2462,6 +2507,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HPText.Font = Enum.Font.GothamBold
         HPText.TextSize = 10
         HPText.ZIndex = 4
+        
+        -- Subtle text shadow for readability
+        local TextShadow = Instance.new("UIStroke", HPText)
+        TextShadow.Color = Color3.fromRGB(0, 0, 0)
+        TextShadow.Thickness = 1
+        TextShadow.Transparency = 0.3
 
         EnemyPills[enemyObj] = { Pill = PillBg, HPFill = HPFill, ShieldFill = ShieldFill, HitOverlay = HitOverlay, TargetStroke = TargetStroke, Text = HPText, LastHP = 0, LastShield = 0 }
         return EnemyPills[enemyObj]
@@ -2488,7 +2539,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     if currentWave ~= LastProcessedWave then
                         LastProcessedWave = currentWave
                         local nextWaveNum = currentWave + 1
-                        UpcomingTitle.Text = "🔮 UPCOMING WAVE (" .. nextWaveNum .. ")"
+                        UpcomingTitle.Text = string.format("🔮 UPCOMING WAVE <font color='#FFFFFF'>(%d)</font>", nextWaveNum)
+                        UpcomingTitle.RichText = true
                         
                         for _, child in ipairs(UpcomingScroll:GetChildren()) do 
                             if child:IsA("TextLabel") then child:Destroy() end 
@@ -2501,62 +2553,53 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             
                             if success and type(modeData) == "table" and modeData.Waves then
                                 
-                                -- Fungsi Helper untuk Menghitung Uang & Bonus secara Akurat (Support Solo/Co-op)
+                                -- Fungsi Helper untuk Menghitung Uang & Bonus (Support Solo/Co-op)
                                 local function GetWaveEconomy(targetWave)
                                     local wCash, cBonus = 0, 0
                                     if targetWave > 0 then
                                         pcall(function()
-                                            -- 1. Hitung Base Wave Cash (Pakai rumus asli dari game)
                                             if modeData.ExtraOptions and type(modeData.ExtraOptions.WaveCash) == "function" then
                                                 wCash = modeData.ExtraOptions.WaveCash(targetWave)
                                             else
-                                                wCash = 200 + ((targetWave - 1) * 160) -- Fallback jika error
+                                                wCash = 200 + ((targetWave - 1) * 160)
                                             end
                                             
-                                            -- 2. Hitung Clear Bonus
                                             if modeData.ExtraOptions and modeData.ExtraOptions.ClearBonus then
-                                                -- Cek jumlah player hidup di server
                                                 local playersCount = #game:GetService("Players"):GetPlayers()
                                                 local bonusPct = modeData.ExtraOptions.ClearBonus.Percentage or 0.2
                                                 
-                                                -- Jika main SENDIRI (Solo), gunakan SoloPercentage (Bonus 40%)
-                                                if playersCount == 1 and modeData.ExtraOptions.ClearBonus.SoloPercentage then
+                                                if playersCount <= 1 and modeData.ExtraOptions.ClearBonus.SoloPercentage then
                                                     bonusPct = modeData.ExtraOptions.ClearBonus.SoloPercentage
                                                 end
-                                                
                                                 cBonus = wCash * bonusPct
                                             end
                                         end)
                                     end
-                                    
-                                    -- TDS selalu membulatkan uang ke bawah, jadi kita pakai math.floor
                                     return math.floor(wCash), math.floor(cBonus)
                                 end
 
-                                -- Kalkulasi Uang Wave Sekarang & Wave Depan
                                 local currCash, currBonus = GetWaveEconomy(currentWave)
                                 local nextCash, nextBonus = GetWaveEconomy(nextWaveNum)
                                 
-                                -- Update Text UI (Dibuat bertumpuk agar rapi dan terbaca jelas)
                                 WaveInfoLabel.Text = string.format(
-                                    "<font color='#FFAA55'>Mode: %s</font>\n[W%d] Cash: $<font color='#88FF88'>%d</font> | Bonus: $<font color='#88FF88'>%d</font>\n[W%d] Cash: $<font color='#88FF88'>%d</font> | Bonus: $<font color='#88FF88'>%d</font>", 
+                                    "<font color='#AABBFF'>Mode:</font> <font color='#FFFFFF'>%s</font>\n" ..
+                                    "<font color='#8888AA'>Wave %d</font> • <font color='#44FF44'>+$%d</font> <font color='#8888AA'>/ Bonus:</font> <font color='#44FF44'>+$%d</font>\n" ..
+                                    "<font color='#8888AA'>Wave %d</font> • <font color='#44FF44'>+$%d</font> <font color='#8888AA'>/ Bonus:</font> <font color='#44FF44'>+$%d</font>", 
                                     stateDiffName, 
                                     currentWave, currCash, currBonus,
                                     nextWaveNum, nextCash, nextBonus
                                 )
 
-                                -- Render List Musuh
                                 local nextWaveData = modeData.Waves[nextWaveNum]
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
                                         local eMods = ParseModifiers(enemy.Modifiers)
-                                        local color = (eMods ~= "") and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(220, 220, 220)
-                                        local text = string.format("<b>x%d %s</b> <font color=\"#888888\">(%.1fs)</font><font color=\"#ffaa55\">%s</font>", enemy.Amount or 1, enemy.Name or "Unknown", enemy.Delay or 0, eMods)
+                                        local color = (eMods ~= "") and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(230, 230, 235)
+                                        local text = string.format("<b>x%d %s</b> <font color=\"#777788\">(%.1fs)</font><font color=\"#ffaa55\">%s</font>", enemy.Amount or 1, enemy.Name or "Unknown", enemy.Delay or 0, eMods)
                                         CreateUpcomingEntry(UpcomingScroll, text, color)
                                     end
-                                    UpcomingScroll.CanvasSize = UDim2.new(0, 0, 0, #nextWaveData.WaveTimeline.Enemies * 20)
                                 else
-                                    CreateUpcomingEntry(UpcomingScroll, "No more waves or MAX Wave reached.", Color3.fromRGB(150, 150, 150))
+                                    CreateUpcomingEntry(UpcomingScroll, "<i>No more waves data.</i>", Color3.fromRGB(150, 150, 160))
                                 end
                             else
                                 WaveInfoLabel.Text = "Error: Failed to read module data"
@@ -2594,11 +2637,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     
                                     EnemyGroups[name].Count = EnemyGroups[name].Count + 1
                                     table.insert(EnemyGroups[name].Individuals, { 
-                                        Obj = enemy, 
-                                        HP = health, 
-                                        MaxHP = maxHP, 
-                                        Shield = shield, 
-                                        MaxShield = maxShield, 
+                                        Obj = enemy, HP = health, MaxHP = maxHP, 
+                                        Shield = shield, MaxShield = maxShield, 
                                         IsTargeted = (enemy == Globals.CurrentTargetModel) 
                                     })
                                     ProcessedEnemies[enemy] = true
@@ -2616,7 +2656,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, LiveScroll)
                         groupUI.Card.Visible = true
                         groupUI.Card.LayoutOrder = groupOrder
-                        groupUI.Title.Text = string.format("%s %s (x%d)", groupData.MaxHP_Sample > 10000 and "💀" or "👾", groupData.Name, groupData.Count)
+                        groupUI.Title.Text = string.format("%s %s <font color='#888899'>x%d</font>", groupData.MaxHP_Sample > 10000 and "💀" or "👾", groupData.Name, groupData.Count)
+                        groupUI.Title.RichText = true
 
                         table.sort(groupData.Individuals, function(a, b)
                             if a.IsTargeted ~= b.IsTargeted then return a.IsTargeted end
@@ -2630,13 +2671,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                             if (pillUI.LastHP > 0 and indv.HP < pillUI.LastHP) or (pillUI.LastShield > 0 and indv.Shield < pillUI.LastShield) then
                                 pillUI.HitOverlay.Transparency = 0
-                                TweenService:Create(pillUI.HitOverlay, TweenInfo.new(0.3), {Transparency = 1}):Play()
+                                TweenService:Create(pillUI.HitOverlay, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Transparency = 1}):Play()
                             end
                             pillUI.LastHP, pillUI.LastShield = indv.HP, indv.Shield
 
                             pillUI.TargetStroke.Transparency = indv.IsTargeted and 0 or 1
                             if indv.IsTargeted then 
-                                pillUI.TargetStroke.Thickness = 1.5 + math.sin(os.clock() * 15) * 1 
+                                pillUI.TargetStroke.Thickness = 1.5 + math.sin(os.clock() * 12) * 1 
                             end
 
                             pillUI.HPFill.Size = UDim2.new(math.clamp(indv.HP / math.max(1, indv.MaxHP), 0, 1), 0, 1, 0)
@@ -2645,14 +2686,15 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 pillUI.ShieldFill.Visible = true
                                 pillUI.ShieldFill.Size = UDim2.new(math.clamp(indv.Shield / indv.MaxShield, 0, 1), 0, 1, 0)
                                 pillUI.Text.Text = string.format("🛡️ %s", FormatNumber(indv.Shield))
-                                pillUI.Text.TextColor3 = Color3.fromRGB(180, 230, 255) 
                             else
                                 pillUI.ShieldFill.Visible = false
                                 pillUI.Text.Text = FormatNumber(indv.HP)
-                                pillUI.Text.TextColor3 = Color3.fromRGB(255, 255, 255) 
                             end
                         end
-                        groupUI.Card.Size = UDim2.new(1, 0, 0, 25 + (math.ceil(#groupData.Individuals / 4) * 20))
+                        
+                        -- Dynamic card height calculation
+                        local rows = math.ceil(#groupData.Individuals / 4) -- 4 pills per row max
+                        groupUI.Card.Size = UDim2.new(1, 0, 0, 32 + (rows * 24))
                     end
 
                     for enemyObj, pillUI in pairs(EnemyPills) do 
