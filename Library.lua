@@ -2270,13 +2270,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local function ParseModifiers(modTable)
         if type(modTable) ~= "table" then return "" end
         local mods = {}
-        
-        -- [FILTER KETAT] Buat daftar validasi agar modifier palsu (seperti TimeScaled) diabaikan
-        local ValidModNames = {}
-        for _, name in pairs(TDS_Modifiers) do
-            ValidModNames[name] = true
-        end
-
         for k, v in pairs(modTable) do
             if v then
                 local strKey = tostring(k)
@@ -2284,17 +2277,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 elseif type(k) == "table" and k.Value then strKey = tostring(k.Value)
                 else strKey = tostring(k):match("%d+") or tostring(k) end
                 
-                local modName = nil
-                
-                if TDS_Modifiers[strKey] then
-                    modName = TDS_Modifiers[strKey]
-                elseif ValidModNames[strKey] then
-                    modName = strKey
-                end
-                
-                if modName then
-                    table.insert(mods, modName)
-                end
+                local modName = TDS_Modifiers[strKey] or strKey
+                if tonumber(strKey) == nil then modName = strKey end 
+                table.insert(mods, modName)
             end
         end
         return #mods > 0 and " [" .. table.concat(mods, ", ") .. "]" or ""
@@ -2312,6 +2297,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         TrackerUI.ResetOnSpawn = false
         TrackerUI.Parent = game:GetService("CoreGui")
 
+        -- MAIN GLASS PANEL
         local MainFrame = Instance.new("Frame", TrackerUI)
         MainFrame.Size = UDim2.new(0, 280, 0, 540)
         MainFrame.Position = UDim2.new(1, -295, 0.5, -270)
@@ -2324,6 +2310,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         MainStroke.Transparency = 0.3
         MainStroke.Thickness = 1
 
+        -- TOP NEON ACCENT LINE
         local TopAccent = Instance.new("Frame", MainFrame)
         TopAccent.Size = UDim2.new(1, -16, 0, 2)
         TopAccent.Position = UDim2.new(0, 8, 0, 0)
@@ -2336,6 +2323,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 100))
         })
 
+        -- ================= 1. UPCOMING WAVE SECTION =================
         local UpcomingTitle = Instance.new("TextLabel", MainFrame)
         UpcomingTitle.Size = UDim2.new(1, -24, 0, 24)
         UpcomingTitle.Position = UDim2.new(0, 12, 0, 8)
@@ -2347,6 +2335,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         UpcomingTitle.TextXAlignment = Enum.TextXAlignment.Left
         UpcomingTitle.RichText = true
 
+        -- WIDGET BOX FOR ECONOMY INFO
         local EcoWidget = Instance.new("Frame", MainFrame)
         EcoWidget.Size = UDim2.new(1, -24, 0, 48)
         EcoWidget.Position = UDim2.new(0, 12, 0, 36)
@@ -2366,6 +2355,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         WaveInfoLabel.TextYAlignment = Enum.TextYAlignment.Center
         WaveInfoLabel.RichText = true
 
+        -- UPCOMING SCROLLING FRAME
         local UpcomingScroll = Instance.new("ScrollingFrame", MainFrame)
         UpcomingScroll.Size = UDim2.new(1, -14, 0, 130)
         UpcomingScroll.Position = UDim2.new(0, 7, 0, 92)
@@ -2378,8 +2368,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local UpcomingPadding = Instance.new("UIPadding", UpcomingScroll)
         UpcomingPadding.PaddingLeft = UDim.new(0, 5)
         UpcomingPadding.PaddingRight = UDim.new(0, 5)
-        UpcomingPadding.PaddingTop = UDim.new(0, 2)
-        UpcomingPadding.PaddingBottom = UDim.new(0, 2)
         
         local UpcomingLayout = Instance.new("UIListLayout", UpcomingScroll)
         UpcomingLayout.Padding = UDim.new(0, 4)
@@ -2391,6 +2379,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Divider.BackgroundColor3 = Color3.fromRGB(50, 55, 70)
         Divider.BorderSizePixel = 0
 
+        -- ================= 2. LIVE RADAR SECTION =================
         local LiveTitle = Instance.new("TextLabel", MainFrame)
         LiveTitle.Size = UDim2.new(1, -24, 0, 24)
         LiveTitle.Position = UDim2.new(0, 12, 0, 238)
@@ -2401,6 +2390,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         LiveTitle.TextSize = 12
         LiveTitle.TextXAlignment = Enum.TextXAlignment.Left
 
+        -- LIVE SCROLLING FRAME
         local LiveScroll = Instance.new("ScrollingFrame", MainFrame)
         LiveScroll.Size = UDim2.new(1, -14, 1, -275)
         LiveScroll.Position = UDim2.new(0, 7, 0, 265)
@@ -2413,7 +2403,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local LivePadding = Instance.new("UIPadding", LiveScroll)
         LivePadding.PaddingLeft = UDim.new(0, 5)
         LivePadding.PaddingRight = UDim.new(0, 5)
-        LivePadding.PaddingTop = UDim.new(0, 2)
         LivePadding.PaddingBottom = UDim.new(0, 10)
 
         local LiveLayout = Instance.new("UIListLayout", LiveScroll)
@@ -2423,6 +2412,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel
     end
 
+    -- PREMIUM LIST ITEM FOR UPCOMING WAVE
     local function CreateUpcomingEntry(parent, text, color)
         local EntryBg = Instance.new("Frame", parent)
         EntryBg.Size = UDim2.new(1, 0, 0, 22)
@@ -2430,6 +2420,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         EntryBg.BackgroundTransparency = 0.5
         Instance.new("UICorner", EntryBg).CornerRadius = UDim.new(0, 4)
         
+        -- Left Color Strip indicator
         local ColorStrip = Instance.new("Frame", EntryBg)
         ColorStrip.Size = UDim2.new(0, 3, 1, -8)
         ColorStrip.Position = UDim2.new(0, 4, 0, 4)
@@ -2467,7 +2458,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HeaderBg.BackgroundTransparency = 0.2
         HeaderBg.BorderSizePixel = 0
         Instance.new("UICorner", HeaderBg).CornerRadius = UDim.new(0, 6)
-        
+        -- Hide bottom corners of header
         local Hider = Instance.new("Frame", HeaderBg)
         Hider.Size = UDim2.new(1, 0, 0, 4)
         Hider.Position = UDim2.new(0, 0, 1, -4)
@@ -2545,7 +2536,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HPText.Size = UDim2.new(1, 0, 1, 0)
         HPText.BackgroundTransparency = 1
         HPText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        HPText.Font = Enum.Font.Code
+        HPText.Font = Enum.Font.Code -- Hacky/Tech Font for numbers!
         HPText.TextSize = 11
         HPText.ZIndex = 4
         
@@ -2568,7 +2559,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
             if v then
                 local LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
-
+                
                 TrackerConnection = RunService.Heartbeat:Connect(function()
                     if not Globals.EnemyTracker then return end
                     
@@ -2581,6 +2572,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local nextWaveNum = currentWave + 1
                         UpcomingTitle.Text = string.format("🔮 UPCOMING WAVE <font color='#888899'>[%d]</font>", nextWaveNum)
                         
+                        -- Destroy Frames, not just TextLabels, because we use custom Frame entries now
                         for _, child in ipairs(UpcomingScroll:GetChildren()) do 
                             if child:IsA("Frame") then child:Destroy() end 
                         end
@@ -2605,6 +2597,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                             if modeData.ExtraOptions and modeData.ExtraOptions.ClearBonus then
                                                 local playersCount = #game:GetService("Players"):GetPlayers()
                                                 local bonusPct = modeData.ExtraOptions.ClearBonus.Percentage or 0.2
+                                                
                                                 if playersCount <= 1 and modeData.ExtraOptions.ClearBonus.SoloPercentage then
                                                     bonusPct = modeData.ExtraOptions.ClearBonus.SoloPercentage
                                                 end
@@ -2631,6 +2624,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
                                         local eMods = ParseModifiers(enemy.Modifiers)
+                                        -- Determine left strip color based on threat
                                         local stripColor = Color3.fromRGB(150, 150, 160)
                                         if eMods ~= "" then stripColor = Color3.fromRGB(255, 80, 80) end
                                         if enemy.Name:find("Boss") or enemy.Name:find("King") then stripColor = Color3.fromRGB(180, 80, 255) end
@@ -2666,44 +2660,17 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local health = state:GetAttribute("Health") or 0
                                 
                                 if health > 0 then
-                                    local baseName = enemy.Name:gsub("Enemy$", "")
+                                    local name = enemy.Name:gsub("Enemy$", "")
                                     local shield = state:GetAttribute("Shield") or 0
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    -- KUMPULKAN ATTRIBUTES MUSUH (FILTER BERLAKU DISINI)
-                                    local rawMods = {}
-                                    
-                                    for k, v in pairs(enemy:GetAttributes()) do 
-                                        if v == true then rawMods[k] = true end 
-                                    end
-                                    for k, v in pairs(state:GetAttributes()) do 
-                                        if v == true then rawMods[k] = true end 
-                                    end
-                                    local modFolder = enemy:FindFirstChild("Modifiers") or state:FindFirstChild("Modifiers")
-                                    if modFolder then
-                                        for _, child in ipairs(modFolder:GetChildren()) do 
-                                            rawMods[child.Name] = true 
-                                        end
-                                    end
-
-                                    -- PANGGIL FUNGSI PARSE MODIFIER (Modifier palsu otomatis terhapus)
-                                    local parsedMods = ParseModifiers(rawMods)
-                                    local modsTextFormat = ""
-                                    if parsedMods ~= "" then
-                                        modsTextFormat = "<font color='#FFBB55'>" .. parsedMods .. "</font>"
-                                    end
-
-                                    -- Tampilan Card UI
-                                    local displayName = baseName .. modsTextFormat
-                                    local groupKey = baseName .. "_" .. parsedMods
-
-                                    if not EnemyGroups[groupKey] then 
-                                        EnemyGroups[groupKey] = { Key = groupKey, DisplayName = displayName, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
+                                    if not EnemyGroups[name] then 
+                                        EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
                                     end
                                     
-                                    EnemyGroups[groupKey].Count = EnemyGroups[groupKey].Count + 1
-                                    table.insert(EnemyGroups[groupKey].Individuals, { 
+                                    EnemyGroups[name].Count = EnemyGroups[name].Count + 1
+                                    table.insert(EnemyGroups[name].Individuals, { 
                                         Obj = enemy, HP = health, MaxHP = maxHP, 
                                         Shield = shield, MaxShield = maxShield, 
                                         IsTargeted = (enemy == Globals.CurrentTargetModel) 
@@ -2719,8 +2686,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     table.sort(SortedGroups, function(a, b) return a.MaxHP_Sample > b.MaxHP_Sample end)
 
                     for groupOrder, groupData in ipairs(SortedGroups) do
-                        ProcessedGroups[groupData.Key] = true
-                        local groupUI = GroupCards[groupData.Key] or CreateGroupCard(groupData.Key, LiveScroll)
+                        ProcessedGroups[groupData.Name] = true
+                        local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, LiveScroll)
                         groupUI.Card.Visible = true
                         groupUI.Card.LayoutOrder = groupOrder
                         
@@ -2728,7 +2695,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         if groupData.MaxHP_Sample > 15000 then icon = "👑"
                         elseif groupData.MaxHP_Sample > 5000 then icon = "💀" end
                         
-                        groupUI.Title.Text = string.format("%s %s <font color='#666677'>[x%d]</font>", icon, groupData.DisplayName, groupData.Count)
+                        groupUI.Title.Text = string.format("%s %s <font color='#666677'>[x%d]</font>", icon, groupData.Name, groupData.Count)
                         groupUI.Title.RichText = true
 
                         table.sort(groupData.Individuals, function(a, b)
@@ -2747,6 +2714,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                             pillUI.LastHP, pillUI.LastShield = indv.HP, indv.Shield
 
+                            -- Target Indicator Lock-on Animation
                             if indv.IsTargeted then 
                                 pillUI.TargetStroke.Transparency = 0
                                 pillUI.TargetStroke.Thickness = 1.5 + math.sin(os.clock() * 15) * 1 
@@ -2777,10 +2745,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end 
                     end
 
-                    for groupKey, groupUI in pairs(GroupCards) do 
-                        if not ProcessedGroups[groupKey] then 
+                    for groupName, groupUI in pairs(GroupCards) do 
+                        if not ProcessedGroups[groupName] then 
                             groupUI.Card:Destroy()
-                            GroupCards[groupKey] = nil 
+                            GroupCards[groupName] = nil 
                         end 
                     end
                 end)
