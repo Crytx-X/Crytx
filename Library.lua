@@ -2368,6 +2368,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local UpcomingPadding = Instance.new("UIPadding", UpcomingScroll)
         UpcomingPadding.PaddingLeft = UDim.new(0, 5)
         UpcomingPadding.PaddingRight = UDim.new(0, 5)
+        UpcomingPadding.PaddingTop = UDim.new(0, 2)
+        UpcomingPadding.PaddingBottom = UDim.new(0, 2)
         
         local UpcomingLayout = Instance.new("UIListLayout", UpcomingScroll)
         UpcomingLayout.Padding = UDim.new(0, 4)
@@ -2403,6 +2405,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local LivePadding = Instance.new("UIPadding", LiveScroll)
         LivePadding.PaddingLeft = UDim.new(0, 5)
         LivePadding.PaddingRight = UDim.new(0, 5)
+        LivePadding.PaddingTop = UDim.new(0, 2)
         LivePadding.PaddingBottom = UDim.new(0, 10)
 
         local LiveLayout = Instance.new("UIListLayout", LiveScroll)
@@ -2660,75 +2663,34 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local health = state:GetAttribute("Health") or 0
                                 
                                 if health > 0 then
-                                    local baseName = enemy.Name:gsub("Enemy$", "")
-                                    
-                                    -- [ PATCH MODIFIER ]
-                                    local liveMods = {}
-                                    local foundMods = {}
-                                    
-                                    local function addMod(modKey)
-                                        local strKey = tostring(modKey):match("%d+") or tostring(modKey)
-                                        local modName = TDS_Modifiers[strKey] or strKey
-                                        if tonumber(strKey) == nil then modName = strKey end 
-
-                                        if not foundMods[modName] then
-                                            foundMods[modName] = true
-                                            table.insert(liveMods, modName)
-                                        end
-                                    end
-
-                                    -- 1. Parse dari Attribute 'Modifiers' (Bentuknya JSON String di TDS)
-                                    local modsAttr = state:GetAttribute("Modifiers")
-                                    if type(modsAttr) == "string" then
-                                        pcall(function()
-                                            local decoded = game:GetService("HttpService"):JSONDecode(modsAttr)
-                                            if type(decoded) == "table" then
-                                                for k, v in pairs(decoded) do
-                                                    if v then addMod(k) end
-                                                end
-                                            end
-                                        end)
-                                    end
-
-                                    -- 2. Parse dari Folder 'Modifiers' (Jika ada)
-                                    local modsFolder = state:FindFirstChild("Modifiers")
-                                    if modsFolder then
-                                        for _, mod in ipairs(modsFolder:GetChildren()) do
-                                            addMod(mod.Name)
-                                        end
-                                    end
-
-                                    -- 3. Parse dari bool Attributes langsung (Bloated, Hidden, dll)
-                                    for attr, val in pairs(state:GetAttributes()) do
-                                        if val == true then
-                                            for key, knownMod in pairs(TDS_Modifiers) do
-                                                if attr == knownMod or attr == key then
-                                                    addMod(attr)
-                                                    break
-                                                end
-                                            end
-                                        end
-                                    end
-
-                                    -- Format persis seperti Upcoming Wave (contoh: "Fallen [Bloated]")
-                                    local modString = ""
-                                    if #liveMods > 0 then
-                                        modString = " <font color='#FFBB55'>[" .. table.concat(liveMods, ", ") .. "]</font>"
-                                    end
-                                    
-                                    local name = baseName .. modString
-                                    -- [ END OF PATCH ]
-
+                                    local name = enemy.Name:gsub("Enemy$", "")
                                     local shield = state:GetAttribute("Shield") or 0
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    if not EnemyGroups[name] then 
-                                        EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
+                                    -- Fetch Modifiers
+                                    local activeMods = {}
+                                    local attrs = state:GetAttributes()
+                                    for _, mName in pairs(TDS_Modifiers) do
+                                        if attrs[mName] == true then
+                                            table.insert(activeMods, mName)
+                                        end
+                                    end
+
+                                    local modsText = ""
+                                    if #activeMods > 0 then
+                                        modsText = " <font color='#FFBB55'>[" .. table.concat(activeMods, ", ") .. "]</font>"
+                                    end
+
+                                    local groupKey = name .. "_" .. table.concat(activeMods, "_")
+                                    local displayName = name .. modsText
+
+                                    if not EnemyGroups[groupKey] then 
+                                        EnemyGroups[groupKey] = { Key = groupKey, DisplayName = displayName, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
                                     end
                                     
-                                    EnemyGroups[name].Count = EnemyGroups[name].Count + 1
-                                    table.insert(EnemyGroups[name].Individuals, { 
+                                    EnemyGroups[groupKey].Count = EnemyGroups[groupKey].Count + 1
+                                    table.insert(EnemyGroups[groupKey].Individuals, { 
                                         Obj = enemy, HP = health, MaxHP = maxHP, 
                                         Shield = shield, MaxShield = maxShield, 
                                         IsTargeted = (enemy == Globals.CurrentTargetModel) 
@@ -2744,8 +2706,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     table.sort(SortedGroups, function(a, b) return a.MaxHP_Sample > b.MaxHP_Sample end)
 
                     for groupOrder, groupData in ipairs(SortedGroups) do
-                        ProcessedGroups[groupData.Name] = true
-                        local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, LiveScroll)
+                        ProcessedGroups[groupData.Key] = true
+                        local groupUI = GroupCards[groupData.Key] or CreateGroupCard(groupData.Key, LiveScroll)
                         groupUI.Card.Visible = true
                         groupUI.Card.LayoutOrder = groupOrder
                         
@@ -2753,7 +2715,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         if groupData.MaxHP_Sample > 15000 then icon = "👑"
                         elseif groupData.MaxHP_Sample > 5000 then icon = "💀" end
                         
-                        groupUI.Title.Text = string.format("%s %s <font color='#666677'>[x%d]</font>", icon, groupData.Name, groupData.Count)
+                        groupUI.Title.Text = string.format("%s %s <font color='#666677'>[x%d]</font>", icon, groupData.DisplayName, groupData.Count)
                         groupUI.Title.RichText = true
 
                         table.sort(groupData.Individuals, function(a, b)
@@ -2803,10 +2765,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end 
                     end
 
-                    for groupName, groupUI in pairs(GroupCards) do 
-                        if not ProcessedGroups[groupName] then 
+                    for groupKey, groupUI in pairs(GroupCards) do 
+                        if not ProcessedGroups[groupKey] then 
                             groupUI.Card:Destroy()
-                            GroupCards[groupName] = nil 
+                            GroupCards[groupKey] = nil 
                         end 
                     end
                 end)
