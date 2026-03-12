@@ -2184,50 +2184,86 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return tostring(math.floor(n))
     end
 
-    -- Sistem Pencarian Module 
+    -- Sistem Pencarian Module Waves (DIROMBAK TOTAL MENGGUNAKAN FULL PATH)
     local function GetModeDataModule()
         if CachedModeModule then return CachedModeModule, CachedModeName end
         
         local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        local difficulty = "Easy"
         local modeName = "Survival"
+        local diffName = "Normal"
 
+        -- 1. Ambil data state gamemode saat ini
         if state then
             local diffObj = state:FindFirstChild("Difficulty")
-            if diffObj and diffObj.Value and diffObj.Value ~= "" then difficulty = diffObj.Value end
+            if diffObj and diffObj.Value and diffObj.Value ~= "" then diffName = diffObj.Value end
             
             local modeObj = state:FindFirstChild("Mode")
             if modeObj and modeObj.Value and modeObj.Value ~= "" then modeName = modeObj.Value end
         end
 
-        if difficulty:lower() == "sandbox" then
-            difficulty, CachedModeName = "Easy", "Sandbox"
+        if diffName:lower() == "sandbox" then
+            diffName, CachedModeName = "Easy", "Sandbox"
         else
-            CachedModeName = difficulty
+            CachedModeName = diffName
         end
 
         local gamemodes = ReplicatedStorage:FindFirstChild("Content") and ReplicatedStorage.Content:FindFirstChild("Gamemodes")
-        if gamemodes then
-            local targetModeFolder = gamemodes:FindFirstChild(modeName) or gamemodes:FindFirstChild("Survival")
-            if targetModeFolder and targetModeFolder:FindFirstChild("Difficulties") then
-                for _, diff in ipairs(targetModeFolder.Difficulties:GetChildren()) do
-                    if diff.Name:lower() == difficulty:lower() and diff:FindFirstChild("Waves") then
-                        CachedModeModule = diff.Waves
-                        return CachedModeModule, CachedModeName
+        if not gamemodes then return nil, "Missing Gamemodes Folder" end
+
+        -- 2. DIRECT PATH SEARCH (Sesuai request: Content.Gamemodes.Survival.Difficulties.Casual.Waves)
+        local function FindDirect(mName, dName)
+            local mFolder = gamemodes:FindFirstChild(mName)
+            if mFolder then
+                local diffsFolder = mFolder:FindFirstChild("Difficulties")
+                if diffsFolder then
+                    local targetDiff = diffsFolder:FindFirstChild(dName)
+                    if targetDiff and targetDiff:FindFirstChild("Waves") then
+                        return targetDiff.Waves
                     end
                 end
             end
-            for _, folder in ipairs(gamemodes:GetDescendants()) do
-                if folder:IsA("Folder") and folder.Name:lower() == difficulty:lower() and folder:FindFirstChild("Waves") then
-                    CachedModeModule = folder.Waves
-                    return CachedModeModule, CachedModeName .. " (Fallback)"
+            return nil
+        end
+
+        -- Coba cari dengan path langsung
+        local directModule = FindDirect(modeName, diffName)
+        if directModule then
+            CachedModeModule = directModule
+            return CachedModeModule, CachedModeName
+        end
+
+        -- 3. FUZZY SEARCH FALLBACK (Jika nama folder gamemode beda dengan nama di State)
+        -- Contoh: State bilang "PizzaParty", tapi nama folder aslinya "Pizza Party"
+        local safeDiff = diffName:lower():gsub("[%s%p]", "")
+        for _, mFolder in ipairs(gamemodes:GetChildren()) do
+            local diffsFolder = mFolder:FindFirstChild("Difficulties")
+            if diffsFolder then
+                for _, dFolder in ipairs(diffsFolder:GetChildren()) do
+                    local safeDName = dFolder.Name:lower():gsub("[%s%p]", "")
+                    if safeDName == safeDiff or string.find(safeDName, safeDiff) then
+                        if dFolder:FindFirstChild("Waves") then
+                            CachedModeModule = dFolder.Waves
+                            return CachedModeModule, CachedModeName .. " (Auto-Found)"
+                        end
+                    end
                 end
             end
         end
-        return nil, "Missing Data"
+
+        -- 4. DEEP SCAN (Cara Paling Ekstrim jika Gamemode event disembunyikan)
+        for _, folder in ipairs(gamemodes:GetDescendants()) do
+            if folder:IsA("Folder") and folder.Name:lower():gsub("[%s%p]", "") == safeDiff then
+                if folder:FindFirstChild("Waves") then
+                    CachedModeModule = folder.Waves
+                    return CachedModeModule, CachedModeName .. " (Deep-Scan)"
+                end
+            end
+        end
+
+        return nil, "Missing Wave Data"
     end
 
-    -- Ambil Wave Instan
+    -- Ambil Wave Instan dari UI
     local function GetFastWave()
         local pg = LocalPlayer:FindFirstChild("PlayerGui")
         local container = pg and pg:FindFirstChild("ReactGameTopGameDisplay") and pg.ReactGameTopGameDisplay:FindFirstChild("Frame")
@@ -2267,7 +2303,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 end
                 
                 local modName = TDS_Modifiers[strKey] or strKey
-                if not tonumber(strKey) then modName = strKey end 
+                if tonumber(strKey) == nil then modName = strKey end 
                 
                 table.insert(mods, modName)
             end
@@ -2277,7 +2313,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     local function CreateTrackerUI()
         if TrackerUI then TrackerUI:Destroy() end
-        GroupCards, EnemyPills, LastProcessedWave = {}, {}, -1
+        GroupCards, EnemyPills, LastProcessedWave, CachedModeModule = {}, {}, -1, nil -- Reset Cache saat UI dibikin ulang
         
         TrackerUI = Instance.new("ScreenGui")
         TrackerUI.Name = "ADS_AdvancedTracker"
@@ -2390,7 +2426,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if v then
                 local LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
                 
-                TrackerConnection = RunService.RenderStepped:Connect(function()
+                TrackerConnection = RunService.Heartbeat:Connect(function()
                     if not Globals.EnemyTracker then return end
                     
                     -- ==========================================
@@ -2406,7 +2442,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         local modeDataModule, stateDiffName = GetModeDataModule()
                         if modeDataModule then
-                            -- DIBENARKAN DI SINI, menggunakan safe function agar tidak error di executor tertentu
                             local success, modeData = pcall(function() return require(modeDataModule) end)
                             
                             if success and type(modeData) == "table" and modeData.Waves then
@@ -2422,8 +2457,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
                                         local eMods = ParseModifiers(enemy.Modifiers)
-                                        
-                                        -- JIKA PUNYA MODIFIER APAPUN, WARNA LANGSUNG MERAH!
                                         local color = (eMods ~= "") and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(220, 220, 220)
                                         local text = string.format("<b>x%d %s</b> <font color=\"#888888\">(%.1fs)</font><font color=\"#ffaa55\">%s</font>", enemy.Amount or 1, enemy.Name or "Unknown", enemy.Delay or 0, eMods)
                                         CreateUpcomingEntry(UpcomingScroll, text, color)
