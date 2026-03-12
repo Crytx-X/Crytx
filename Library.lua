@@ -2494,7 +2494,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Toggle({
         Title = "Advanced Enemy Radar",
-        Desc = "Displays Upcoming Waves and Live Enemy Tracker (Using Wave Data Logic)",
+        Desc = "Displays Upcoming Waves and Live Enemy Tracker",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
             Globals.EnemyTracker = v
@@ -2502,14 +2502,15 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
             if v then
                 local LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
-                local HistoricalModifiersCache = {} -- Cache untuk menyimpan Modifier dari Data Module
                 
                 TrackerConnection = RunService.Heartbeat:Connect(function()
                     if not Globals.EnemyTracker then return end
                     
                     local currentWave = GetFastWave()
                     
-                    -- Update Data saat Wave Berubah
+                    -- ==========================================
+                    -- 1. LOGIKA UPCOMING WAVE (DATA MODULE)
+                    -- ==========================================
                     if currentWave ~= LastProcessedWave then
                         LastProcessedWave = currentWave
                         local nextWaveNum = currentWave + 1
@@ -2526,20 +2527,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             
                             if success and type(modeData) == "table" and modeData.Waves then
                                 
-                                -- 1. BANGUN CACHE MODIFIER BERDASARKAN WAVE DATA (LOGIKA UPCOMING WAVE)
-                                HistoricalModifiersCache = {}
-                                for w = 1, currentWave do
-                                    local wData = modeData.Waves[w]
-                                    if wData and wData.WaveTimeline and wData.WaveTimeline.Enemies then
-                                        for _, e in ipairs(wData.WaveTimeline.Enemies) do
-                                            local eMods = ParseModifiers(e.Modifiers)
-                                            -- Simpan Modifier ke Cache berdasarkan Nama Musuh
-                                            HistoricalModifiersCache[e.Name] = eMods
-                                        end
-                                    end
-                                end
-
-                                -- 2. EKONOMI & INFO WAVE
                                 local function GetWaveEconomy(targetWave)
                                     local wCash, cBonus = 0, 0
                                     if targetWave > 0 then
@@ -2575,7 +2562,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     nextWaveNum, nextCash, nextBonus
                                 )
 
-                                -- 3. RENDER UPCOMING WAVE
                                 local nextWaveData = modeData.Waves[nextWaveNum]
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
@@ -2601,7 +2587,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
 
-                    -- // PROSES LIVE THREAT RADAR
+                    -- ==========================================
+                    -- 2. LOGIKA LIVE RADAR (ANTI-NYANGKUT)
+                    -- ==========================================
                     local EnemyGroups, ProcessedEnemies = {}, {}
                     local NPCs = workspace:FindFirstChild("NPCs")
                     
@@ -2618,10 +2606,27 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    -- AMBIL MODIFIER DARI CACHE MODULE DATA (SAMA SEPERTI UPCOMING WAVE)
-                                    local modString = HistoricalModifiersCache[name] or ""
+                                    -- CEK MODIFIER LANGSUNG DARI MUSUH UNTUK MENCEGAH NYANGKUT
+                                    local liveMods = {}
+                                    for attrName, attrValue in pairs(state:GetAttributes()) do
+                                        if attrValue == true then
+                                            -- Pastikan attribute adalah modifier yang sah dari list TDS_Modifiers (Logika Upcoming Wave)
+                                            for _, validMod in pairs(TDS_Modifiers) do
+                                                if attrName == validMod then
+                                                    liveMods[attrName] = true
+                                                    break
+                                                end
+                                            end
+                                        end
+                                    end
 
-                                    -- BUAT GROUP KEY (Ini yang akan memisahkan Tab Biasa vs Modifier)
+                                    -- Format teks agar 100% mirip dengan Upcoming Wave
+                                    local modList = {}
+                                    for m, _ in pairs(liveMods) do table.insert(modList, m) end
+                                    table.sort(modList)
+                                    local modString = #modList > 0 and " [" .. table.concat(modList, ", ") .. "]" or ""
+
+                                    -- KEY PEMISAH TAB: Nama Musuh + String Modifikator
                                     local groupKey = name .. modString
 
                                     if not EnemyGroups[groupKey] then 
@@ -2662,12 +2667,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         if groupData.MaxHP_Sample > 15000 then icon = "👑"
                         elseif groupData.MaxHP_Sample > 5000 then icon = "💀" end
                         
-                        -- Setel warna nama (Sama persis dengan Upcoming Wave)
+                        -- Pewarnaan Teks
                         local nameColor = "#FFFFFF"
                         if groupData.ModString ~= "" then nameColor = "#FF5050" end
                         if groupData.Name:find("Boss") or groupData.Name:find("King") then nameColor = "#B450FF" end
 
-                        -- Text Rendering dengan RichText
+                        -- Setup Teks Judul Tab dengan RichText
                         groupUI.Title.Text = string.format("%s <font color='%s'>%s</font><font color='#FFBB55'>%s</font> <font color='#666677'>[x%d]</font>", 
                             icon, nameColor, groupData.Name, groupData.ModString, groupData.Count)
                         groupUI.Title.RichText = true
@@ -2677,7 +2682,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             return a.HP > b.HP
                         end)
 
-                        -- HP & Shield Bars (Pill)
+                        -- HP & Shield Bars
                         for pillOrder, indv in ipairs(groupData.Individuals) do
                             local pillUI = EnemyPills[indv.Obj] or CreatePill(indv.Obj, groupUI.Container)
                             pillUI.Pill.Visible = true
@@ -2712,7 +2717,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         groupUI.Card.Size = UDim2.new(1, 0, 0, 28 + (rows * 23))
                     end
 
-                    -- Bersihkan Cache Musuh Yang Sudah Mati
                     for enemyObj, pillUI in pairs(EnemyPills) do 
                         if not ProcessedEnemies[enemyObj] then 
                             pillUI.Pill:Destroy()
@@ -2720,7 +2724,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end 
                     end
 
-                    -- Bersihkan Cache UI Tab Yang Sudah Tidak Ada
                     for groupKey, groupUI in pairs(GroupCards) do 
                         if not ProcessedGroups[groupKey] then 
                             groupUI.Card:Destroy()
