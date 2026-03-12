@@ -2129,7 +2129,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local GroupCards, EnemyPills = {}, {} 
     local CachedModeModule, CachedModeName
     local LastProcessedWave = -1
-    local GlobalEnemyModsCache = {} -- Cache untuk menyimpan Modifier dari ModuleScript
 
     local function FormatNumber(n)
         if type(n) ~= "number" then return "0" end
@@ -2504,9 +2503,21 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if v then
                 local LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
                 
-                -- Reset data saat fitur baru dinyalakan
                 LastProcessedWave = -1
-                GlobalEnemyModsCache = {}
+
+                -- Fungsi untuk membaca Modifier langsung dari Musuh yang sedang Hidup di Map
+                local function GetLiveEnemyMods(state)
+                    local mods = {}
+                    -- Mengecek attribute musuh menggunakan list TDS_Modifiers dari Upcoming Wave
+                    for _, modName in pairs(TDS_Modifiers) do
+                        if state:GetAttribute(modName) == true then
+                            table.insert(mods, modName)
+                        end
+                    end
+                    -- Sort agar urutannya konsisten
+                    table.sort(mods)
+                    return #mods > 0 and " [" .. table.concat(mods, ", ") .. "]" or ""
+                end
 
                 TrackerConnection = RunService.Heartbeat:Connect(function()
                     if not Globals.EnemyTracker then return end
@@ -2514,9 +2525,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     local currentWave = GetFastWave()
                     
                     -- ==========================================
-                    -- 1. UPDATE UPCOMING WAVE & MODIFIER CACHE
+                    -- 1. UPDATE UPCOMING WAVE
                     -- ==========================================
-                    -- Update hanya saat Wave berubah agar FPS tidak drop (Sangat Optimal)
                     if currentWave ~= LastProcessedWave then
                         LastProcessedWave = currentWave
                         local nextWaveNum = currentWave + 1
@@ -2533,23 +2543,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             
                             if success and type(modeData) == "table" and modeData.Waves then
                                 
-                                -- MENGGUNAKAN LOGIC UPCOMING WAVE: 
-                                -- Membaca ModuleScript untuk mencari Modifier dan menyimpannya ke Cache Live Radar
-                                GlobalEnemyModsCache = {} 
-                                for wIdx = 1, nextWaveNum do
-                                    local wData = modeData.Waves[wIdx]
-                                    if type(wData) == "table" and wData.WaveTimeline and wData.WaveTimeline.Enemies then
-                                        for _, eData in ipairs(wData.WaveTimeline.Enemies) do
-                                            if eData.Name and eData.Modifiers then
-                                                local parsed = ParseModifiers(eData.Modifiers)
-                                                if parsed ~= "" then
-                                                    GlobalEnemyModsCache[eData.Name] = parsed
-                                                end
-                                            end
-                                        end
-                                    end
-                                end
-
                                 local function GetWaveEconomy(targetWave)
                                     local wCash, cBonus = 0, 0
                                     if targetWave > 0 then
@@ -2602,7 +2595,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 end
                             else
                                 WaveInfoLabel.Text = "SYSTEM ERROR: FAILED TO PARSE MODULE"
-                                CachedModeModule = nil 
                                 CreateUpcomingEntry(UpcomingScroll, "Data corruption detected.", Color3.fromRGB(255, 50, 50))
                             end
                         else
@@ -2630,15 +2622,25 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
                                     
-                                    -- Menarik Modifier dari Cache yang menggunakan logic Upcoming Wave
-                                    local eMods = GlobalEnemyModsCache[name] or ""
+                                    -- Membaca Modifier aktual dari musuh tersebut
+                                    local eMods = GetLiveEnemyMods(state)
+                                    
+                                    -- KUNCI PENTING: Menggabungkan Nama + Modifier sebagai Group Key
+                                    -- Ini akan memisahkan "Speedy" biasa dengan "Speedy [Bloated]"
+                                    local groupKey = name .. eMods
 
-                                    if not EnemyGroups[name] then 
-                                        EnemyGroups[name] = { Name = name, Mods = eMods, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
+                                    if not EnemyGroups[groupKey] then 
+                                        EnemyGroups[groupKey] = { 
+                                            Name = name, 
+                                            Mods = eMods, 
+                                            Count = 0, 
+                                            MaxHP_Sample = maxHP, 
+                                            Individuals = {} 
+                                        } 
                                     end
                                     
-                                    EnemyGroups[name].Count = EnemyGroups[name].Count + 1
-                                    table.insert(EnemyGroups[name].Individuals, { 
+                                    EnemyGroups[groupKey].Count = EnemyGroups[groupKey].Count + 1
+                                    table.insert(EnemyGroups[groupKey].Individuals, { 
                                         Obj = enemy, HP = health, MaxHP = maxHP, 
                                         Shield = shield, MaxShield = maxShield, 
                                         IsTargeted = (enemy == Globals.CurrentTargetModel) 
@@ -2650,12 +2652,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     end
 
                     local SortedGroups, ProcessedGroups = {}, {}
-                    for _, gd in pairs(EnemyGroups) do table.insert(SortedGroups, gd) end
+                    for groupKey, gd in pairs(EnemyGroups) do 
+                        gd.GroupKey = groupKey 
+                        table.insert(SortedGroups, gd) 
+                    end
+                    -- Mengurutkan berdasarkan HP Tertinggi
                     table.sort(SortedGroups, function(a, b) return a.MaxHP_Sample > b.MaxHP_Sample end)
 
                     for groupOrder, groupData in ipairs(SortedGroups) do
-                        ProcessedGroups[groupData.Name] = true
-                        local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, LiveScroll)
+                        ProcessedGroups[groupData.GroupKey] = true
+                        local groupUI = GroupCards[groupData.GroupKey] or CreateGroupCard(groupData.GroupKey, LiveScroll)
                         groupUI.Card.Visible = true
                         groupUI.Card.LayoutOrder = groupOrder
                         
@@ -2663,7 +2669,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         if groupData.MaxHP_Sample > 15000 then icon = "👑"
                         elseif groupData.MaxHP_Sample > 5000 then icon = "💀" end
                         
-                        -- Mengaplikasikan UI: Icon, Nama, [Modifier], dan Jumlah 
+                        -- Mengaplikasikan UI: Icon, Nama, [Modifier], dan Jumlah
                         groupUI.Title.Text = string.format("%s %s<font color='#FFBB55'>%s</font> <font color='#666677'>[x%d]</font>", icon, groupData.Name, groupData.Mods, groupData.Count)
                         groupUI.Title.RichText = true
 
@@ -2706,6 +2712,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         groupUI.Card.Size = UDim2.new(1, 0, 0, 28 + (rows * 23))
                     end
 
+                    -- Membersihkan UI Musuh & Group yang sudah mati
                     for enemyObj, pillUI in pairs(EnemyPills) do 
                         if not ProcessedEnemies[enemyObj] then 
                             pillUI.Pill:Destroy()
@@ -2713,10 +2720,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end 
                     end
 
-                    for groupName, groupUI in pairs(GroupCards) do 
-                        if not ProcessedGroups[groupName] then 
+                    for groupKey, groupUI in pairs(GroupCards) do 
+                        if not ProcessedGroups[groupKey] then 
                             groupUI.Card:Destroy()
-                            GroupCards[groupName] = nil 
+                            GroupCards[groupKey] = nil 
                         end 
                     end
                 end)
