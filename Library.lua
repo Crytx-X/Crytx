@@ -2493,7 +2493,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     Misc:Toggle({
-        Title = "Advanced Enemy Radars",
+        Title = "Advanced Enemy Radar",
         Desc = "Displays Upcoming Waves and Live Enemy Tracker",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
@@ -2503,30 +2503,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if v then
                 local LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
                 
-                LastProcessedWave = -1
-
-                -- Fungsi untuk membaca Modifier langsung dari Musuh yang sedang Hidup di Map
-                local function GetLiveEnemyMods(state)
-                    local mods = {}
-                    -- Mengecek attribute musuh menggunakan list TDS_Modifiers dari Upcoming Wave
-                    for _, modName in pairs(TDS_Modifiers) do
-                        if state:GetAttribute(modName) == true then
-                            table.insert(mods, modName)
-                        end
-                    end
-                    -- Sort agar urutannya konsisten
-                    table.sort(mods)
-                    return #mods > 0 and " [" .. table.concat(mods, ", ") .. "]" or ""
-                end
-
                 TrackerConnection = RunService.Heartbeat:Connect(function()
                     if not Globals.EnemyTracker then return end
                     
                     local currentWave = GetFastWave()
-                    
-                    -- ==========================================
-                    -- 1. UPDATE UPCOMING WAVE
-                    -- ==========================================
                     if currentWave ~= LastProcessedWave then
                         LastProcessedWave = currentWave
                         local nextWaveNum = currentWave + 1
@@ -2595,6 +2575,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 end
                             else
                                 WaveInfoLabel.Text = "SYSTEM ERROR: FAILED TO PARSE MODULE"
+                                CachedModeModule = nil 
                                 CreateUpcomingEntry(UpcomingScroll, "Data corruption detected.", Color3.fromRGB(255, 50, 50))
                             end
                         else
@@ -2603,9 +2584,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
 
-                    -- ==========================================
-                    -- 2. UPDATE LIVE ENEMY 
-                    -- ==========================================
                     local EnemyGroups, ProcessedEnemies = {}, {}
                     local NPCs = workspace:FindFirstChild("NPCs")
                     
@@ -2621,26 +2599,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local shield = state:GetAttribute("Shield") or 0
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
-                                    
-                                    -- Membaca Modifier aktual dari musuh tersebut
-                                    local eMods = GetLiveEnemyMods(state)
-                                    
-                                    -- KUNCI PENTING: Menggabungkan Nama + Modifier sebagai Group Key
-                                    -- Ini akan memisahkan "Speedy" biasa dengan "Speedy [Bloated]"
-                                    local groupKey = name .. eMods
 
-                                    if not EnemyGroups[groupKey] then 
-                                        EnemyGroups[groupKey] = { 
-                                            Name = name, 
-                                            Mods = eMods, 
-                                            Count = 0, 
-                                            MaxHP_Sample = maxHP, 
-                                            Individuals = {} 
-                                        } 
+                                    if not EnemyGroups[name] then 
+                                        EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
                                     end
                                     
-                                    EnemyGroups[groupKey].Count = EnemyGroups[groupKey].Count + 1
-                                    table.insert(EnemyGroups[groupKey].Individuals, { 
+                                    EnemyGroups[name].Count = EnemyGroups[name].Count + 1
+                                    table.insert(EnemyGroups[name].Individuals, { 
                                         Obj = enemy, HP = health, MaxHP = maxHP, 
                                         Shield = shield, MaxShield = maxShield, 
                                         IsTargeted = (enemy == Globals.CurrentTargetModel) 
@@ -2652,16 +2617,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     end
 
                     local SortedGroups, ProcessedGroups = {}, {}
-                    for groupKey, gd in pairs(EnemyGroups) do 
-                        gd.GroupKey = groupKey 
-                        table.insert(SortedGroups, gd) 
-                    end
-                    -- Mengurutkan berdasarkan HP Tertinggi
+                    for _, gd in pairs(EnemyGroups) do table.insert(SortedGroups, gd) end
                     table.sort(SortedGroups, function(a, b) return a.MaxHP_Sample > b.MaxHP_Sample end)
 
                     for groupOrder, groupData in ipairs(SortedGroups) do
-                        ProcessedGroups[groupData.GroupKey] = true
-                        local groupUI = GroupCards[groupData.GroupKey] or CreateGroupCard(groupData.GroupKey, LiveScroll)
+                        ProcessedGroups[groupData.Name] = true
+                        local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, LiveScroll)
                         groupUI.Card.Visible = true
                         groupUI.Card.LayoutOrder = groupOrder
                         
@@ -2669,8 +2630,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         if groupData.MaxHP_Sample > 15000 then icon = "👑"
                         elseif groupData.MaxHP_Sample > 5000 then icon = "💀" end
                         
-                        -- Mengaplikasikan UI: Icon, Nama, [Modifier], dan Jumlah
-                        groupUI.Title.Text = string.format("%s %s<font color='#FFBB55'>%s</font> <font color='#666677'>[x%d]</font>", icon, groupData.Name, groupData.Mods, groupData.Count)
+                        groupUI.Title.Text = string.format("%s %s <font color='#666677'>[x%d]</font>", icon, groupData.Name, groupData.Count)
                         groupUI.Title.RichText = true
 
                         table.sort(groupData.Individuals, function(a, b)
@@ -2712,7 +2672,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         groupUI.Card.Size = UDim2.new(1, 0, 0, 28 + (rows * 23))
                     end
 
-                    -- Membersihkan UI Musuh & Group yang sudah mati
                     for enemyObj, pillUI in pairs(EnemyPills) do 
                         if not ProcessedEnemies[enemyObj] then 
                             pillUI.Pill:Destroy()
@@ -2720,10 +2679,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end 
                     end
 
-                    for groupKey, groupUI in pairs(GroupCards) do 
-                        if not ProcessedGroups[groupKey] then 
+                    for groupName, groupUI in pairs(GroupCards) do 
+                        if not ProcessedGroups[groupName] then 
                             groupUI.Card:Destroy()
-                            GroupCards[groupKey] = nil 
+                            GroupCards[groupName] = nil 
                         end 
                     end
                 end)
