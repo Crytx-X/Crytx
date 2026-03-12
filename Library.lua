@@ -2166,94 +2166,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-    -- // ==========================================
-    -- // ADVANCED RADAR: ULTIMATE PREMIUM EDITION
-    -- // ==========================================
-    
-    local TrackerUI, TrackerConnection
-    local GroupCards, EnemyPills = {}, {} 
-    local CachedModeModule, CachedModeName
-    local LastProcessedWave = -1
-
-    local function FormatNumber(n)
-        if type(n) ~= "number" then return "0" end
-        if n >= 1e6 then return string.format("%.1fM", n / 1e6)
-        elseif n >= 1e3 then return string.format("%.1fK", n / 1e3)
-        end
-        return tostring(math.floor(n))
-    end
-
-    local function GetModeDataModule()
-        if CachedModeModule then return CachedModeModule, CachedModeName end
-        
-        local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        if not state then return nil, "Waiting for State..." end
-
-        local modeObj = state:FindFirstChild("Mode")
-        local diffObj = state:FindFirstChild("Difficulty")
-
-        local modeName = (modeObj and modeObj.Value ~= "") and modeObj.Value or nil
-        local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or nil
-
-        if not modeName or not diffName then return nil, "None" end
-        CachedModeName = diffName
-
-        local content = ReplicatedStorage:FindFirstChild("Content")
-        local gamemodes = content and content:FindFirstChild("Gamemodes")
-        if not gamemodes then return nil, "Missing Gamemodes Folder" end
-
-        local function cleanString(str) return str:lower():gsub("[%s%p]", "") end
-        local safeMode, safeDiff = cleanString(modeName), cleanString(diffName)
-
-        local mFolder = gamemodes:FindFirstChild(modeName)
-        if mFolder then
-            local diffsFolder = mFolder:FindFirstChild("Difficulties")
-            if diffsFolder then
-                local targetDiff = diffsFolder:FindFirstChild(diffName)
-                if targetDiff and targetDiff:FindFirstChild("Waves") then
-                    CachedModeModule = targetDiff.Waves
-                    return CachedModeModule, CachedModeName
-                end
-            end
-        end
-
-        for _, mDir in ipairs(gamemodes:GetChildren()) do
-            if cleanString(mDir.Name) == safeMode or string.find(cleanString(mDir.Name), safeMode) then
-                local diffsDir = mDir:FindFirstChild("Difficulties")
-                if diffsDir then
-                    for _, dDir in ipairs(diffsDir:GetChildren()) do
-                        if cleanString(dDir.Name) == safeDiff or string.find(cleanString(dDir.Name), safeDiff) then
-                            if dDir:FindFirstChild("Waves") then
-                                CachedModeModule = dDir.Waves
-                                return CachedModeModule, CachedModeName .. " (Fuzzy)"
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        for _, folder in ipairs(gamemodes:GetDescendants()) do
-            if folder:IsA("Folder") and cleanString(folder.Name) == safeDiff then
-                if folder:FindFirstChild("Waves") then
-                    CachedModeModule = folder.Waves
-                    return CachedModeModule, CachedModeName .. " (Deep Scan)"
-                end
-            end
-        end
-        return nil, "Waves Not Found"
-    end
-
-    local function GetFastWave()
-        local pg = LocalPlayer:FindFirstChild("PlayerGui")
-        local container = pg and pg:FindFirstChild("ReactGameTopGameDisplay") 
-        local waveContainer = container and container:FindFirstChild("Frame") and container.Frame:FindFirstChild("wave")
-        if waveContainer and waveContainer:FindFirstChild("container") then
-            return tonumber(waveContainer.container.value.Text:match("^(%d+)")) or 0
-        end
-        return 0
-    end
-
     local TDS_Modifiers = {
         ["1"] = "God", ["2"] = "Hidden", ["3"] = "Flying", ["4"] = "Stunned", 
         ["5"] = "Lead", ["6"] = "CliffUnit", ["7"] = "StunImmune", ["8"] = "Ignore", 
@@ -2270,6 +2182,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local function ParseModifiers(modTable)
         if type(modTable) ~= "table" then return "" end
         local mods = {}
+        
+        -- [FILTER KETAT] Buat daftar validasi agar modifier palsu (seperti TimeScaled) diabaikan
+        local ValidModNames = {}
+        for _, name in pairs(TDS_Modifiers) do
+            ValidModNames[name] = true
+        end
+
         for k, v in pairs(modTable) do
             if v then
                 local strKey = tostring(k)
@@ -2277,9 +2196,17 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 elseif type(k) == "table" and k.Value then strKey = tostring(k.Value)
                 else strKey = tostring(k):match("%d+") or tostring(k) end
                 
-                local modName = TDS_Modifiers[strKey] or strKey
-                if tonumber(strKey) == nil then modName = strKey end 
-                table.insert(mods, modName)
+                local modName = nil
+                
+                if TDS_Modifiers[strKey] then
+                    modName = TDS_Modifiers[strKey]
+                elseif ValidModNames[strKey] then
+                    modName = strKey
+                end
+                
+                if modName then
+                    table.insert(mods, modName)
+                end
             end
         end
         return #mods > 0 and " [" .. table.concat(mods, ", ") .. "]" or ""
@@ -2297,7 +2224,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         TrackerUI.ResetOnSpawn = false
         TrackerUI.Parent = game:GetService("CoreGui")
 
-        -- MAIN GLASS PANEL
         local MainFrame = Instance.new("Frame", TrackerUI)
         MainFrame.Size = UDim2.new(0, 280, 0, 540)
         MainFrame.Position = UDim2.new(1, -295, 0.5, -270)
@@ -2310,7 +2236,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         MainStroke.Transparency = 0.3
         MainStroke.Thickness = 1
 
-        -- TOP NEON ACCENT LINE
         local TopAccent = Instance.new("Frame", MainFrame)
         TopAccent.Size = UDim2.new(1, -16, 0, 2)
         TopAccent.Position = UDim2.new(0, 8, 0, 0)
@@ -2323,7 +2248,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 100))
         })
 
-        -- ================= 1. UPCOMING WAVE SECTION =================
         local UpcomingTitle = Instance.new("TextLabel", MainFrame)
         UpcomingTitle.Size = UDim2.new(1, -24, 0, 24)
         UpcomingTitle.Position = UDim2.new(0, 12, 0, 8)
@@ -2335,7 +2259,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         UpcomingTitle.TextXAlignment = Enum.TextXAlignment.Left
         UpcomingTitle.RichText = true
 
-        -- WIDGET BOX FOR ECONOMY INFO
         local EcoWidget = Instance.new("Frame", MainFrame)
         EcoWidget.Size = UDim2.new(1, -24, 0, 48)
         EcoWidget.Position = UDim2.new(0, 12, 0, 36)
@@ -2355,7 +2278,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         WaveInfoLabel.TextYAlignment = Enum.TextYAlignment.Center
         WaveInfoLabel.RichText = true
 
-        -- UPCOMING SCROLLING FRAME
         local UpcomingScroll = Instance.new("ScrollingFrame", MainFrame)
         UpcomingScroll.Size = UDim2.new(1, -14, 0, 130)
         UpcomingScroll.Position = UDim2.new(0, 7, 0, 92)
@@ -2381,7 +2303,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Divider.BackgroundColor3 = Color3.fromRGB(50, 55, 70)
         Divider.BorderSizePixel = 0
 
-        -- ================= 2. LIVE RADAR SECTION =================
         local LiveTitle = Instance.new("TextLabel", MainFrame)
         LiveTitle.Size = UDim2.new(1, -24, 0, 24)
         LiveTitle.Position = UDim2.new(0, 12, 0, 238)
@@ -2392,7 +2313,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         LiveTitle.TextSize = 12
         LiveTitle.TextXAlignment = Enum.TextXAlignment.Left
 
-        -- LIVE SCROLLING FRAME
         local LiveScroll = Instance.new("ScrollingFrame", MainFrame)
         LiveScroll.Size = UDim2.new(1, -14, 1, -275)
         LiveScroll.Position = UDim2.new(0, 7, 0, 265)
@@ -2415,7 +2335,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel
     end
 
-    -- PREMIUM LIST ITEM FOR UPCOMING WAVE
     local function CreateUpcomingEntry(parent, text, color)
         local EntryBg = Instance.new("Frame", parent)
         EntryBg.Size = UDim2.new(1, 0, 0, 22)
@@ -2423,7 +2342,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         EntryBg.BackgroundTransparency = 0.5
         Instance.new("UICorner", EntryBg).CornerRadius = UDim.new(0, 4)
         
-        -- Left Color Strip indicator
         local ColorStrip = Instance.new("Frame", EntryBg)
         ColorStrip.Size = UDim2.new(0, 3, 1, -8)
         ColorStrip.Position = UDim2.new(0, 4, 0, 4)
@@ -2461,7 +2379,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HeaderBg.BackgroundTransparency = 0.2
         HeaderBg.BorderSizePixel = 0
         Instance.new("UICorner", HeaderBg).CornerRadius = UDim.new(0, 6)
-        -- Hide bottom corners of header
+        
         local Hider = Instance.new("Frame", HeaderBg)
         Hider.Size = UDim2.new(1, 0, 0, 4)
         Hider.Position = UDim2.new(0, 0, 1, -4)
@@ -2539,7 +2457,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HPText.Size = UDim2.new(1, 0, 1, 0)
         HPText.BackgroundTransparency = 1
         HPText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        HPText.Font = Enum.Font.Code -- Hacky/Tech Font for numbers!
+        HPText.Font = Enum.Font.Code
         HPText.TextSize = 11
         HPText.ZIndex = 4
         
@@ -2553,7 +2471,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     Misc:Toggle({
-        Title = "Advanced Enemy Radars",
+        Title = "Advanced Enemy Radar",
         Desc = "Displays Upcoming Waves and Live Enemy Tracker",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
@@ -2562,16 +2480,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
             if v then
                 local LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
-                
-                -- [PATCH UI]: Memaksa Padding agar Garis / Outline tidak terpotong (Lebih Rapi)
-                for _, scroll in ipairs({LiveScroll, UpcomingScroll}) do
-                    local pad = scroll:FindFirstChildOfClass("UIPadding")
-                    if not pad then pad = Instance.new("UIPadding", scroll) end
-                    pad.PaddingTop = UDim.new(0, 5)    -- Mendorong Card ke bawah agar garis atas tidak potong
-                    pad.PaddingBottom = UDim.new(0, 10)
-                    pad.PaddingLeft = UDim.new(0, 5)
-                    pad.PaddingRight = UDim.new(0, 5)
-                end
 
                 TrackerConnection = RunService.Heartbeat:Connect(function()
                     if not Globals.EnemyTracker then return end
@@ -2634,7 +2542,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local nextWaveData = modeData.Waves[nextWaveNum]
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
-                                        -- Menggunakan ParseModifiers asli
                                         local eMods = ParseModifiers(enemy.Modifiers)
                                         local stripColor = Color3.fromRGB(150, 150, 160)
                                         if eMods ~= "" then stripColor = Color3.fromRGB(255, 80, 80) end
@@ -2676,18 +2583,15 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    -- KUMPULKAN DATA MODIFIER UNTUK DIKIRIM KE FUNGSI UPCOMING WAVE
+                                    -- KUMPULKAN ATTRIBUTES MUSUH (FILTER BERLAKU DISINI)
                                     local rawMods = {}
                                     
-                                    -- Cek dari Attribute Model
                                     for k, v in pairs(enemy:GetAttributes()) do 
                                         if v == true then rawMods[k] = true end 
                                     end
-                                    -- Cek dari Attribute State
                                     for k, v in pairs(state:GetAttributes()) do 
                                         if v == true then rawMods[k] = true end 
                                     end
-                                    -- Cek dari Folder Modifiers (Jika ada)
                                     local modFolder = enemy:FindFirstChild("Modifiers") or state:FindFirstChild("Modifiers")
                                     if modFolder then
                                         for _, child in ipairs(modFolder:GetChildren()) do 
@@ -2695,14 +2599,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         end
                                     end
 
-                                    -- PANGGIL FUNGSI PARSE MODIFIER PERSIS SEPERTI UPCOMING WAVE
+                                    -- PANGGIL FUNGSI PARSE MODIFIER (Modifier palsu otomatis terhapus)
                                     local parsedMods = ParseModifiers(rawMods)
                                     local modsTextFormat = ""
                                     if parsedMods ~= "" then
                                         modsTextFormat = "<font color='#FFBB55'>" .. parsedMods .. "</font>"
                                     end
 
-                                    -- Gabungkan Nama & Modifier persis seperti Format Upcoming
+                                    -- Tampilan Card UI
                                     local displayName = baseName .. modsTextFormat
                                     local groupKey = baseName .. "_" .. parsedMods
 
