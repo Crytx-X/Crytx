@@ -2553,7 +2553,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     Misc:Toggle({
-        Title = "Advanced Enemy Radar",
+        Title = "Advanced Enemy Radars",
         Desc = "Displays Upcoming Waves and Live Enemy Tracker",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
@@ -2563,63 +2563,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if v then
                 local LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
                 
-                -- [PATCH UI]: Perbaiki padding agar outline tidak kepotong
-                local UpPad = UpcomingScroll:FindFirstChildOfClass("UIPadding")
-                if UpPad then UpPad.PaddingTop = UDim.new(0, 3) end
-                
-                local LivePad = LiveScroll:FindFirstChildOfClass("UIPadding")
-                if LivePad then LivePad.PaddingTop = UDim.new(0, 3) end
-
-                -- [PATCH MODIFIER]: Fungsi Ekstraktor Brutal untuk Live Enemy
-                local function ExtractLiveModifiers(enemyObj, stateObj)
-                    local activeMods = {}
-                    local foundMods = {}
-
-                    local function addMod(name)
-                        local str = tostring(name)
-                        local mapped = TDS_Modifiers[str] or str
-                        if mapped == "true" or mapped == "false" or tonumber(mapped) then return end
-                        
-                        if not foundMods[mapped] then
-                            foundMods[mapped] = true
-                            table.insert(activeMods, mapped)
-                        end
-                    end
-
-                    if not stateObj then return "" end
-
-                    -- 1. Cek folder "Modifiers" (TDS Update terbaru)
-                    local modFolder = stateObj:FindFirstChild("Modifiers") or enemyObj:FindFirstChild("Modifiers")
-                    if modFolder then
-                        for _, child in ipairs(modFolder:GetChildren()) do
-                            addMod(child.Name)
-                        end
-                    end
-
-                    -- 2. Cek Attributes langsung di State (TDS Update lama/standar)
-                    local attrs = stateObj:GetAttributes()
-                    for k, val in pairs(attrs) do
-                        if val == true then
-                            -- Pastikan attribute ini memang nama modifier yg valid
-                            for _, knownMod in pairs(TDS_Modifiers) do
-                                if k == knownMod then addMod(k); break end
-                            end
-                        end
-                    end
-
-                    -- 3. Cek Attribute "Modifiers" dalam format JSON (Jaga-jaga)
-                    local attrMod = stateObj:GetAttribute("Modifiers")
-                    if type(attrMod) == "string" and attrMod:sub(1,1) == "[" then
-                        pcall(function()
-                            local decoded = game:GetService("HttpService"):JSONDecode(attrMod)
-                            for _, m in pairs(decoded) do addMod(m) end
-                        end)
-                    end
-
-                    if #activeMods > 0 then
-                        return " <font color='#FFBB55'>[" .. table.concat(activeMods, ", ") .. "]</font>"
-                    end
-                    return ""
+                -- [PATCH UI]: Memaksa Padding agar Garis / Outline tidak terpotong (Lebih Rapi)
+                for _, scroll in ipairs({LiveScroll, UpcomingScroll}) do
+                    local pad = scroll:FindFirstChildOfClass("UIPadding")
+                    if not pad then pad = Instance.new("UIPadding", scroll) end
+                    pad.PaddingTop = UDim.new(0, 5)    -- Mendorong Card ke bawah agar garis atas tidak potong
+                    pad.PaddingBottom = UDim.new(0, 10)
+                    pad.PaddingLeft = UDim.new(0, 5)
+                    pad.PaddingRight = UDim.new(0, 5)
                 end
 
                 TrackerConnection = RunService.Heartbeat:Connect(function()
@@ -2683,6 +2634,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local nextWaveData = modeData.Waves[nextWaveNum]
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
+                                        -- Menggunakan ParseModifiers asli
                                         local eMods = ParseModifiers(enemy.Modifiers)
                                         local stripColor = Color3.fromRGB(150, 150, 160)
                                         if eMods ~= "" then stripColor = Color3.fromRGB(255, 80, 80) end
@@ -2724,12 +2676,35 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    -- Inject Mods
-                                    local modsText = ExtractLiveModifiers(enemy, state)
+                                    -- KUMPULKAN DATA MODIFIER UNTUK DIKIRIM KE FUNGSI UPCOMING WAVE
+                                    local rawMods = {}
                                     
-                                    -- Gabungkan nama dan Modifiers agar musuh Hidden/Bloated terpisah grupnya
-                                    local displayName = baseName .. modsText
-                                    local groupKey = baseName .. "_" .. modsText
+                                    -- Cek dari Attribute Model
+                                    for k, v in pairs(enemy:GetAttributes()) do 
+                                        if v == true then rawMods[k] = true end 
+                                    end
+                                    -- Cek dari Attribute State
+                                    for k, v in pairs(state:GetAttributes()) do 
+                                        if v == true then rawMods[k] = true end 
+                                    end
+                                    -- Cek dari Folder Modifiers (Jika ada)
+                                    local modFolder = enemy:FindFirstChild("Modifiers") or state:FindFirstChild("Modifiers")
+                                    if modFolder then
+                                        for _, child in ipairs(modFolder:GetChildren()) do 
+                                            rawMods[child.Name] = true 
+                                        end
+                                    end
+
+                                    -- PANGGIL FUNGSI PARSE MODIFIER PERSIS SEPERTI UPCOMING WAVE
+                                    local parsedMods = ParseModifiers(rawMods)
+                                    local modsTextFormat = ""
+                                    if parsedMods ~= "" then
+                                        modsTextFormat = "<font color='#FFBB55'>" .. parsedMods .. "</font>"
+                                    end
+
+                                    -- Gabungkan Nama & Modifier persis seperti Format Upcoming
+                                    local displayName = baseName .. modsTextFormat
+                                    local groupKey = baseName .. "_" .. parsedMods
 
                                     if not EnemyGroups[groupKey] then 
                                         EnemyGroups[groupKey] = { Key = groupKey, DisplayName = displayName, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
