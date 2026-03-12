@@ -2167,7 +2167,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     -- // ==========================================
-    -- // ADVANCED RADAR: ULTIMATE PREMIUM EDITION (WITH LIVE MODIFIERS)
+    -- // ADVANCED RADAR: ULTIMATE PREMIUM EDITION
     -- // ==========================================
     
     local TrackerUI, TrackerConnection
@@ -2297,6 +2297,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         TrackerUI.ResetOnSpawn = false
         TrackerUI.Parent = game:GetService("CoreGui")
 
+        -- MAIN GLASS PANEL
         local MainFrame = Instance.new("Frame", TrackerUI)
         MainFrame.Size = UDim2.new(0, 280, 0, 540)
         MainFrame.Position = UDim2.new(1, -295, 0.5, -270)
@@ -2309,6 +2310,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         MainStroke.Transparency = 0.3
         MainStroke.Thickness = 1
 
+        -- TOP NEON ACCENT LINE
         local TopAccent = Instance.new("Frame", MainFrame)
         TopAccent.Size = UDim2.new(1, -16, 0, 2)
         TopAccent.Position = UDim2.new(0, 8, 0, 0)
@@ -2321,7 +2323,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 100))
         })
 
-        -- UPCOMING WAVE SECTION
+        -- ================= 1. UPCOMING WAVE SECTION =================
         local UpcomingTitle = Instance.new("TextLabel", MainFrame)
         UpcomingTitle.Size = UDim2.new(1, -24, 0, 24)
         UpcomingTitle.Position = UDim2.new(0, 12, 0, 8)
@@ -2333,6 +2335,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         UpcomingTitle.TextXAlignment = Enum.TextXAlignment.Left
         UpcomingTitle.RichText = true
 
+        -- WIDGET BOX FOR ECONOMY INFO
         local EcoWidget = Instance.new("Frame", MainFrame)
         EcoWidget.Size = UDim2.new(1, -24, 0, 48)
         EcoWidget.Position = UDim2.new(0, 12, 0, 36)
@@ -2352,6 +2355,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         WaveInfoLabel.TextYAlignment = Enum.TextYAlignment.Center
         WaveInfoLabel.RichText = true
 
+        -- UPCOMING SCROLLING FRAME
         local UpcomingScroll = Instance.new("ScrollingFrame", MainFrame)
         UpcomingScroll.Size = UDim2.new(1, -14, 0, 130)
         UpcomingScroll.Position = UDim2.new(0, 7, 0, 92)
@@ -2375,7 +2379,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Divider.BackgroundColor3 = Color3.fromRGB(50, 55, 70)
         Divider.BorderSizePixel = 0
 
-        -- LIVE RADAR SECTION
+        -- ================= 2. LIVE RADAR SECTION =================
         local LiveTitle = Instance.new("TextLabel", MainFrame)
         LiveTitle.Size = UDim2.new(1, -24, 0, 24)
         LiveTitle.Position = UDim2.new(0, 12, 0, 238)
@@ -2386,6 +2390,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         LiveTitle.TextSize = 12
         LiveTitle.TextXAlignment = Enum.TextXAlignment.Left
 
+        -- LIVE SCROLLING FRAME
         local LiveScroll = Instance.new("ScrollingFrame", MainFrame)
         LiveScroll.Size = UDim2.new(1, -14, 1, -275)
         LiveScroll.Position = UDim2.new(0, 7, 0, 265)
@@ -2407,6 +2412,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel
     end
 
+    -- PREMIUM LIST ITEM FOR UPCOMING WAVE
     local function CreateUpcomingEntry(parent, text, color)
         local EntryBg = Instance.new("Frame", parent)
         EntryBg.Size = UDim2.new(1, 0, 0, 22)
@@ -2414,6 +2420,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         EntryBg.BackgroundTransparency = 0.5
         Instance.new("UICorner", EntryBg).CornerRadius = UDim.new(0, 4)
         
+        -- Left Color Strip indicator
         local ColorStrip = Instance.new("Frame", EntryBg)
         ColorStrip.Size = UDim2.new(0, 3, 1, -8)
         ColorStrip.Position = UDim2.new(0, 4, 0, 4)
@@ -2451,6 +2458,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HeaderBg.BackgroundTransparency = 0.2
         HeaderBg.BorderSizePixel = 0
         Instance.new("UICorner", HeaderBg).CornerRadius = UDim.new(0, 6)
+        -- Hide bottom corners of header
         local Hider = Instance.new("Frame", HeaderBg)
         Hider.Size = UDim2.new(1, 0, 0, 4)
         Hider.Position = UDim2.new(0, 0, 1, -4)
@@ -2465,7 +2473,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Title.Font = Enum.Font.GothamBold
         Title.TextSize = 11
         Title.TextXAlignment = Enum.TextXAlignment.Left
-        Title.RichText = true -- PENTING untuk menampilkan warna dan modifier
 
         local PillContainer = Instance.new("Frame", Card)
         PillContainer.Size = UDim2.new(1, -16, 1, -26)
@@ -2529,7 +2536,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         HPText.Size = UDim2.new(1, 0, 1, 0)
         HPText.BackgroundTransparency = 1
         HPText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        HPText.Font = Enum.Font.Code
+        HPText.Font = Enum.Font.Code -- Hacky/Tech Font for numbers!
         HPText.TextSize = 11
         HPText.ZIndex = 4
         
@@ -2565,6 +2572,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local nextWaveNum = currentWave + 1
                         UpcomingTitle.Text = string.format("🔮 UPCOMING WAVE <font color='#888899'>[%d]</font>", nextWaveNum)
                         
+                        -- Destroy Frames, not just TextLabels, because we use custom Frame entries now
                         for _, child in ipairs(UpcomingScroll:GetChildren()) do 
                             if child:IsA("Frame") then child:Destroy() end 
                         end
@@ -2616,6 +2624,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
                                         local eMods = ParseModifiers(enemy.Modifiers)
+                                        -- Determine left strip color based on threat
                                         local stripColor = Color3.fromRGB(150, 150, 160)
                                         if eMods ~= "" then stripColor = Color3.fromRGB(255, 80, 80) end
                                         if enemy.Name:find("Boss") or enemy.Name:find("King") then stripColor = Color3.fromRGB(180, 80, 255) end
@@ -2638,14 +2647,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     end
 
                     -- ==========================================
-                    -- 2. UPDATE LIVE ENEMY (NOW WITH LIVE MODIFIERS)
+                    -- 2. UPDATE LIVE ENEMY 
                     -- ==========================================
                     local EnemyGroups, ProcessedEnemies = {}, {}
                     local NPCs = workspace:FindFirstChild("NPCs")
                     
-                    -- List Modifier Standard yang sering muncul di Atribut Enemy
-                    local StandardModifiers = {"Hidden", "Flying", "Lead", "Boss", "Ghost", "StunImmune", "FreezeImmune"}
-
                     if NPCs then
                         for _, enemy in ipairs(NPCs:GetChildren()) do
                             local pointer = enemy:FindFirstChild("RootPointer")
@@ -2659,28 +2665,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    -- LIVE MODIFIER EXTRACTION (Mengecek attribute secara langsung)
-                                    local activeMods = {}
-                                    for _, mod in ipairs(StandardModifiers) do
-                                        if state:GetAttribute(mod) == true then
-                                            table.insert(activeMods, mod)
-                                        end
-                                    end
-                                    
-                                    local modsText = ""
-                                    if #activeMods > 0 then
-                                        modsText = " <font color='#FFBB55'>[" .. table.concat(activeMods, ", ") .. "]</font>"
-                                    end
-
-                                    -- Simpan modsText di grup (karena enemy dengan nama sama biasanya modifiernya sama)
                                     if not EnemyGroups[name] then 
-                                        EnemyGroups[name] = { 
-                                            Name = name, 
-                                            Count = 0, 
-                                            MaxHP_Sample = maxHP, 
-                                            ModsText = modsText, -- Disimpan di sini!
-                                            Individuals = {} 
-                                        } 
+                                        EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
                                     end
                                     
                                     EnemyGroups[name].Count = EnemyGroups[name].Count + 1
@@ -2705,19 +2691,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         groupUI.Card.Visible = true
                         groupUI.Card.LayoutOrder = groupOrder
                         
-                        -- Cek apakah Boss icon harus dipaksa karena modifier Boss
-                        local isBoss = groupData.ModsText:find("Boss")
                         local icon = "👾"
-                        if groupData.MaxHP_Sample > 15000 or isBoss then icon = "👑"
+                        if groupData.MaxHP_Sample > 15000 then icon = "👑"
                         elseif groupData.MaxHP_Sample > 5000 then icon = "💀" end
                         
-                        -- Menampilkan Modifier di Judul Live Radar
-                        groupUI.Title.Text = string.format("%s %s <font color='#666677'>[x%d]</font>%s", 
-                            icon, 
-                            groupData.Name, 
-                            groupData.Count,
-                            groupData.ModsText -- Ditambahkan di sini!
-                        )
+                        groupUI.Title.Text = string.format("%s %s <font color='#666677'>[x%d]</font>", icon, groupData.Name, groupData.Count)
+                        groupUI.Title.RichText = true
 
                         table.sort(groupData.Individuals, function(a, b)
                             if a.IsTargeted ~= b.IsTargeted then return a.IsTargeted end
@@ -2735,6 +2714,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                             pillUI.LastHP, pillUI.LastShield = indv.HP, indv.Shield
 
+                            -- Target Indicator Lock-on Animation
                             if indv.IsTargeted then 
                                 pillUI.TargetStroke.Transparency = 0
                                 pillUI.TargetStroke.Thickness = 1.5 + math.sin(os.clock() * 15) * 1 
