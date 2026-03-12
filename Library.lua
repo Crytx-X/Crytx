@@ -2166,6 +2166,94 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
+    -- // ==========================================
+    -- // ADVANCED RADAR: ULTIMATE PREMIUM EDITION
+    -- // ==========================================
+    
+    local TrackerUI, TrackerConnection
+    local GroupCards, EnemyPills = {}, {} 
+    local CachedModeModule, CachedModeName
+    local LastProcessedWave = -1
+
+    local function FormatNumber(n)
+        if type(n) ~= "number" then return "0" end
+        if n >= 1e6 then return string.format("%.1fM", n / 1e6)
+        elseif n >= 1e3 then return string.format("%.1fK", n / 1e3)
+        end
+        return tostring(math.floor(n))
+    end
+
+    local function GetModeDataModule()
+        if CachedModeModule then return CachedModeModule, CachedModeName end
+        
+        local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
+        if not state then return nil, "Waiting for State..." end
+
+        local modeObj = state:FindFirstChild("Mode")
+        local diffObj = state:FindFirstChild("Difficulty")
+
+        local modeName = (modeObj and modeObj.Value ~= "") and modeObj.Value or nil
+        local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or nil
+
+        if not modeName or not diffName then return nil, "None" end
+        CachedModeName = diffName
+
+        local content = ReplicatedStorage:FindFirstChild("Content")
+        local gamemodes = content and content:FindFirstChild("Gamemodes")
+        if not gamemodes then return nil, "Missing Gamemodes Folder" end
+
+        local function cleanString(str) return str:lower():gsub("[%s%p]", "") end
+        local safeMode, safeDiff = cleanString(modeName), cleanString(diffName)
+
+        local mFolder = gamemodes:FindFirstChild(modeName)
+        if mFolder then
+            local diffsFolder = mFolder:FindFirstChild("Difficulties")
+            if diffsFolder then
+                local targetDiff = diffsFolder:FindFirstChild(diffName)
+                if targetDiff and targetDiff:FindFirstChild("Waves") then
+                    CachedModeModule = targetDiff.Waves
+                    return CachedModeModule, CachedModeName
+                end
+            end
+        end
+
+        for _, mDir in ipairs(gamemodes:GetChildren()) do
+            if cleanString(mDir.Name) == safeMode or string.find(cleanString(mDir.Name), safeMode) then
+                local diffsDir = mDir:FindFirstChild("Difficulties")
+                if diffsDir then
+                    for _, dDir in ipairs(diffsDir:GetChildren()) do
+                        if cleanString(dDir.Name) == safeDiff or string.find(cleanString(dDir.Name), safeDiff) then
+                            if dDir:FindFirstChild("Waves") then
+                                CachedModeModule = dDir.Waves
+                                return CachedModeModule, CachedModeName .. " (Fuzzy)"
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        for _, folder in ipairs(gamemodes:GetDescendants()) do
+            if folder:IsA("Folder") and cleanString(folder.Name) == safeDiff then
+                if folder:FindFirstChild("Waves") then
+                    CachedModeModule = folder.Waves
+                    return CachedModeModule, CachedModeName .. " (Deep Scan)"
+                end
+            end
+        end
+        return nil, "Waves Not Found"
+    end
+
+    local function GetFastWave()
+        local pg = LocalPlayer:FindFirstChild("PlayerGui")
+        local container = pg and pg:FindFirstChild("ReactGameTopGameDisplay") 
+        local waveContainer = container and container:FindFirstChild("Frame") and container.Frame:FindFirstChild("wave")
+        if waveContainer and waveContainer:FindFirstChild("container") then
+            return tonumber(waveContainer.container.value.Text:match("^(%d+)")) or 0
+        end
+        return 0
+    end
+
     local TDS_Modifiers = {
         ["1"] = "God", ["2"] = "Hidden", ["3"] = "Flying", ["4"] = "Stunned", 
         ["5"] = "Lead", ["6"] = "CliffUnit", ["7"] = "StunImmune", ["8"] = "Ignore", 
