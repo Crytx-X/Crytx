@@ -2501,21 +2501,35 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             
                             if success and type(modeData) == "table" and modeData.Waves then
                                 
-                                -- Fungsi Helper untuk Menghitung Uang & Bonus secara Aman
+                                -- Fungsi Helper untuk Menghitung Uang & Bonus secara Akurat (Support Solo/Co-op)
                                 local function GetWaveEconomy(targetWave)
                                     local wCash, cBonus = 0, 0
                                     if targetWave > 0 then
                                         pcall(function()
+                                            -- 1. Hitung Base Wave Cash (Pakai rumus asli dari game)
                                             if modeData.ExtraOptions and type(modeData.ExtraOptions.WaveCash) == "function" then
                                                 wCash = modeData.ExtraOptions.WaveCash(targetWave)
                                             else
-                                                wCash = 200 + ((targetWave - 1) * 160)
+                                                wCash = 200 + ((targetWave - 1) * 160) -- Fallback jika error
                                             end
+                                            
+                                            -- 2. Hitung Clear Bonus
                                             if modeData.ExtraOptions and modeData.ExtraOptions.ClearBonus then
-                                                cBonus = wCash * (modeData.ExtraOptions.ClearBonus.Percentage or 0.2)
+                                                -- Cek jumlah player hidup di server
+                                                local playersCount = #game:GetService("Players"):GetPlayers()
+                                                local bonusPct = modeData.ExtraOptions.ClearBonus.Percentage or 0.2
+                                                
+                                                -- Jika main SENDIRI (Solo), gunakan SoloPercentage (Bonus 40%)
+                                                if playersCount == 1 and modeData.ExtraOptions.ClearBonus.SoloPercentage then
+                                                    bonusPct = modeData.ExtraOptions.ClearBonus.SoloPercentage
+                                                end
+                                                
+                                                cBonus = wCash * bonusPct
                                             end
                                         end)
                                     end
+                                    
+                                    -- TDS selalu membulatkan uang ke bawah, jadi kita pakai math.floor
                                     return math.floor(wCash), math.floor(cBonus)
                                 end
 
