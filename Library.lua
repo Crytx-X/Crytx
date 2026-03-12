@@ -2179,6 +2179,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local CachedModeModule = nil
     local CachedModeName = nil
     local LastProcessedWave = -1
+    local LastDifficulty = nil 
+    local LastMode = nil       
 
     -- Format Angka (1500 -> 1.5K)
     local function FormatNumber(n)
@@ -2188,46 +2190,44 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         else return tostring(math.floor(n)) end
     end
 
-    -- Sistem Pencarian Module SUPER AKURAT (Prioritas Path Survival)
+    -- Sistem Pencarian Module SUPER AKURAT (Support All Modes & Sandbox)
     local function GetModeDataModule()
-        if CachedModeModule then return CachedModeModule, CachedModeName end
-        
         local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        local difficulty = "Easy" -- Default Fallback
-        local modeName = "Survival" -- Default Game Mode
+        local currentDifficulty = "Easy"
+        local currentMode = "Survival"
         
         if state then
             local diffObj = state:FindFirstChild("Difficulty")
             if diffObj and diffObj.Value and diffObj.Value ~= "" then 
-                difficulty = diffObj.Value 
+                currentDifficulty = diffObj.Value 
             end
             
             local modeObj = state:FindFirstChild("Mode")
             if modeObj and modeObj.Value and modeObj.Value ~= "" then 
-                modeName = modeObj.Value 
+                currentMode = modeObj.Value 
             end
         end
 
-        -- Jika sedang di Sandbox, kita paksa ngambil data dari "Easy" (karena Sandbox basicnya dari Easy/Normal)
-        if difficulty:lower() == "sandbox" then
-            difficulty = "Easy"
-            CachedModeName = "Sandbox"
-        else
-            CachedModeName = difficulty
+        if LastDifficulty ~= currentDifficulty or LastMode ~= currentMode then
+            CachedModeModule = nil
+            LastDifficulty = currentDifficulty
+            LastMode = currentMode
+            LastProcessedWave = -1
         end
 
+        if CachedModeModule then return CachedModeModule, CachedModeName end
+
+        CachedModeName = currentDifficulty
         local gamemodes = ReplicatedStorage:FindFirstChild("Content") and ReplicatedStorage.Content:FindFirstChild("Gamemodes")
         
         if gamemodes then
-            -- 1. MENEMBAK LURUS KE PATH YANG BENAR (Survival -> Difficulties -> [Difficulty] -> Waves)
-            -- Ini mencegah script salah mengambil folder event seperti Pizza Party
-            local targetModeFolder = gamemodes:FindFirstChild(modeName) or gamemodes:FindFirstChild("Survival")
+            local targetModeFolder = gamemodes:FindFirstChild(currentMode)
             
             if targetModeFolder then
                 local diffFolder = targetModeFolder:FindFirstChild("Difficulties")
                 if diffFolder then
                     for _, diff in ipairs(diffFolder:GetChildren()) do
-                        if diff.Name:lower() == difficulty:lower() then
+                        if diff.Name:lower() == currentDifficulty:lower() then
                             local wavesMod = diff:FindFirstChild("Waves")
                             if wavesMod and wavesMod:IsA("ModuleScript") then
                                 CachedModeModule = wavesMod
@@ -2236,21 +2236,44 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
                 end
+                
+                local eventWavesMod = targetModeFolder:FindFirstChild("Waves")
+                if eventWavesMod and eventWavesMod:IsA("ModuleScript") then
+                    CachedModeModule = eventWavesMod
+                    CachedModeName = currentMode 
+                    return CachedModeModule, CachedModeName
+                end
             end
             
-            -- 2. Jika tidak ketemu di Survival, baru kita cari di seluruh folder (Fallback Darurat)
             for _, folder in ipairs(gamemodes:GetDescendants()) do
-                if folder:IsA("Folder") and folder.Name:lower() == difficulty:lower() then
+                if folder:IsA("Folder") and (folder.Name:lower() == currentDifficulty:lower() or folder.Name:lower() == currentMode:lower()) then
                     local wavesMod = folder:FindFirstChild("Waves")
                     if wavesMod and wavesMod:IsA("ModuleScript") then
                         CachedModeModule = wavesMod
-                        return CachedModeModule, CachedModeName .. " (Fallback)"
+                        CachedModeName = folder.Name .. " (Auto-Found)"
+                        return CachedModeModule, CachedModeName
+                    end
+                end
+            end
+
+            if currentDifficulty:lower() == "sandbox" then
+                local fallbackDiffs = {"Intermediate", "Normal", "Easy"} 
+                for _, fDiff in ipairs(fallbackDiffs) do
+                    for _, folder in ipairs(gamemodes:GetDescendants()) do
+                        if folder:IsA("Folder") and folder.Name:lower() == fDiff:lower() then
+                            local wavesMod = folder:FindFirstChild("Waves")
+                            if wavesMod and wavesMod:IsA("ModuleScript") then
+                                CachedModeModule = wavesMod
+                                CachedModeName = "Sandbox (" .. fDiff .. ")"
+                                return CachedModeModule, CachedModeName
+                            end
+                        end
                     end
                 end
             end
         end
         
-        return nil, "Missing Data"
+        return nil, "Waiting for Map Data..."
     end
 
     -- Ambil wave instan tanpa task.wait (Anti Lag)
