@@ -2662,19 +2662,35 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 if health > 0 then
                                     local baseName = enemy.Name:gsub("Enemy$", "")
                                     
-                                    -- Check Modifiers for Live Enemy
+                                    -- [ PATCH MODIFIER ]
                                     local liveMods = {}
                                     local foundMods = {}
                                     
                                     local function addMod(modKey)
-                                        local modName = TDS_Modifiers[tostring(modKey)] or tostring(modKey)
+                                        local strKey = tostring(modKey):match("%d+") or tostring(modKey)
+                                        local modName = TDS_Modifiers[strKey] or strKey
+                                        if tonumber(strKey) == nil then modName = strKey end 
+
                                         if not foundMods[modName] then
                                             foundMods[modName] = true
                                             table.insert(liveMods, modName)
                                         end
                                     end
 
-                                    -- Check for Modifiers Folder
+                                    -- 1. Parse dari Attribute 'Modifiers' (Bentuknya JSON String di TDS)
+                                    local modsAttr = state:GetAttribute("Modifiers")
+                                    if type(modsAttr) == "string" then
+                                        pcall(function()
+                                            local decoded = game:GetService("HttpService"):JSONDecode(modsAttr)
+                                            if type(decoded) == "table" then
+                                                for k, v in pairs(decoded) do
+                                                    if v then addMod(k) end
+                                                end
+                                            end
+                                        end)
+                                    end
+
+                                    -- 2. Parse dari Folder 'Modifiers' (Jika ada)
                                     local modsFolder = state:FindFirstChild("Modifiers")
                                     if modsFolder then
                                         for _, mod in ipairs(modsFolder:GetChildren()) do
@@ -2682,30 +2698,27 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         end
                                     end
 
-                                    -- Check for True Attributes directly on State
+                                    -- 3. Parse dari bool Attributes langsung (Bloated, Hidden, dll)
                                     for attr, val in pairs(state:GetAttributes()) do
                                         if val == true then
-                                            if TDS_Modifiers[tostring(attr)] then
-                                                addMod(attr)
-                                            else
-                                                -- Fallback match for names like "Bloated" stored directly
-                                                for _, knownMod in pairs(TDS_Modifiers) do
-                                                    if attr == knownMod then
-                                                        addMod(attr)
-                                                        break
-                                                    end
+                                            for key, knownMod in pairs(TDS_Modifiers) do
+                                                if attr == knownMod or attr == key then
+                                                    addMod(attr)
+                                                    break
                                                 end
                                             end
                                         end
                                     end
 
-                                    -- Append modifiers to name e.g. "Fallen (Bloated)"
+                                    -- Format persis seperti Upcoming Wave (contoh: "Fallen [Bloated]")
                                     local modString = ""
                                     if #liveMods > 0 then
-                                        modString = " <font color='#FFBB55'>(" .. table.concat(liveMods, ", ") .. ")</font>"
+                                        modString = " <font color='#FFBB55'>[" .. table.concat(liveMods, ", ") .. "]</font>"
                                     end
                                     
                                     local name = baseName .. modString
+                                    -- [ END OF PATCH ]
+
                                     local shield = state:GetAttribute("Shield") or 0
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
