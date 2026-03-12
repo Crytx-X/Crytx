@@ -511,7 +511,7 @@ end
 -- ==========================================
 Globals.CurrentTargetModel = nil
 Globals.CurrentHighlight = nil
-Globals.LockedTargetPosition = nil -- Posisi yang akan ditembak oleh Gatling/Silent Aim
+Globals.LockedTargetPosition = nil 
 
 local function ClearESP()
     if Globals.CurrentHighlight then
@@ -528,16 +528,14 @@ local function ApplyTargetChams(enemyModel)
     end
 
     if Globals.CurrentTargetModel ~= enemyModel then
-        ClearESP() -- Hapus highlight dari musuh lama
+        ClearESP() 
         
-        -- Buat Highlight baru ke musuh yang baru
         local highlight = Instance.new("Highlight")
         highlight.FillColor = Color3.fromRGB(255, 0, 0)
         highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
         highlight.FillTransparency = 0.5
         highlight.OutlineTransparency = 0
         highlight.Adornee = enemyModel
-        -- Simpan di CoreGui agar tidak error saat musuh terhapus
         highlight.Parent = game:GetService("CoreGui") 
 
         Globals.CurrentHighlight = highlight
@@ -545,16 +543,13 @@ local function ApplyTargetChams(enemyModel)
     end
 end
 
--- // LOOP RADAR: BERJALAN 60x PER DETIK SECARA REAL-TIME
 RunService.Heartbeat:Connect(function()
-    -- 1. Bersihkan semua jika fitur mati
     if not Globals.AutoGatling and not Globals.SilentAimEnabled then
         ClearESP()
         Globals.LockedTargetPosition = nil
         return
     end
 
-    -- 2. Cari Posisi Tower / Kamera untuk hitungan jarak (Priority: Close)
     local towerPos = workspace.CurrentCamera.CFrame.Position
     local towersFolder = workspace:FindFirstChild("Towers")
     if towersFolder then
@@ -569,15 +564,13 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- 3. Mulai mencari musuh
     local BestTargetEnemy = nil
     local TargetHitbox = nil
     local MaxDistance = -1
     local MaxHealth = -1
     local MinDist = math.huge
-    local MinDistancePath = math.huge -- Tambahan untuk target "Last"
+    local MinDistancePath = math.huge 
     
-    -- Auto Gatling priority menimpa Silent Aim priority jika Auto Gatling menyala
     local activePriority = Globals.AutoGatling and Globals.AutoGatlingPriority or Globals.TargetPriority
 
     local npcs = workspace:FindFirstChild("NPCs")
@@ -596,7 +589,7 @@ RunService.Heartbeat:Connect(function()
                         MaxDistance = pathDist
                         BestTargetEnemy = enemy
                         TargetHitbox = hitbox
-                    elseif activePriority == "Last" and pathDist < MinDistancePath then -- Logika Target "Last"
+                    elseif activePriority == "Last" and pathDist < MinDistancePath then 
                         MinDistancePath = pathDist
                         BestTargetEnemy = enemy
                         TargetHitbox = hitbox
@@ -617,14 +610,12 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- 4. Simpan posisi target untuk ditembak
     if TargetHitbox then
         Globals.LockedTargetPosition = TargetHitbox.Position
     else
         Globals.LockedTargetPosition = nil
     end
 
-    -- 5. Urus Highlight Visual secara instan
     if BestTargetEnemy and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Highlight" or Globals.TargetChamsType == "Both") then
         ApplyTargetChams(BestTargetEnemy)
     else
@@ -632,17 +623,14 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Visual Tracer
 local function CreateTracer(targetPos)
     local startPos = nil
     local towersFolder = workspace:FindFirstChild("Towers")
     if towersFolder then
         for _, tower in pairs(towersFolder:GetChildren()) do
             local rep = tower:FindFirstChild("TowerReplicator")
-            -- Pastikan ini tower Gatling Gun milik kita
             if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
                 
-                -- Mencari Path: Weapon -> Main -> Barrel (Berdasarkan path yang Anda berikan)
                 local weapon = tower:FindFirstChild("Weapon")
                 if weapon then
                     local main = weapon:FindFirstChild("Main")
@@ -655,7 +643,6 @@ local function CreateTracer(targetPos)
                     end
                 end
                 
-                -- Fallback: Jika Barrel tidak ditemukan (misal lag render), ambil posisi tengah tower
                 if not startPos and tower.PrimaryPart then
                     startPos = tower.PrimaryPart.Position
                 end
@@ -667,7 +654,6 @@ local function CreateTracer(targetPos)
         end
     end
 
-    -- Jika masih tidak ketemu titik awalnya, batalkan
     if not startPos then return end
 
     local tracer = Instance.new("Part")
@@ -681,16 +667,13 @@ local function CreateTracer(targetPos)
     local distance = (targetPos - startPos).Magnitude
     tracer.Size = Vector3.new(0.15, 0.15, distance) 
     
-    -- Memposisikan tracer tepat di antara moncong senjata (Barrel) dan Musuh
     tracer.CFrame = CFrame.lookAt(startPos, targetPos) * CFrame.new(0, 0, -(distance / 2))
     tracer.Parent = workspace.Terrain
 
-    -- Animasi pudar (Fade out)
     TweenService:Create(tracer, TweenInfo.new(0.15), {Transparency = 1}):Play()
     game:GetService("Debris"):AddItem(tracer, 0.15)
 end
 
--- Hook Remote
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
@@ -2176,13 +2159,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     
     local GroupCards = {} 
     local EnemyPills = {} 
+    
     local CachedModeModule = nil
-    local CachedModeName = nil
+    local CachedModeName = "Waiting..."
     local LastProcessedWave = -1
     local LastDifficulty = nil 
     local LastMode = nil       
 
-    -- Format Angka (1500 -> 1.5K)
     local function FormatNumber(n)
         if type(n) ~= "number" then return "0" end
         if n >= 1e6 then return string.format("%.1fM", n / 1e6)
@@ -2190,22 +2173,22 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         else return tostring(math.floor(n)) end
     end
 
-    -- Sistem Pencarian Module SUPER AKURAT (Support All Modes & Sandbox)
     local function GetModeDataModule()
         local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        local currentDifficulty = "Easy"
-        local currentMode = "Survival"
+        
+        local currentDifficulty = ""
+        local currentMode = ""
         
         if state then
             local diffObj = state:FindFirstChild("Difficulty")
-            if diffObj and diffObj.Value and diffObj.Value ~= "" then 
-                currentDifficulty = diffObj.Value 
-            end
+            if diffObj then currentDifficulty = diffObj.Value end
             
             local modeObj = state:FindFirstChild("Mode")
-            if modeObj and modeObj.Value and modeObj.Value ~= "" then 
-                currentMode = modeObj.Value 
-            end
+            if modeObj then currentMode = modeObj.Value end
+        end
+
+        if currentDifficulty == "" or currentDifficulty == "None" then
+            return nil, "Waiting for Voting..."
         end
 
         if LastDifficulty ~= currentDifficulty or LastMode ~= currentMode then
@@ -2217,54 +2200,36 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
         if CachedModeModule then return CachedModeModule, CachedModeName end
 
-        CachedModeName = currentDifficulty
         local gamemodes = ReplicatedStorage:FindFirstChild("Content") and ReplicatedStorage.Content:FindFirstChild("Gamemodes")
-        
-        if gamemodes then
-            local targetModeFolder = gamemodes:FindFirstChild(currentMode)
-            
-            if targetModeFolder then
-                local diffFolder = targetModeFolder:FindFirstChild("Difficulties")
-                if diffFolder then
-                    for _, diff in ipairs(diffFolder:GetChildren()) do
-                        if diff.Name:lower() == currentDifficulty:lower() then
-                            local wavesMod = diff:FindFirstChild("Waves")
-                            if wavesMod and wavesMod:IsA("ModuleScript") then
-                                CachedModeModule = wavesMod
-                                return CachedModeModule, CachedModeName
-                            end
-                        end
-                    end
-                end
-                
-                local eventWavesMod = targetModeFolder:FindFirstChild("Waves")
-                if eventWavesMod and eventWavesMod:IsA("ModuleScript") then
-                    CachedModeModule = eventWavesMod
-                    CachedModeName = currentMode 
-                    return CachedModeModule, CachedModeName
-                end
-            end
-            
-            for _, folder in ipairs(gamemodes:GetDescendants()) do
-                if folder:IsA("Folder") and (folder.Name:lower() == currentDifficulty:lower() or folder.Name:lower() == currentMode:lower()) then
-                    local wavesMod = folder:FindFirstChild("Waves")
-                    if wavesMod and wavesMod:IsA("ModuleScript") then
-                        CachedModeModule = wavesMod
-                        CachedModeName = folder.Name .. " (Auto-Found)"
-                        return CachedModeModule, CachedModeName
-                    end
-                end
+        if not gamemodes then return nil, "Game Data Loading..." end
+
+        local diffAliases = {
+            ["easy"] = {"Easy", "Normal"},
+            ["intermediate"] = {"Intermediate", "Molten"},
+            ["fallen"] = {"Fallen", "Hard"},
+            ["sandbox"] = {"Easy", "Normal", "Intermediate"} 
+        }
+
+        local targets = diffAliases[currentDifficulty:lower()] or {currentDifficulty}
+        local modeFolder = gamemodes:FindFirstChild(currentMode) or gamemodes:FindFirstChild("Survival")
+
+        if modeFolder then
+            local eventWaves = modeFolder:FindFirstChild("Waves")
+            if eventWaves and eventWaves:IsA("ModuleScript") then
+                CachedModeModule = eventWaves
+                CachedModeName = currentMode
+                return CachedModeModule, CachedModeName
             end
 
-            if currentDifficulty:lower() == "sandbox" then
-                local fallbackDiffs = {"Intermediate", "Normal", "Easy"} 
-                for _, fDiff in ipairs(fallbackDiffs) do
-                    for _, folder in ipairs(gamemodes:GetDescendants()) do
-                        if folder:IsA("Folder") and folder.Name:lower() == fDiff:lower() then
-                            local wavesMod = folder:FindFirstChild("Waves")
+            local diffFolder = modeFolder:FindFirstChild("Difficulties")
+            if diffFolder then
+                for _, alias in ipairs(targets) do
+                    for _, child in ipairs(diffFolder:GetChildren()) do
+                        if child.Name:lower() == alias:lower() then
+                            local wavesMod = child:FindFirstChild("Waves")
                             if wavesMod and wavesMod:IsA("ModuleScript") then
                                 CachedModeModule = wavesMod
-                                CachedModeName = "Sandbox (" .. fDiff .. ")"
+                                CachedModeName = currentDifficulty .. " (" .. child.Name .. ")"
                                 return CachedModeModule, CachedModeName
                             end
                         end
@@ -2272,11 +2237,24 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 end
             end
         end
-        
-        return nil, "Waiting for Map Data..."
+
+        for _, alias in ipairs(targets) do
+            for _, folder in ipairs(gamemodes:GetDescendants()) do
+                if folder:IsA("Folder") and folder.Name:lower() == alias:lower() then
+                    local wavesMod = folder:FindFirstChild("Waves")
+                    if wavesMod and wavesMod:IsA("ModuleScript") then
+                        CachedModeModule = wavesMod
+                        CachedModeName = currentDifficulty .. " (Deep Search)"
+                        return CachedModeModule, CachedModeName
+                    end
+                end
+            end
+        end
+
+        CachedModeName = "Data Not Found: " .. currentDifficulty
+        return nil, CachedModeName
     end
 
-    -- Ambil wave instan tanpa task.wait (Anti Lag)
     local function GetFastWave()
         local pg = LocalPlayer:FindFirstChild("PlayerGui")
         if not pg then return 0 end
@@ -2296,17 +2274,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return 0
     end
 
-    -- Penerjemah Angka Modifier menjadi Teks Asli (Boss, Lead, Flying, dll)
     local function GetModifierName(val)
         if type(val) == "string" then return val:gsub("Modifier%.", "") end
         if typeof(val) == "EnumItem" then return val.Name end
         
-        -- Hack: Mengambil module Enum bawaan game untuk mencocokkan angka dengan nama Modifier
         local success, result = pcall(function()
             local TDSEnum = require(game:GetService("ReplicatedStorage").Shared.Modules.Enum)
             if TDSEnum and TDSEnum.Modifier then
                 for name, enumVal in pairs(TDSEnum.Modifier) do
-                    -- Jika cocok, kembalikan namanya (Contoh: value 20 -> kembalikan "Boss")
                     if enumVal == val or (type(enumVal) == "table" and enumVal.Value == val) then
                         return name
                     end
@@ -2316,10 +2291,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end)
 
         if success and result then return result end
-        return tostring(val) -- Fallback ke angka jika gagal
+        return tostring(val) 
     end
 
-    -- Parser untuk Modifier
     local function ParseModifiers(modTable)
         if type(modTable) ~= "table" then return "" end
         local mods = {}
@@ -2360,9 +2334,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         UIStroke.Thickness = 1
         UIStroke.Parent = MainFrame
 
-        -- =======================================
-        -- 1. BAGIAN ATAS: UPCOMING WAVE RADAR
-        -- =======================================
         local UpcomingHeader = Instance.new("Frame")
         UpcomingHeader.Size = UDim2.new(1, 0, 0, 28)
         UpcomingHeader.BackgroundColor3 = Color3.fromRGB(40, 30, 15)
@@ -2411,9 +2382,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Divider.BorderSizePixel = 0
         Divider.Parent = MainFrame
 
-        -- =======================================
-        -- 2. BAGIAN BAWAH: LIVE THREAT RADAR
-        -- =======================================
         local LiveHeader = Instance.new("Frame")
         LiveHeader.Size = UDim2.new(1, 0, 0, 28)
         LiveHeader.Position = UDim2.new(0, 0, 0, 225)
@@ -2563,9 +2531,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 TrackerConnection = RunService.RenderStepped:Connect(function()
                     if not Globals.EnemyTracker then return end
                     
-                    -- ==========================================
-                    -- 1. UPDATE UPCOMING WAVE
-                    -- ==========================================
+                    if GameState == "LOBBY" then
+                        UpcomingTitle.Text = "🔮 RADAR STANDBY"
+                        WaveInfoLabel.Text = "Waiting to join a match..."
+                        
+                        for _, child in ipairs(UpcomingScroll:GetChildren()) do
+                            if child:IsA("TextLabel") then child:Destroy() end
+                        end
+                        return
+                    end
+                    
                     local currentWave = GetFastWave()
                     
                     if currentWave ~= LastProcessedWave then
@@ -2573,7 +2548,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local nextWaveNum = currentWave + 1
                         UpcomingTitle.Text = "🔮 UPCOMING WAVE (" .. nextWaveNum .. ")"
                         
-                        -- Bersihkan List Lama
                         for _, child in ipairs(UpcomingScroll:GetChildren()) do
                             if child:IsA("TextLabel") then child:Destroy() end
                         end
@@ -2585,7 +2559,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             if success and type(modeData) == "table" and modeData.Waves then
                                 local nextWaveData = modeData.Waves[nextWaveNum]
                                 
-                                -- Kalkulasi Uang
                                 local waveCash = 0
                                 local clearBonus = 0
                                 pcall(function()
@@ -2602,7 +2575,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 end)
                                 WaveInfoLabel.Text = string.format("Mode: %s | Cash: $%d | Bonus: $%d", stateDiffName, math.floor(waveCash), math.floor(clearBonus))
 
-                                -- Tampilkan Data Musuh
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
                                     for _, enemy in ipairs(nextWaveData.WaveTimeline.Enemies) do
                                         local eName = enemy.Name or "Unknown"
@@ -2611,7 +2583,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         local eMods = ParseModifiers(enemy.Modifiers)
                                         
                                         local color = Color3.fromRGB(220, 220, 220)
-                                        -- Warna Berdasarkan Modifier
                                         if eMods:find("Boss") then color = Color3.fromRGB(255, 100, 100) end
                                         if eMods:find("Hidden") then color = Color3.fromRGB(150, 150, 255) end
                                         if eMods:find("Bloated") then color = Color3.fromRGB(255, 150, 50) end
@@ -2629,17 +2600,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             else
                                 WaveInfoLabel.Text = "Error: Failed to read module data"
                                 CreateUpcomingEntry(UpcomingScroll, "Data couldn't be loaded properly.", Color3.fromRGB(255, 100, 100))
-                                CachedModeModule = nil -- Reset Cache jika error baca tabel
+                                CachedModeModule = nil 
                             end
                         else
-                            WaveInfoLabel.Text = "No Wave Data Found"
-                            CreateUpcomingEntry(UpcomingScroll, stateDiffName, Color3.fromRGB(255, 100, 100))
+                            WaveInfoLabel.Text = stateDiffName
+                            CreateUpcomingEntry(UpcomingScroll, "Awaiting match start or map loading...", Color3.fromRGB(200, 200, 200))
                         end
                     end
 
-                    -- ==========================================
-                    -- 2. UPDATE LIVE ENEMY (Clean & Optimize)
-                    -- ==========================================
                     local EnemyGroups = {}
                     local ProcessedEnemies = {}
                     local NPCs = workspace:FindFirstChild("NPCs")
@@ -2652,7 +2620,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local health = state:GetAttribute("Health") or 0
                                 
                                 if health > 0 then
-                                    -- Otomatis menghapus kata "Enemy" dari nama internal game
                                     local name = enemy.Name:gsub("Enemy$", "")
                                     
                                     local shield = state:GetAttribute("Shield") or 0
@@ -2811,7 +2778,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             SetSetting("TargetChamsEnabled", state) 
             
             if not state then
-                ClearESP() -- INSTAN HILANG
+                ClearESP() 
             end
         end
     })
@@ -2821,7 +2788,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Dropdown({
         Title = "Auto Gatling Priority",
         Desc = "Choose target priority for Auto Gatling",
-        List = {"First", "Last", "Strongest", "Close"}, -- Ditambah "Last"
+        List = {"First", "Last", "Strongest", "Close"}, 
         Value = Globals.AutoGatlingPriority or "First",
         Callback = function(choice)
             local selected = type(choice) == "table" and choice[1] or choice
@@ -2910,7 +2877,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             end
                         end
 
-                        -- Tembak ke target yang sudah dikunci oleh Sistem Radar (Globals.LockedTargetPosition)
                         if Globals.LockedTargetPosition then
                             for i = 1, Globals.AutoMultiply do
                                 pcall(function()
@@ -2930,7 +2896,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Section({Title = "Gatling Gun"})
     
-    Globals.CustomGatlingApplied = false -- Tidak perlu di-save karena status running (sementara)
+    Globals.CustomGatlingApplied = false 
 
     local function EnsureGatlingHook()
         local success, gganim = pcall(function()
@@ -2946,12 +2912,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         gganim._fireGun = function(self)
             local TargetPosition = nil
 
-            -- Ambil target dari Sistem Radar
             if Globals.SilentAimEnabled and Globals.LockedTargetPosition then
                 TargetPosition = Globals.LockedTargetPosition
             end
 
-            -- Jika target tidak ada / fitur mati, tembak lurus ngikutin crosshair player
             if not TargetPosition then
                 local CameraController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
                 TargetPosition = CameraController.result and CameraController.result.Position or CameraController.position
@@ -2986,7 +2950,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Dropdown({
         Title = "Silent Aim Priority",
         Desc = "Choose target priority for Silent Aim",
-        List = {"First", "Last", "Strongest", "Close"}, -- Ditambah "Last"
+        List = {"First", "Last", "Strongest", "Close"}, 
         Value = Globals.TargetPriority, 
         Callback = function(choice)
             local selected = type(choice) == "table" and choice[1] or choice
@@ -3003,7 +2967,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             SetSetting("SilentAimEnabled", state)
             
             if not state then
-                ClearESP() -- INSTAN HILANG JIKA DIMATIKAN
+                ClearESP() 
             end
             
             local hooked = EnsureGatlingHook()
@@ -3096,7 +3060,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             Globals.PartySpamEnabled = state
             
             if state then
-                -- Fitur ini hanya bisa dipakai di LOBBY
                 if GameState ~= "LOBBY" then
                     Window:Notify({
                         Title = "Error",
@@ -3116,20 +3079,17 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     
                     while Globals.PartySpamEnabled do
                         pcall(function()
-                            -- Buat Party
                             rfunc:InvokeServer("Party", "CreateParty")
                             
-                            -- Invite semua orang
                             for _, plr in ipairs(plrs:GetPlayers()) do
                                 if plr ~= plrs.LocalPlayer then
                                     rfunc:InvokeServer("Party", "InvitePlayer", plr)
                                 end
                             end
                             
-                            -- Keluar Party
                             rfunc:InvokeServer("Party", "LeaveParty")
                         end)
-                        task.wait(0.2) -- Diberi delay 0.2 agar kamu tidak kena kick "Error 268" dari server
+                        task.wait(0.2) 
                     end
                 end)
             end
@@ -3142,20 +3102,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Callback = function()
             local RS = game:GetService("ReplicatedStorage")
 
-            -- 1. Memberi tahu server bahwa kita membuka inventory (Sama seperti fungsi aslinya)
             pcall(function()
                 local NewNetwork = require(RS.Shared.Modules.NewNetwork)
                 NewNetwork.Channel("Inventory"):fireUnreliableServer("OpenInventory")
             end)
 
-            -- 2. Memaksa UI Client untuk Muncul di Layar
             local foundStore = false
             for _, module in ipairs(getloadedmodules()) do
-                -- Mencari module "View" yang ada di dalam folder "Stores"
                 if module.Name == "View" and module.Parent and module.Parent.Name == "Stores" then
                     local Store = require(module)
                     
-                    -- Mengubah tampilan layar langsung ke Inventory (Bypass fungsi setView)
                     Store:commit("setView", "Inventory")
                     foundStore = true
                     print("Berhasil membuka UI Inventory secara paksa!")
