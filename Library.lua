@@ -2170,7 +2170,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     -- // ADVANCED RADAR: UPCOMING WAVE & LIVE ENEMY
     -- // ==========================================
     
-    local TweenService = game:GetService("TweenService")
     local TrackerUI, TrackerConnection
     local GroupCards, EnemyPills = {}, {} 
     local CachedModeModule, CachedModeName
@@ -2181,16 +2180,25 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         if type(n) ~= "number" then return "0" end
         if n >= 1e6 then return string.format("%.1fM", n / 1e6)
         elseif n >= 1e3 then return string.format("%.1fK", n / 1e3)
+        end
         return tostring(math.floor(n))
     end
 
-    -- Sistem Pencarian Module (Dioptimalkan)
+    -- Sistem Pencarian Module 
     local function GetModeDataModule()
         if CachedModeModule then return CachedModeModule, CachedModeName end
         
         local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        local difficulty = state and state:FindFirstChild("Difficulty") and state.Difficulty.Value or "Easy"
-        local modeName = state and state:FindFirstChild("Mode") and state.Mode.Value or "Survival"
+        local difficulty = "Easy"
+        local modeName = "Survival"
+
+        if state then
+            local diffObj = state:FindFirstChild("Difficulty")
+            if diffObj and diffObj.Value and diffObj.Value ~= "" then difficulty = diffObj.Value end
+            
+            local modeObj = state:FindFirstChild("Mode")
+            if modeObj and modeObj.Value and modeObj.Value ~= "" then modeName = modeObj.Value end
+        end
 
         if difficulty:lower() == "sandbox" then
             difficulty, CachedModeName = "Easy", "Sandbox"
@@ -2229,7 +2237,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return 0
     end
 
-    -- Data Modifier Lengkap
+    -- Data Modifier 
     local TDS_Modifiers = {
         ["1"] = "God", ["2"] = "Hidden", ["3"] = "Flying", ["4"] = "Stunned", 
         ["5"] = "Lead", ["6"] = "CliffUnit", ["7"] = "StunImmune", ["8"] = "Ignore", 
@@ -2243,14 +2251,25 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         ["32"] = "Blessed", ["33"] = "Shield", ["34"] = "SpeedBoost", ["35"] = "HiddenExposed"
     }
 
-    -- Parser Modifier Singkat
+    -- Parser Modifier
     local function ParseModifiers(modTable)
         if type(modTable) ~= "table" then return "" end
         local mods = {}
         for k, v in pairs(modTable) do
             if v then
-                local strKey = tostring(typeof(k) == "EnumItem" and k.Value or (type(k) == "table" and k.Value or tostring(k):match("%d+") or k))
-                table.insert(mods, TDS_Modifiers[strKey] or strKey)
+                local strKey = tostring(k)
+                if typeof(k) == "EnumItem" then
+                    strKey = tostring(k.Value)
+                elseif type(k) == "table" and k.Value then
+                    strKey = tostring(k.Value)
+                else
+                    strKey = tostring(k):match("%d+") or tostring(k)
+                end
+                
+                local modName = TDS_Modifiers[strKey] or strKey
+                if not tonumber(strKey) then modName = strKey end 
+                
+                table.insert(mods, modName)
             end
         end
         return #mods > 0 and " [" .. table.concat(mods, ", ") .. "]" or ""
@@ -2387,7 +2406,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         local modeDataModule, stateDiffName = GetModeDataModule()
                         if modeDataModule then
-                            local success, modeData = pcall(require, modeDataModule)
+                            -- DIBENARKAN DI SINI, menggunakan safe function agar tidak error di executor tertentu
+                            local success, modeData = pcall(function() return require(modeDataModule) end)
+                            
                             if success and type(modeData) == "table" and modeData.Waves then
                                 local nextWaveData = modeData.Waves[nextWaveNum]
                                 
@@ -2440,7 +2461,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                                     if not EnemyGroups[name] then EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } end
                                     
-                                    EnemyGroups[name].Count += 1
+                                    EnemyGroups[name].Count = EnemyGroups[name].Count + 1
                                     table.insert(EnemyGroups[name].Individuals, { Obj = enemy, HP = health, MaxHP = maxHP, Shield = shield, MaxShield = state:GetAttribute("MaxShield") or shield, IsTargeted = (enemy == Globals.CurrentTargetModel) })
                                     ProcessedEnemies[enemy] = true
                                 end
