@@ -2167,7 +2167,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     -- // ==========================================
-    -- // ADVANCED RADAR: UPCOMING WAVE & LIVE ENEMY (ALL MODES SUPPORT)
+    -- // ADVANCED RADAR: UPCOMING WAVE & LIVE ENEMY
     -- // ==========================================
     
     local TweenService = game:GetService("TweenService")
@@ -2188,51 +2188,49 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         else return tostring(math.floor(n)) end
     end
 
-    -- Sistem Pencarian Module Dynamic (Support SEMUA Mode & Difficulty)
+    -- Sistem Pencarian Module SUPER AKURAT (Prioritas Path Survival)
     local function GetModeDataModule()
         if CachedModeModule then return CachedModeModule, CachedModeName end
         
         local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        local modeName = "Survival"      
-        local difficultyName = "Unknown" 
+        local difficulty = "Easy" -- Default Fallback
+        local modeName = "Survival" -- Default Game Mode
         
         if state then
+            local diffObj = state:FindFirstChild("Difficulty")
+            if diffObj and diffObj.Value and diffObj.Value ~= "" then 
+                difficulty = diffObj.Value 
+            end
+            
             local modeObj = state:FindFirstChild("Mode")
             if modeObj and modeObj.Value and modeObj.Value ~= "" then 
                 modeName = modeObj.Value 
             end
-            
-            local diffObj = state:FindFirstChild("Difficulty")
-            if diffObj and diffObj.Value and diffObj.Value ~= "" then 
-                difficultyName = diffObj.Value 
-            end
         end
 
-        if difficultyName:lower() == "sandbox" then
-            difficultyName = "Easy"
-            CachedModeName = modeName .. " - Sandbox"
+        -- Jika sedang di Sandbox, kita paksa ngambil data dari "Easy" (karena Sandbox basicnya dari Easy/Normal)
+        if difficulty:lower() == "sandbox" then
+            difficulty = "Easy"
+            CachedModeName = "Sandbox"
+        else
+            CachedModeName = difficulty
         end
 
         local gamemodes = ReplicatedStorage:FindFirstChild("Content") and ReplicatedStorage.Content:FindFirstChild("Gamemodes")
         
         if gamemodes then
-            local targetModeFolder = nil
-            for _, child in ipairs(gamemodes:GetChildren()) do
-                if child.Name:lower() == modeName:lower() then
-                    targetModeFolder = child
-                    break
-                end
-            end
+            -- 1. MENEMBAK LURUS KE PATH YANG BENAR (Survival -> Difficulties -> [Difficulty] -> Waves)
+            -- Ini mencegah script salah mengambil folder event seperti Pizza Party
+            local targetModeFolder = gamemodes:FindFirstChild(modeName) or gamemodes:FindFirstChild("Survival")
             
             if targetModeFolder then
                 local diffFolder = targetModeFolder:FindFirstChild("Difficulties")
                 if diffFolder then
                     for _, diff in ipairs(diffFolder:GetChildren()) do
-                        if diff.Name:lower() == difficultyName:lower() then
+                        if diff.Name:lower() == difficulty:lower() then
                             local wavesMod = diff:FindFirstChild("Waves")
                             if wavesMod and wavesMod:IsA("ModuleScript") then
                                 CachedModeModule = wavesMod
-                                CachedModeName = modeName .. " - " .. diff.Name
                                 return CachedModeModule, CachedModeName
                             end
                         end
@@ -2240,21 +2238,22 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 end
             end
             
+            -- 2. Jika tidak ketemu di Survival, baru kita cari di seluruh folder (Fallback Darurat)
             for _, folder in ipairs(gamemodes:GetDescendants()) do
-                if folder:IsA("Folder") and folder.Name:lower() == difficultyName:lower() then
+                if folder:IsA("Folder") and folder.Name:lower() == difficulty:lower() then
                     local wavesMod = folder:FindFirstChild("Waves")
                     if wavesMod and wavesMod:IsA("ModuleScript") then
                         CachedModeModule = wavesMod
-                        CachedModeName = modeName .. " - " .. folder.Name .. " (Fallback)"
-                        return CachedModeModule, CachedModeName
+                        return CachedModeModule, CachedModeName .. " (Fallback)"
                     end
                 end
             end
         end
         
-        return nil, modeName .. " - " .. difficultyName .. " (No Data)"
+        return nil, "Missing Data"
     end
 
+    -- Ambil wave instan tanpa task.wait (Anti Lag)
     local function GetFastWave()
         local pg = LocalPlayer:FindFirstChild("PlayerGui")
         if not pg then return 0 end
@@ -2274,34 +2273,17 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return 0
     end
 
-    -- KAMUS PENERJEMAH MODIFIER MANUAL
-    local KnownModifiers = {
-        [1] = "Hidden",
-        [2] = "Flying",
-        [3] = "Lead",
-        [4] = "Ghost",
-        [10] = "Boss",
-        [11] = "MiniBoss",
-        [12] = "MajorBoss",
-        [20] = "Bloated",
-        [21] = "Enraged",
-        [22] = "Shielded"
-    }
-
+    -- Penerjemah Angka Modifier menjadi Teks Asli (Boss, Lead, Flying, dll)
     local function GetModifierName(val)
         if type(val) == "string" then return val:gsub("Modifier%.", "") end
         if typeof(val) == "EnumItem" then return val.Name end
         
-        -- Cek di Kamus Manual kita terlebih dahulu
-        if type(val) == "number" and KnownModifiers[val] then
-            return KnownModifiers[val]
-        end
-        
-        -- Jika tidak ada di kamus, coba tebak pakai Module gamenya
+        -- Hack: Mengambil module Enum bawaan game untuk mencocokkan angka dengan nama Modifier
         local success, result = pcall(function()
             local TDSEnum = require(game:GetService("ReplicatedStorage").Shared.Modules.Enum)
             if TDSEnum and TDSEnum.Modifier then
                 for name, enumVal in pairs(TDSEnum.Modifier) do
+                    -- Jika cocok, kembalikan namanya (Contoh: value 20 -> kembalikan "Boss")
                     if enumVal == val or (type(enumVal) == "table" and enumVal.Value == val) then
                         return name
                     end
@@ -2311,9 +2293,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end)
 
         if success and result then return result end
-        return "Mod:" .. tostring(val) -- Jika benar-benar gagal, tulis "Mod:10"
+        return tostring(val) -- Fallback ke angka jika gagal
     end
 
+    -- Parser untuk Modifier
     local function ParseModifiers(modTable)
         if type(modTable) ~= "table" then return "" end
         local mods = {}
@@ -2354,6 +2337,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         UIStroke.Thickness = 1
         UIStroke.Parent = MainFrame
 
+        -- =======================================
+        -- 1. BAGIAN ATAS: UPCOMING WAVE RADAR
+        -- =======================================
         local UpcomingHeader = Instance.new("Frame")
         UpcomingHeader.Size = UDim2.new(1, 0, 0, 28)
         UpcomingHeader.BackgroundColor3 = Color3.fromRGB(40, 30, 15)
@@ -2376,7 +2362,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         WaveInfoLabel.Size = UDim2.new(1, -20, 0, 20)
         WaveInfoLabel.Position = UDim2.new(0, 10, 0, 30)
         WaveInfoLabel.BackgroundTransparency = 1
-        WaveInfoLabel.Text = "Loading Match Data..."
+        WaveInfoLabel.Text = "Loading..."
         WaveInfoLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
         WaveInfoLabel.Font = Enum.Font.GothamSemibold
         WaveInfoLabel.TextSize = 10
@@ -2402,6 +2388,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Divider.BorderSizePixel = 0
         Divider.Parent = MainFrame
 
+        -- =======================================
+        -- 2. BAGIAN BAWAH: LIVE THREAT RADAR
+        -- =======================================
         local LiveHeader = Instance.new("Frame")
         LiveHeader.Size = UDim2.new(1, 0, 0, 28)
         LiveHeader.Position = UDim2.new(0, 0, 0, 225)
@@ -2539,7 +2528,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Toggle({
         Title = "Advanced Enemy Radar",
-        Desc = "Displays Upcoming Waves and Live Enemy Trackers",
+        Desc = "Displays Upcoming Waves and Live Enemy Tracker",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
             Globals.EnemyTracker = v
@@ -2566,7 +2555,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             if child:IsA("TextLabel") then child:Destroy() end
                         end
 
-                        local modeDataModule, stateInfoName = GetModeDataModule()
+                        local modeDataModule, stateDiffName = GetModeDataModule()
                         if modeDataModule then
                             local success, modeData = pcall(function() return require(modeDataModule) end)
                             
@@ -2588,8 +2577,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         clearBonus = waveCash * pct
                                     end
                                 end)
-                                
-                                WaveInfoLabel.Text = string.format("Mode: %s\n💰 Cash: $%d | Bonus: $%d", stateInfoName, math.floor(waveCash), math.floor(clearBonus))
+                                WaveInfoLabel.Text = string.format("Mode: %s | Cash: $%d | Bonus: $%d", stateDiffName, math.floor(waveCash), math.floor(clearBonus))
 
                                 -- Tampilkan Data Musuh
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
@@ -2600,7 +2588,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                         local eMods = ParseModifiers(enemy.Modifiers)
                                         
                                         local color = Color3.fromRGB(220, 220, 220)
-                                        -- Highlight warna teks berdasarkan kata Modifier
+                                        -- Warna Berdasarkan Modifier
                                         if eMods:find("Boss") then color = Color3.fromRGB(255, 100, 100) end
                                         if eMods:find("Hidden") then color = Color3.fromRGB(150, 150, 255) end
                                         if eMods:find("Bloated") then color = Color3.fromRGB(255, 150, 50) end
@@ -2618,11 +2606,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             else
                                 WaveInfoLabel.Text = "Error: Failed to read module data"
                                 CreateUpcomingEntry(UpcomingScroll, "Data couldn't be loaded properly.", Color3.fromRGB(255, 100, 100))
-                                CachedModeModule = nil 
+                                CachedModeModule = nil -- Reset Cache jika error baca tabel
                             end
                         else
-                            WaveInfoLabel.Text = "Data: " .. tostring(stateInfoName)
-                            CreateUpcomingEntry(UpcomingScroll, "Waiting for match data...", Color3.fromRGB(150, 150, 150))
+                            WaveInfoLabel.Text = "No Wave Data Found"
+                            CreateUpcomingEntry(UpcomingScroll, stateDiffName, Color3.fromRGB(255, 100, 100))
                         end
                     end
 
@@ -2641,6 +2629,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 local health = state:GetAttribute("Health") or 0
                                 
                                 if health > 0 then
+                                    -- Otomatis menghapus kata "Enemy" dari nama internal game
                                     local name = enemy.Name:gsub("Enemy$", "")
                                     
                                     local shield = state:GetAttribute("Shield") or 0
