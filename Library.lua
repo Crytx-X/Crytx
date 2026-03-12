@@ -2184,91 +2184,92 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return tostring(math.floor(n))
     end
 
-    -- Sistem Pencarian Module Waves (DIROMBAK TOTAL MENGGUNAKAN FULL PATH)
+    -- Sistem Pencarian Module Waves (TANPA DEFAULT & TANPA SANDBOX)
     local function GetModeDataModule()
         if CachedModeModule then return CachedModeModule, CachedModeName end
         
+        -- 1. Cari folder State
         local state = ReplicatedStorage:FindFirstChild("State") or workspace:FindFirstChild("State")
-        local modeName = "Survival"
-        local diffName = "Normal"
+        if not state then return nil, "Waiting for State..." end
 
-        -- 1. Ambil data state gamemode saat ini
-        if state then
-            local diffObj = state:FindFirstChild("Difficulty")
-            if diffObj and diffObj.Value and diffObj.Value ~= "" then diffName = diffObj.Value end
-            
-            local modeObj = state:FindFirstChild("Mode")
-            if modeObj and modeObj.Value and modeObj.Value ~= "" then modeName = modeObj.Value end
+        -- 2. Ambil nilai Mode dan Difficulty murni dari game
+        local modeObj = state:FindFirstChild("Mode")
+        local diffObj = state:FindFirstChild("Difficulty")
+
+        local modeName = (modeObj and modeObj.Value ~= "") and modeObj.Value or nil
+        local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or nil
+
+        -- Jika data dari game belum ada, kembalikan None
+        if not modeName or not diffName then
+            return nil, "None"
         end
 
-        if diffName:lower() == "sandbox" then
-            diffName, CachedModeName = "Easy", "Sandbox"
-        else
-            CachedModeName = diffName
-        end
+        CachedModeName = diffName
 
-        local gamemodes = ReplicatedStorage:FindFirstChild("Content") and ReplicatedStorage.Content:FindFirstChild("Gamemodes")
+        -- 3. Validasi folder Gamemodes
+        local content = ReplicatedStorage:FindFirstChild("Content")
+        local gamemodes = content and content:FindFirstChild("Gamemodes")
         if not gamemodes then return nil, "Missing Gamemodes Folder" end
 
-        -- 2. DIRECT PATH SEARCH (Sesuai request: Content.Gamemodes.Survival.Difficulties.Casual.Waves)
-        local function FindDirect(mName, dName)
-            local mFolder = gamemodes:FindFirstChild(mName)
-            if mFolder then
-                local diffsFolder = mFolder:FindFirstChild("Difficulties")
-                if diffsFolder then
-                    local targetDiff = diffsFolder:FindFirstChild(dName)
-                    if targetDiff and targetDiff:FindFirstChild("Waves") then
-                        return targetDiff.Waves
-                    end
-                end
-            end
-            return nil
+        -- Helper untuk membersihkan string (hapus spasi & tanda baca)
+        local function cleanString(str)
+            return str:lower():gsub("[%s%p]", "")
         end
 
-        -- Coba cari dengan path langsung
-        local directModule = FindDirect(modeName, diffName)
-        if directModule then
-            CachedModeModule = directModule
-            return CachedModeModule, CachedModeName
-        end
+        local safeMode = cleanString(modeName)
+        local safeDiff = cleanString(diffName)
 
-        -- 3. FUZZY SEARCH FALLBACK (Jika nama folder gamemode beda dengan nama di State)
-        -- Contoh: State bilang "PizzaParty", tapi nama folder aslinya "Pizza Party"
-        local safeDiff = diffName:lower():gsub("[%s%p]", "")
-        for _, mFolder in ipairs(gamemodes:GetChildren()) do
+        -- METHOD A: Direct Path (ReplicatedStorage.Content.Gamemodes.Mode.Difficulties.Difficulty.Waves)
+        local mFolder = gamemodes:FindFirstChild(modeName)
+        if mFolder then
             local diffsFolder = mFolder:FindFirstChild("Difficulties")
             if diffsFolder then
-                for _, dFolder in ipairs(diffsFolder:GetChildren()) do
-                    local safeDName = dFolder.Name:lower():gsub("[%s%p]", "")
-                    if safeDName == safeDiff or string.find(safeDName, safeDiff) then
-                        if dFolder:FindFirstChild("Waves") then
-                            CachedModeModule = dFolder.Waves
-                            return CachedModeModule, CachedModeName .. " (Auto-Found)"
+                local targetDiff = diffsFolder:FindFirstChild(diffName)
+                if targetDiff and targetDiff:FindFirstChild("Waves") then
+                    CachedModeModule = targetDiff.Waves
+                    return CachedModeModule, CachedModeName
+                end
+            end
+        end
+
+        -- METHOD B: Fuzzy Search (Mencocokkan nama folder yang mengabaikan spasi)
+        for _, mDir in ipairs(gamemodes:GetChildren()) do
+            if cleanString(mDir.Name) == safeMode or string.find(cleanString(mDir.Name), safeMode) then
+                local diffsDir = mDir:FindFirstChild("Difficulties")
+                if diffsDir then
+                    for _, dDir in ipairs(diffsDir:GetChildren()) do
+                        if cleanString(dDir.Name) == safeDiff or string.find(cleanString(dDir.Name), safeDiff) then
+                            if dDir:FindFirstChild("Waves") then
+                                CachedModeModule = dDir.Waves
+                                return CachedModeModule, CachedModeName .. " (Fuzzy)"
+                            end
                         end
                     end
                 end
             end
         end
 
-        -- 4. DEEP SCAN (Cara Paling Ekstrim jika Gamemode event disembunyikan)
+        -- METHOD C: Deep Scan (Mencari folder dengan nama Difficulty di seluruh turunan Gamemodes)
         for _, folder in ipairs(gamemodes:GetDescendants()) do
-            if folder:IsA("Folder") and folder.Name:lower():gsub("[%s%p]", "") == safeDiff then
+            if folder:IsA("Folder") and cleanString(folder.Name) == safeDiff then
                 if folder:FindFirstChild("Waves") then
                     CachedModeModule = folder.Waves
-                    return CachedModeModule, CachedModeName .. " (Deep-Scan)"
+                    return CachedModeModule, CachedModeName .. " (Deep Scan)"
                 end
             end
         end
 
-        return nil, "Missing Wave Data"
+        return nil, "Waves Not Found"
     end
 
     -- Ambil Wave Instan dari UI
     local function GetFastWave()
         local pg = LocalPlayer:FindFirstChild("PlayerGui")
-        local container = pg and pg:FindFirstChild("ReactGameTopGameDisplay") and pg.ReactGameTopGameDisplay:FindFirstChild("Frame")
-        if container and container:FindFirstChild("wave") and container.wave:FindFirstChild("container") then
-            return tonumber(container.wave.container.value.Text:match("^(%d+)")) or 0
+        local container = pg and pg:FindFirstChild("ReactGameTopGameDisplay") 
+        local waveContainer = container and container:FindFirstChild("Frame") and container.Frame:FindFirstChild("wave")
+        
+        if waveContainer and waveContainer:FindFirstChild("container") then
+            return tonumber(waveContainer.container.value.Text:match("^(%d+)")) or 0
         end
         return 0
     end
@@ -2311,9 +2312,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return #mods > 0 and " [" .. table.concat(mods, ", ") .. "]" or ""
     end
 
+    -- Pembuatan UI yang sudah dirapikan susunannya
     local function CreateTrackerUI()
         if TrackerUI then TrackerUI:Destroy() end
-        GroupCards, EnemyPills, LastProcessedWave, CachedModeModule = {}, {}, -1, nil -- Reset Cache saat UI dibikin ulang
+        GroupCards, EnemyPills, LastProcessedWave, CachedModeModule = {}, {}, -1, nil
         
         TrackerUI = Instance.new("ScreenGui")
         TrackerUI.Name = "ADS_AdvancedTracker"
@@ -2321,43 +2323,75 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         TrackerUI.Parent = game:GetService("CoreGui")
 
         local MainFrame = Instance.new("Frame", TrackerUI)
-        MainFrame.Size, MainFrame.Position = UDim2.new(0, 260, 0, 480), UDim2.new(1, -270, 0.5, -240)
-        MainFrame.BackgroundColor3, MainFrame.BackgroundTransparency = Color3.fromRGB(15, 15, 18), 0.2
+        MainFrame.Size = UDim2.new(0, 260, 0, 480)
+        MainFrame.Position = UDim2.new(1, -270, 0.5, -240)
+        MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+        MainFrame.BackgroundTransparency = 0.2
         Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
         Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(50, 50, 65)
 
-        -- 1. UPCOMING WAVE
+        -- 1. UPCOMING WAVE HEADER
         local UpcomingHeader = Instance.new("Frame", MainFrame)
-        UpcomingHeader.Size, UpcomingHeader.BackgroundColor3, UpcomingHeader.BackgroundTransparency = UDim2.new(1, 0, 0, 28), Color3.fromRGB(40, 30, 15), 0.3
+        UpcomingHeader.Size = UDim2.new(1, 0, 0, 28)
+        UpcomingHeader.BackgroundColor3 = Color3.fromRGB(40, 30, 15)
+        UpcomingHeader.BackgroundTransparency = 0.3
         Instance.new("UICorner", UpcomingHeader).CornerRadius = UDim.new(0, 8)
 
         local UpcomingTitle = Instance.new("TextLabel", UpcomingHeader)
-        UpcomingTitle.Size, UpcomingTitle.Position, UpcomingTitle.BackgroundTransparency = UDim2.new(1, -10, 1, 0), UDim2.new(0, 10, 0, 0), 1
-        UpcomingTitle.Text, UpcomingTitle.TextColor3, UpcomingTitle.Font, UpcomingTitle.TextSize = "🔮 UPCOMING WAVE", Color3.fromRGB(255, 200, 100), Enum.Font.GothamBold, 12
+        UpcomingTitle.Size = UDim2.new(1, -10, 1, 0)
+        UpcomingTitle.Position = UDim2.new(0, 10, 0, 0)
+        UpcomingTitle.BackgroundTransparency = 1
+        UpcomingTitle.Text = "🔮 UPCOMING WAVE"
+        UpcomingTitle.TextColor3 = Color3.fromRGB(255, 200, 100)
+        UpcomingTitle.Font = Enum.Font.GothamBold
+        UpcomingTitle.TextSize = 12
         UpcomingTitle.TextXAlignment = Enum.TextXAlignment.Left
 
         local WaveInfoLabel = Instance.new("TextLabel", MainFrame)
-        WaveInfoLabel.Size, WaveInfoLabel.Position, WaveInfoLabel.BackgroundTransparency = UDim2.new(1, -20, 0, 20), UDim2.new(0, 10, 0, 30), 1
-        WaveInfoLabel.TextColor3, WaveInfoLabel.Font, WaveInfoLabel.TextSize, WaveInfoLabel.TextXAlignment = Color3.fromRGB(150, 255, 150), Enum.Font.GothamSemibold, 10, Enum.TextXAlignment.Left
+        WaveInfoLabel.Size = UDim2.new(1, -20, 0, 20)
+        WaveInfoLabel.Position = UDim2.new(0, 10, 0, 30)
+        WaveInfoLabel.BackgroundTransparency = 1
+        WaveInfoLabel.TextColor3 = Color3.fromRGB(150, 255, 150)
+        WaveInfoLabel.Font = Enum.Font.GothamSemibold
+        WaveInfoLabel.TextSize = 10
+        WaveInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
 
         local UpcomingScroll = Instance.new("ScrollingFrame", MainFrame)
-        UpcomingScroll.Size, UpcomingScroll.Position, UpcomingScroll.BackgroundTransparency, UpcomingScroll.ScrollBarThickness = UDim2.new(1, -10, 0, 160), UDim2.new(0, 5, 0, 50), 1, 2
+        UpcomingScroll.Size = UDim2.new(1, -10, 0, 160)
+        UpcomingScroll.Position = UDim2.new(0, 5, 0, 50)
+        UpcomingScroll.BackgroundTransparency = 1
+        UpcomingScroll.ScrollBarThickness = 2
         Instance.new("UIListLayout", UpcomingScroll).Padding = UDim.new(0, 2)
 
         local Divider = Instance.new("Frame", MainFrame)
-        Divider.Size, Divider.Position, Divider.BackgroundColor3, Divider.BorderSizePixel = UDim2.new(1, -20, 0, 2), UDim2.new(0, 10, 0, 215), Color3.fromRGB(50, 50, 65), 0
+        Divider.Size = UDim2.new(1, -20, 0, 2)
+        Divider.Position = UDim2.new(0, 10, 0, 215)
+        Divider.BackgroundColor3 = Color3.fromRGB(50, 50, 65)
+        Divider.BorderSizePixel = 0
 
-        -- 2. LIVE RADAR
+        -- 2. LIVE RADAR HEADER
         local LiveHeader = Instance.new("Frame", MainFrame)
-        LiveHeader.Size, LiveHeader.Position, LiveHeader.BackgroundColor3, LiveHeader.BackgroundTransparency = UDim2.new(1, 0, 0, 28), UDim2.new(0, 0, 0, 225), Color3.fromRGB(25, 25, 30), 0.3
+        LiveHeader.Size = UDim2.new(1, 0, 0, 28)
+        LiveHeader.Position = UDim2.new(0, 0, 0, 225)
+        LiveHeader.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+        LiveHeader.BackgroundTransparency = 0.3
         Instance.new("UICorner", LiveHeader).CornerRadius = UDim.new(0, 8)
 
         local LiveTitle = Instance.new("TextLabel", LiveHeader)
-        LiveTitle.Size, LiveTitle.Position, LiveTitle.BackgroundTransparency = UDim2.new(1, -10, 1, 0), UDim2.new(0, 10, 0, 0), 1
-        LiveTitle.Text, LiveTitle.TextColor3, LiveTitle.Font, LiveTitle.TextSize, LiveTitle.TextXAlignment = "📡 LIVE THREAT RADAR", Color3.fromRGB(255, 255, 255), Enum.Font.GothamBold, 12, Enum.TextXAlignment.Left
+        LiveTitle.Size = UDim2.new(1, -10, 1, 0)
+        LiveTitle.Position = UDim2.new(0, 10, 0, 0)
+        LiveTitle.BackgroundTransparency = 1
+        LiveTitle.Text = "📡 LIVE THREAT RADAR"
+        LiveTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+        LiveTitle.Font = Enum.Font.GothamBold
+        LiveTitle.TextSize = 12
+        LiveTitle.TextXAlignment = Enum.TextXAlignment.Left
 
         local LiveScroll = Instance.new("ScrollingFrame", MainFrame)
-        LiveScroll.Size, LiveScroll.Position, LiveScroll.BackgroundTransparency, LiveScroll.ScrollBarThickness = UDim2.new(1, -10, 1, -260), UDim2.new(0, 5, 0, 255), 1, 2
+        LiveScroll.Size = UDim2.new(1, -10, 1, -260)
+        LiveScroll.Position = UDim2.new(0, 5, 0, 255)
+        LiveScroll.BackgroundTransparency = 1
+        LiveScroll.ScrollBarThickness = 2
         Instance.new("UIListLayout", LiveScroll).Padding = UDim.new(0, 6)
 
         return LiveScroll, UpcomingScroll, UpcomingTitle, WaveInfoLabel
@@ -2365,24 +2399,41 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     local function CreateUpcomingEntry(parent, text, color)
         local Entry = Instance.new("TextLabel", parent)
-        Entry.Size, Entry.BackgroundTransparency = UDim2.new(1, -5, 0, 18), 1
-        Entry.Text, Entry.TextColor3, Entry.Font, Entry.TextSize = text, color, Enum.Font.Gotham, 11
-        Entry.TextXAlignment, Entry.RichText = Enum.TextXAlignment.Left, true
+        Entry.Size = UDim2.new(1, -5, 0, 18)
+        Entry.BackgroundTransparency = 1
+        Entry.Text = text
+        Entry.TextColor3 = color
+        Entry.Font = Enum.Font.Gotham
+        Entry.TextSize = 11
+        Entry.TextXAlignment = Enum.TextXAlignment.Left
+        Entry.RichText = true
     end
 
     local function CreateGroupCard(groupName, parent)
         local Card = Instance.new("Frame", parent)
-        Card.Size, Card.BackgroundColor3, Card.BackgroundTransparency = UDim2.new(1, 0, 0, 40), Color3.fromRGB(30, 30, 35), 0.5
+        Card.Size = UDim2.new(1, 0, 0, 40)
+        Card.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        Card.BackgroundTransparency = 0.5
         Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
 
         local Title = Instance.new("TextLabel", Card)
-        Title.Size, Title.Position, Title.BackgroundTransparency = UDim2.new(1, -10, 0, 18), UDim2.new(0, 8, 0, 2), 1
-        Title.TextColor3, Title.Font, Title.TextSize, Title.TextXAlignment = Color3.fromRGB(220, 220, 220), Enum.Font.GothamSemibold, 11, Enum.TextXAlignment.Left
+        Title.Size = UDim2.new(1, -10, 0, 18)
+        Title.Position = UDim2.new(0, 8, 0, 2)
+        Title.BackgroundTransparency = 1
+        Title.TextColor3 = Color3.fromRGB(220, 220, 220)
+        Title.Font = Enum.Font.GothamSemibold
+        Title.TextSize = 11
+        Title.TextXAlignment = Enum.TextXAlignment.Left
 
         local PillContainer = Instance.new("Frame", Card)
-        PillContainer.Size, PillContainer.Position, PillContainer.BackgroundTransparency = UDim2.new(1, -12, 1, -22), UDim2.new(0, 6, 0, 20), 1
+        PillContainer.Size = UDim2.new(1, -12, 1, -22)
+        PillContainer.Position = UDim2.new(0, 6, 0, 20)
+        PillContainer.BackgroundTransparency = 1
+        
         local Grid = Instance.new("UIGridLayout", PillContainer)
-        Grid.CellSize, Grid.CellPadding, Grid.SortOrder = UDim2.new(0, 48, 0, 16), UDim2.new(0, 4, 0, 4), Enum.SortOrder.LayoutOrder
+        Grid.CellSize = UDim2.new(0, 48, 0, 16)
+        Grid.CellPadding = UDim2.new(0, 4, 0, 4)
+        Grid.SortOrder = Enum.SortOrder.LayoutOrder
 
         GroupCards[groupName] = { Card = Card, Title = Title, Container = PillContainer }
         return GroupCards[groupName]
@@ -2394,22 +2445,37 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Instance.new("UICorner", PillBg).CornerRadius = UDim.new(0, 4)
 
         local TargetStroke = Instance.new("UIStroke", PillBg)
-        TargetStroke.Color, TargetStroke.Thickness, TargetStroke.Transparency = Color3.fromRGB(255, 50, 50), 1.5, 1 
+        TargetStroke.Color = Color3.fromRGB(255, 50, 50)
+        TargetStroke.Thickness = 1.5
+        TargetStroke.Transparency = 1 
 
         local HPFill = Instance.new("Frame", PillBg)
-        HPFill.Size, HPFill.BackgroundColor3, HPFill.ZIndex = UDim2.new(1, 0, 1, 0), Color3.fromRGB(235, 50, 50), 1
+        HPFill.Size = UDim2.new(1, 0, 1, 0)
+        HPFill.BackgroundColor3 = Color3.fromRGB(235, 50, 50)
+        HPFill.ZIndex = 1
         Instance.new("UICorner", HPFill).CornerRadius = UDim.new(0, 4)
 
         local ShieldFill = Instance.new("Frame", PillBg)
-        ShieldFill.Size, ShieldFill.BackgroundColor3, ShieldFill.ZIndex, ShieldFill.Visible = UDim2.new(0, 0, 1, 0), Color3.fromRGB(40, 160, 255), 2, false
+        ShieldFill.Size = UDim2.new(0, 0, 1, 0)
+        ShieldFill.BackgroundColor3 = Color3.fromRGB(40, 160, 255)
+        ShieldFill.ZIndex = 2
+        ShieldFill.Visible = false
         Instance.new("UICorner", ShieldFill).CornerRadius = UDim.new(0, 4)
 
         local HitOverlay = Instance.new("Frame", PillBg)
-        HitOverlay.Size, HitOverlay.BackgroundColor3, HitOverlay.Transparency, HitOverlay.ZIndex = UDim2.new(1, 0, 1, 0), Color3.fromRGB(255, 255, 255), 1, 3
+        HitOverlay.Size = UDim2.new(1, 0, 1, 0)
+        HitOverlay.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        HitOverlay.Transparency = 1
+        HitOverlay.ZIndex = 3
         Instance.new("UICorner", HitOverlay).CornerRadius = UDim.new(0, 4)
 
         local HPText = Instance.new("TextLabel", PillBg)
-        HPText.Size, HPText.BackgroundTransparency, HPText.TextColor3, HPText.Font, HPText.TextSize, HPText.ZIndex = UDim2.new(1, 0, 1, 0), 1, Color3.fromRGB(255, 255, 255), Enum.Font.GothamBold, 10, 4
+        HPText.Size = UDim2.new(1, 0, 1, 0)
+        HPText.BackgroundTransparency = 1
+        HPText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        HPText.Font = Enum.Font.GothamBold
+        HPText.TextSize = 10
+        HPText.ZIndex = 4
 
         EnemyPills[enemyObj] = { Pill = PillBg, HPFill = HPFill, ShieldFill = ShieldFill, HitOverlay = HitOverlay, TargetStroke = TargetStroke, Text = HPText, LastHP = 0, LastShield = 0 }
         return EnemyPills[enemyObj]
@@ -2438,9 +2504,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         local nextWaveNum = currentWave + 1
                         UpcomingTitle.Text = "🔮 UPCOMING WAVE (" .. nextWaveNum .. ")"
                         
-                        for _, child in ipairs(UpcomingScroll:GetChildren()) do if child:IsA("TextLabel") then child:Destroy() end end
+                        -- Bersihkan list upcoming wave sebelumnya
+                        for _, child in ipairs(UpcomingScroll:GetChildren()) do 
+                            if child:IsA("TextLabel") then child:Destroy() end 
+                        end
 
                         local modeDataModule, stateDiffName = GetModeDataModule()
+                        
+                        -- Cek apakah module berhasil ditemukan
                         if modeDataModule then
                             local success, modeData = pcall(function() return require(modeDataModule) end)
                             
@@ -2452,6 +2523,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     waveCash = modeData.ExtraOptions and type(modeData.ExtraOptions.WaveCash) == "function" and modeData.ExtraOptions.WaveCash(nextWaveNum) or (200 + ((nextWaveNum - 1) * 160))
                                     clearBonus = modeData.ExtraOptions and modeData.ExtraOptions.ClearBonus and (waveCash * (modeData.ExtraOptions.ClearBonus.Percentage or 0.2)) or 0
                                 end)
+                                
                                 WaveInfoLabel.Text = string.format("Mode: %s | Cash: $%d | Bonus: $%d", stateDiffName, math.floor(waveCash), math.floor(clearBonus))
 
                                 if nextWaveData and nextWaveData.WaveTimeline and nextWaveData.WaveTimeline.Enemies then
@@ -2466,12 +2538,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     CreateUpcomingEntry(UpcomingScroll, "No more waves or MAX Wave reached.", Color3.fromRGB(150, 150, 150))
                                 end
                             else
-                                WaveInfoLabel.Text, CachedModeModule = "Error: Failed to read module data", nil
+                                WaveInfoLabel.Text = "Error: Failed to read module data"
+                                CachedModeModule = nil -- Reset cache jika gagal require
                                 CreateUpcomingEntry(UpcomingScroll, "Data couldn't be loaded properly.", Color3.fromRGB(255, 80, 80))
                             end
                         else
-                            WaveInfoLabel.Text = "No Wave Data Found"
-                            CreateUpcomingEntry(UpcomingScroll, stateDiffName, Color3.fromRGB(255, 80, 80))
+                            -- Jika module gagal ditemukan (misal di Lobby atau state belum siap)
+                            WaveInfoLabel.Text = "Mode: " .. tostring(stateDiffName)
+                            CreateUpcomingEntry(UpcomingScroll, "Waiting for wave data...", Color3.fromRGB(150, 150, 150))
                         end
                     end
 
@@ -2490,12 +2564,23 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 
                                 if health > 0 then
                                     local name = enemy.Name:gsub("Enemy$", "")
-                                    local shield, maxHP = state:GetAttribute("Shield") or 0, state:GetAttribute("MaxHealth") or health
+                                    local shield = state:GetAttribute("Shield") or 0
+                                    local maxHP = state:GetAttribute("MaxHealth") or health
+                                    local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    if not EnemyGroups[name] then EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } end
+                                    if not EnemyGroups[name] then 
+                                        EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
+                                    end
                                     
                                     EnemyGroups[name].Count = EnemyGroups[name].Count + 1
-                                    table.insert(EnemyGroups[name].Individuals, { Obj = enemy, HP = health, MaxHP = maxHP, Shield = shield, MaxShield = state:GetAttribute("MaxShield") or shield, IsTargeted = (enemy == Globals.CurrentTargetModel) })
+                                    table.insert(EnemyGroups[name].Individuals, { 
+                                        Obj = enemy, 
+                                        HP = health, 
+                                        MaxHP = maxHP, 
+                                        Shield = shield, 
+                                        MaxShield = maxShield, 
+                                        IsTargeted = (enemy == Globals.CurrentTargetModel) 
+                                    })
                                     ProcessedEnemies[enemy] = true
                                 end
                             end
@@ -2509,7 +2594,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     for groupOrder, groupData in ipairs(SortedGroups) do
                         ProcessedGroups[groupData.Name] = true
                         local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, LiveScroll)
-                        groupUI.Card.Visible, groupUI.Card.LayoutOrder = true, groupOrder
+                        groupUI.Card.Visible = true
+                        groupUI.Card.LayoutOrder = groupOrder
                         groupUI.Title.Text = string.format("%s %s (x%d)", groupData.MaxHP_Sample > 10000 and "💀" or "👾", groupData.Name, groupData.Count)
 
                         table.sort(groupData.Individuals, function(a, b)
@@ -2519,7 +2605,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         for pillOrder, indv in ipairs(groupData.Individuals) do
                             local pillUI = EnemyPills[indv.Obj] or CreatePill(indv.Obj, groupUI.Container)
-                            pillUI.Pill.Visible, pillUI.Pill.LayoutOrder = true, pillOrder
+                            pillUI.Pill.Visible = true
+                            pillUI.Pill.LayoutOrder = pillOrder
 
                             if (pillUI.LastHP > 0 and indv.HP < pillUI.LastHP) or (pillUI.LastShield > 0 and indv.Shield < pillUI.LastShield) then
                                 pillUI.HitOverlay.Transparency = 0
@@ -2528,22 +2615,41 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             pillUI.LastHP, pillUI.LastShield = indv.HP, indv.Shield
 
                             pillUI.TargetStroke.Transparency = indv.IsTargeted and 0 or 1
-                            if indv.IsTargeted then pillUI.TargetStroke.Thickness = 1.5 + math.sin(os.clock() * 15) * 1 end
+                            if indv.IsTargeted then 
+                                pillUI.TargetStroke.Thickness = 1.5 + math.sin(os.clock() * 15) * 1 
+                            end
 
                             pillUI.HPFill.Size = UDim2.new(math.clamp(indv.HP / math.max(1, indv.MaxHP), 0, 1), 0, 1, 0)
 
                             if indv.MaxShield > 0 and indv.Shield > 0 then
-                                pillUI.ShieldFill.Visible, pillUI.ShieldFill.Size = true, UDim2.new(math.clamp(indv.Shield / indv.MaxShield, 0, 1), 0, 1, 0)
-                                pillUI.Text.Text, pillUI.Text.TextColor3 = string.format("🛡️ %s", FormatNumber(indv.Shield)), Color3.fromRGB(180, 230, 255) 
+                                pillUI.ShieldFill.Visible = true
+                                pillUI.ShieldFill.Size = UDim2.new(math.clamp(indv.Shield / indv.MaxShield, 0, 1), 0, 1, 0)
+                                pillUI.Text.Text = string.format("🛡️ %s", FormatNumber(indv.Shield))
+                                pillUI.Text.TextColor3 = Color3.fromRGB(180, 230, 255) 
                             else
-                                pillUI.ShieldFill.Visible, pillUI.Text.Text, pillUI.Text.TextColor3 = false, FormatNumber(indv.HP), Color3.fromRGB(255, 255, 255) 
+                                pillUI.ShieldFill.Visible = false
+                                pillUI.Text.Text = FormatNumber(indv.HP)
+                                pillUI.Text.TextColor3 = Color3.fromRGB(255, 255, 255) 
                             end
                         end
                         groupUI.Card.Size = UDim2.new(1, 0, 0, 25 + (math.ceil(#groupData.Individuals / 4) * 20))
                     end
 
-                    for enemyObj, pillUI in pairs(EnemyPills) do if not ProcessedEnemies[enemyObj] then pillUI.Pill:Destroy(); EnemyPills[enemyObj] = nil end end
-                    for groupName, groupUI in pairs(GroupCards) do if not ProcessedGroups[groupName] then groupUI.Card:Destroy(); GroupCards[groupName] = nil end end
+                    -- Hapus UI musuh yang sudah mati / hilang
+                    for enemyObj, pillUI in pairs(EnemyPills) do 
+                        if not ProcessedEnemies[enemyObj] then 
+                            pillUI.Pill:Destroy()
+                            EnemyPills[enemyObj] = nil 
+                        end 
+                    end
+
+                    -- Hapus Card grup yang sudah kosong
+                    for groupName, groupUI in pairs(GroupCards) do 
+                        if not ProcessedGroups[groupName] then 
+                            groupUI.Card:Destroy()
+                            GroupCards[groupName] = nil 
+                        end 
+                    end
                 end)
             else
                 if TrackerConnection then TrackerConnection:Disconnect() end
