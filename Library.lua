@@ -2494,7 +2494,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
     Misc:Toggle({
         Title = "Advanced Enemy Radar",
-        Desc = "Displays Upcoming Waves and Live Enemy Tracker",
+        Desc = "Displays Upcoming Waves and Live Enemy Tracker (Supports Modifiers)",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
             Globals.EnemyTracker = v
@@ -2600,12 +2600,63 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    if not EnemyGroups[name] then 
-                                        EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
+                                    -- // EKSTRAKSI LIVE MODIFIERS
+                                    local liveMods = {}
+                                    
+                                    -- 1. Cek dari Folder Modifiers
+                                    local modsFolder = enemy:FindFirstChild("Modifiers") or state:FindFirstChild("Modifiers")
+                                    if modsFolder then
+                                        for _, mod in ipairs(modsFolder:GetChildren()) do
+                                            liveMods[mod.Name] = true
+                                        end
                                     end
                                     
-                                    EnemyGroups[name].Count = EnemyGroups[name].Count + 1
-                                    table.insert(EnemyGroups[name].Individuals, { 
+                                    -- 2. Cek dari Attributes
+                                    local attrs = state:GetAttributes()
+                                    for k, v in pairs(attrs) do
+                                        if v == true then
+                                            for _, modName in pairs(TDS_Modifiers) do
+                                                if k == modName then liveMods[modName] = true end
+                                            end
+                                        end
+                                    end
+                                    
+                                    -- 3. Cek Attribute JSON "Modifiers" (Bila TDS Menggunakan Format Ini)
+                                    local modsAttr = state:GetAttribute("Modifiers")
+                                    if type(modsAttr) == "string" and modsAttr:sub(1,1) == "[" then
+                                        pcall(function()
+                                            local decoded = game:GetService("HttpService"):JSONDecode(modsAttr)
+                                            for _, v in pairs(decoded) do
+                                                local strKey = tostring(v)
+                                                local mapped = TDS_Modifiers[strKey] or strKey
+                                                if tonumber(strKey) == nil then mapped = strKey end
+                                                liveMods[mapped] = true
+                                            end
+                                        end)
+                                    end
+
+                                    -- Konversi Modifier menjadi String Label Format
+                                    local modList = {}
+                                    for m, _ in pairs(liveMods) do table.insert(modList, m) end
+                                    table.sort(modList)
+                                    local modString = #modList > 0 and " [" .. table.concat(modList, ", ") .. "]" or ""
+                                    
+                                    -- Buat Kunci Grup Unik (Memisahkan Musuh Biasa & Modifiers)
+                                    local groupKey = name .. modString
+
+                                    if not EnemyGroups[groupKey] then 
+                                        EnemyGroups[groupKey] = { 
+                                            GroupKey = groupKey,
+                                            Name = name, 
+                                            ModString = modString,
+                                            Count = 0, 
+                                            MaxHP_Sample = maxHP, 
+                                            Individuals = {} 
+                                        } 
+                                    end
+                                    
+                                    EnemyGroups[groupKey].Count = EnemyGroups[groupKey].Count + 1
+                                    table.insert(EnemyGroups[groupKey].Individuals, { 
                                         Obj = enemy, HP = health, MaxHP = maxHP, 
                                         Shield = shield, MaxShield = maxShield, 
                                         IsTargeted = (enemy == Globals.CurrentTargetModel) 
@@ -2621,8 +2672,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     table.sort(SortedGroups, function(a, b) return a.MaxHP_Sample > b.MaxHP_Sample end)
 
                     for groupOrder, groupData in ipairs(SortedGroups) do
-                        ProcessedGroups[groupData.Name] = true
-                        local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, LiveScroll)
+                        ProcessedGroups[groupData.GroupKey] = true
+                        local groupUI = GroupCards[groupData.GroupKey] or CreateGroupCard(groupData.GroupKey, LiveScroll)
                         groupUI.Card.Visible = true
                         groupUI.Card.LayoutOrder = groupOrder
                         
@@ -2630,7 +2681,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         if groupData.MaxHP_Sample > 15000 then icon = "👑"
                         elseif groupData.MaxHP_Sample > 5000 then icon = "💀" end
                         
-                        groupUI.Title.Text = string.format("%s %s <font color='#666677'>[x%d]</font>", icon, groupData.Name, groupData.Count)
+                        -- Setel warna nama sama persis dengan yang di Upcoming
+                        local nameColor = "#FFFFFF"
+                        if groupData.ModString ~= "" then nameColor = "#FF5050" end
+                        if groupData.Name:find("Boss") or groupData.Name:find("King") then nameColor = "#B450FF" end
+
+                        -- Render Teks menggunakan RichText
+                        groupUI.Title.Text = string.format("%s <font color='%s'>%s</font><font color='#FFBB55'>%s</font> <font color='#666677'>[x%d]</font>", 
+                            icon, nameColor, groupData.Name, groupData.ModString, groupData.Count)
                         groupUI.Title.RichText = true
 
                         table.sort(groupData.Individuals, function(a, b)
@@ -2679,10 +2737,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end 
                     end
 
-                    for groupName, groupUI in pairs(GroupCards) do 
-                        if not ProcessedGroups[groupName] then 
+                    for groupKey, groupUI in pairs(GroupCards) do 
+                        if not ProcessedGroups[groupKey] then 
                             groupUI.Card:Destroy()
-                            GroupCards[groupName] = nil 
+                            GroupCards[groupKey] = nil 
                         end 
                     end
                 end)
