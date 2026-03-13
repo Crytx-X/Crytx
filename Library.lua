@@ -967,6 +967,32 @@ end
 
 Window:Line()
 
+local FPSMods = Window:Tab({Title = "FPS Mods", Icon = "crosshair"}) do
+    FPSMods:Section({Title = "Gatling Gun / FPS Towers"})
+
+    FPSMods:Toggle({
+        Title = "FPS Silent Aim (Magnet Bullets)",
+        Desc = "Tahan Klik Kiri ke arah mana saja, peluru akan otomatis mengenai musuh terdepan.",
+        Value = false,
+        Callback = function(v)
+            Globals.FPSAimbot = v
+            SetSetting("FPSAimbot", v)
+        end
+    })
+
+    FPSMods:Toggle({
+        Title = "Auto Reload FPS",
+        Desc = "Instan reload saat peluru habis.",
+        Value = false,
+        Callback = function(v)
+            Globals.FPSAutoReload = v
+            SetSetting("FPSAutoReload", v)
+        end
+    })
+end
+
+Window:Line()
+
 local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Section({Title = "Tower Options"})
     
@@ -1350,56 +1376,6 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
     Strategies:Toggle({
         Title = "Hardcore Mode", Desc = "Towers:\nFarm, Golden Scout, DJ Booth, Commander, Electroshocker, Ranger, Freezer, Golden Minigunner",
         Value = Globals.Hardcore, Callback = function(v) SetSetting("Hardcore", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Hardcore.lua") end end
-    })
-end
-
-Window:Line()
-
-local FPSMods = Window:Tab({Title = "FPS Mods", Icon = "crosshair"}) do
-    FPSMods:Section({Title = "Gatling Gun / FPS Towers"})
-
-    FPSMods:Toggle({
-        Title = "FPS Auto Aimbot (Silent Aim)",
-        Desc = "Otomatis menembak musuh terdekat/terkuat saat kamu masuk mode FPS.",
-        Value = false,
-        Callback = function(v)
-            Globals.FPSAimbot = v
-            SetSetting("FPSAimbot", v)
-        end
-    })
-
-    FPSMods:Toggle({
-        Title = "FPS Auto Reload",
-        Desc = "Otomatis mengirim sinyal reload saat peluru habis.",
-        Value = false,
-        Callback = function(v)
-            Globals.FPSAutoReload = v
-            SetSetting("FPSAutoReload", v)
-        end
-    })
-
-    FPSMods:Toggle({
-        Title = "Remove Spread (No Recoil)",
-        Desc = "Menghapus penyebaran peluru (Client-side).",
-        Value = false,
-        Callback = function(v)
-            Globals.NoFPSSpread = v
-            SetSetting("NoFPSSpread", v)
-            
-            -- Inject ke UI Store untuk menghilangkan spread crosshair
-            if v then
-                pcall(function()
-                    local RS = game:GetService("ReplicatedStorage")
-                    local Stores = require(RS.Client.Interfaces.Stores)
-                    if Stores and Stores.CrosshairStore then
-                        Stores.CrosshairStore.store:dispatch({
-                            type = "removeSpread",
-                            spread = 99999
-                        })
-                    end
-                end)
-            end
-        end
     })
 end
 
@@ -2496,99 +2472,6 @@ local function StartAntiLag()
     end)
 end
 
-local NewNetwork
-pcall(function()
-    NewNetwork = require(ReplicatedStorage.Shared.Modules.NewNetwork)
-end)
-
-local FPSAimbotRunning = false
-local function StartFPSAimbot()
-    if FPSAimbotRunning then return end
-    FPSAimbotRunning = true
-
-    task.spawn(function()
-        local GatlingChannel = NewNetwork and NewNetwork.Channel("GatlingGun")
-        
-        while task.wait() do
-            if not Globals.FPSAimbot and not Globals.FPSAutoReload then 
-                task.wait(1)
-                continue 
-            end
-
-            -- Pastikan channel network tersedia dan kita sedang di dalam GAME
-            if GatlingChannel and GameState == "GAME" then
-                -- Cek apakah player sedang mengontrol FPS tower (Mengecek state replicator)
-                local isFPSMode = false
-                local myAmmo = 0
-                local isReloading = false
-
-                local StateReplicators = RS:FindFirstChild("StateReplicators")
-                if StateReplicators then
-                    for _, folder in ipairs(StateReplicators:GetChildren()) do
-                        if folder.Name == "TowerReplicator" and folder:GetAttribute("OwnerId") == LocalPlayer.UserId then
-                            if folder:GetAttribute("FPS") == true then
-                                isFPSMode = true
-                                myAmmo = folder:GetAttribute("Ammo") or 0
-                                isReloading = folder:GetAttribute("Reloading") or false
-                                break
-                            end
-                        end
-                    end
-                end
-
-                if isFPSMode then
-                    -- 1. Logika Auto Reload
-                    if Globals.FPSAutoReload and myAmmo == 0 and not isReloading then
-                        GatlingChannel:fireServer("Reload")
-                    end
-
-                    -- 2. Logika Auto Aimbot (Silent Aim)
-                    if Globals.FPSAimbot and myAmmo > 0 and not isReloading then
-                        -- Cari musuh paling depan atau terdekat
-                        local targetEnemy = nil
-                        local maxProg = -1
-                        
-                        local NPCs = workspace:FindFirstChild("NPCs")
-                        if NPCs then
-                            for _, enemy in ipairs(NPCs:GetChildren()) do
-                                local root = enemy:FindFirstChild("HumanoidRootPart")
-                                local state = enemy:FindFirstChild("State")
-                                if root and state then
-                                    local hp = state:GetAttribute("Health") or 0
-                                    local prog = state:GetAttribute("Progress") or 0
-                                    if hp > 0 and prog > maxProg then
-                                        maxProg = prog
-                                        targetEnemy = enemy
-                                    end
-                                end
-                            end
-                        end
-
-                        if targetEnemy then
-                            local targetPos = targetEnemy.HumanoidRootPart.Position
-                            local sync = workspace:GetAttribute("Sync")
-                            local timeNow = workspace:GetServerTimeNow()
-
-                            -- Kirim orientasi palsu agar terlihat menembak ke arah musuh
-                            GatlingChannel:fireUnreliableServer("ReplicateAimPosition", targetPos)
-                            
-                            -- Tembak musuh tersebut secara instan
-                            GatlingChannel:fireServer("Fire", targetPos, sync, timeNow)
-                        else
-                            -- Kalau tidak ada musuh, berhentikan wind-up agar tidak buang ammo
-                            GatlingChannel:fireServer("StopFiring")
-                        end
-                        task.wait(0.05) -- Cooldown tembakan (Bisa disesuaikan dengan fire rate Gatling)
-                    end
-                end
-            else
-                task.wait(1)
-            end
-        end
-        FPSAimbotRunning = false
-    end)
-end
-
 local function StartAutoChain()
     if AutoChainRunning or not Globals.AutoChain then return end
     AutoChainRunning = true
@@ -3138,6 +3021,102 @@ function TDS:SetOption(idx, name, val, ReqWave)
     return false
 end
 
+-- // ==========================================
+-- // FPS TOWER AUTOMATION (HOOKING METHOD)
+-- // ==========================================
+
+-- Fungsi untuk mencari musuh terdepan (Progress tertinggi)
+local function GetBestFPSEnemyTarget()
+    local bestPos = nil
+    local maxProg = -1
+    local npcs = workspace:FindFirstChild("NPCs")
+    
+    if not npcs then return nil end
+
+    for _, enemy in ipairs(npcs:GetChildren()) do
+        local root = enemy:FindFirstChild("HumanoidRootPart")
+        local state = enemy:FindFirstChild("State")
+        
+        if root and state then
+            -- TDS menyimpan Health dan Progress di Attribute atau Value object
+            local hp = state:GetAttribute("Health") or (state:FindFirstChild("Health") and state.Health.Value) or 0
+            local prog = state:GetAttribute("Progress") or (state:FindFirstChild("Progress") and state.Progress.Value) or -1
+            
+            -- Jika musuh masih hidup dan posisinya paling depan
+            if hp > 0 and prog > maxProg then
+                maxProg = prog
+                -- Arahkan ke sedikit di atas kaki (RootPart) agar hit konsisten
+                bestPos = root.Position
+            end
+        end
+    end
+    
+    return bestPos
+end
+
+-- // HOOKING METAMETHOD (SILENT AIM)
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+
+    -- Cek jika game mencoba mengirim sinyal "FireServer" (Menembak ke server)
+    if not checkcaller() and method == "FireServer" then
+        
+        -- Mencegat RemoteEvent khusus FPS (Gatling Gun / dll)
+        if self.Name == "RE:Fire" or self.Name == "URE:ReplicateAimPosition" or self.Name == "FireVisual" then
+            if Globals.FPSAimbot then
+                local targetPos = GetBestFPSEnemyTarget()
+                if targetPos then
+                    -- args[1] biasanya adalah Vector3 Position (titik tembak)
+                    -- Kita ganti posisinya paksa ke posisi musuh terdepan
+                    if typeof(args[1]) == "Vector3" then
+                        args[1] = targetPos
+                        return oldNamecall(self, unpack(args))
+                    end
+                end
+            end
+        end
+        
+    end
+
+    return oldNamecall(self, ...)
+end)
+
+-- // AUTO RELOAD LOOP
+task.spawn(function()
+    while task.wait(0.1) do
+        if Globals.FPSAutoReload and GameState == "GAME" then
+            pcall(function()
+                local towers = workspace:FindFirstChild("Towers")
+                if towers then
+                    for _, tower in ipairs(towers:GetChildren()) do
+                        local rep = tower:FindFirstChild("TowerReplicator")
+                        if rep and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId then
+                            -- Jika kita sedang di mode FPS dan peluru 0
+                            if rep:GetAttribute("FPS") == true then
+                                local ammo = rep:GetAttribute("Ammo") or 0
+                                local isReloading = rep:GetAttribute("Reloading") or false
+                                
+                                if ammo == 0 and not isReloading then
+                                    -- Bypass fungsi manual, langsung tembak remote Reload ke server
+                                    local network = game:GetService("ReplicatedStorage"):FindFirstChild("Network")
+                                    if network then
+                                        local gatlingFolder = network:FindFirstChild("GatlingGun")
+                                        if gatlingFolder and gatlingFolder:FindFirstChild("RE:Reload") then
+                                            gatlingFolder["RE:Reload"]:FireServer()
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
 task.spawn(function()
     while true do
         if Globals.AutoSkip and not AutoSkipRunning then StartAutoSkip() end
@@ -3150,9 +3129,6 @@ task.spawn(function()
         if Globals.SellFarms and not SellFarmsRunning then StartSellFarm() end
         if Globals.AntiLag and not AntiLagRunning then StartAntiLag() end
         if Globals.AutoRejoin and not BackToLobbyRunning then StartBackToLobby() end
-        if (Globals.FPSAimbot or Globals.FPSAutoReload) and not FPSAimbotRunning then 
-            StartFPSAimbot() 
-        end
         task.wait(1)
     end
 end)
