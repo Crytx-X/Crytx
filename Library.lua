@@ -216,8 +216,7 @@ local DefaultSettings = {
     SellFarms = false, AutoMercenary = false, AutoMilitary = false, AntiLag = false, Disable3DRendering = false,
     SendWebhook = false, SellFarmsWave = 1, WebhookURL = "", 
     StreamerMode = false, HideUsername = false, StreamerName = "", tagName = "None", 
-    Modifiers = {}, EnemyTracker = false, GatlingAimbot = false,
-    GatlingAutoReload = false
+    Modifiers = {}, EnemyTracker = false, AutoGatling = false
 }
 
 local TimeScaleValues = {0.5, 1, 1.5, 2}
@@ -922,6 +921,12 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
 
     Autostrat:Section({Title = "Abilities"})
     Autostrat:Toggle({
+        Title = "Auto Gatling Gun (Aimbot)",
+        Desc = "Otomatis Aim, Tembak, dan Reload Gatling Gun tanpa masuk ke FPS mode.",
+        Value = Globals.AutoGatling,
+        Callback = function(v) SetSetting("AutoGatling", v) end
+    })
+    Autostrat:Toggle({
         Title = "Enable Path Distance Marker",
         Desc = "Red = Mercenary Base, Green = Military Base",
         Value = Globals.PathVisuals,
@@ -1305,36 +1310,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         if table.find(StatNames, child.Name) then QueueStatsUpdate() end
     end)
     QueueStatsUpdate()
-end
-
-Window:Line()
-
-local Gatling = Window:Tab({Title = "Gatling Gun", Icon = "crosshair"}) do
-    Gatling:Section({Title = "Combat Automation"})
-    
-    Gatling:Toggle({
-        Title = "Silent Aim (Aimbot)",
-        Desc = "Otomatis mengunci dan menembak musuh di dalam area tanpa harus masuk mode FPS.",
-        Value = Globals.GatlingAimbot or false,
-        Callback = function(v)
-            SetSetting("GatlingAimbot", v)
-            if v and not Globals.GatlingAutoReload then
-                Window:Notify({ Title = "ADS", Desc = "Disarankan menyalakan Auto Reload juga!", Time = 4, Type = "normal" })
-            end
-        end
-    })
-
-    Gatling:Toggle({
-        Title = "Auto Reload",
-        Desc = "Otomatis melakukan Reload saat peluru Gatling Gun habis.",
-        Value = Globals.GatlingAutoReload or false,
-        Callback = function(v)
-            SetSetting("GatlingAutoReload", v)
-        end
-    })
-    
-    Gatling:Section({Title = "Info"})
-    Gatling:Label({Title = "Status: Harus pasang Gatling Gun dulu.", Desc = "Pastikan jangkauan (cone) menghadap jalan musuh."})
 end
 
 Window:Line()
@@ -2363,113 +2338,6 @@ local function DoActivateAbility(TObj, AbName, AbData, IsLooping)
     return attempt()
 end
 
--- ==========================================
--- // GATLING GUN SILENT AIM & AUTO RELOAD
--- ==========================================
-local GatlingRunning = false
-
-local function GetBestGatlingTarget(towerModel, range, angle)
-    local root = towerModel.PrimaryPart or towerModel:FindFirstChild("HumanoidRootPart")
-    if not root then return nil end
-
-    local bestTargetPos = nil
-    local highestProgress = -1
-
-    local enemies = workspace:FindFirstChild("NPCs")
-    if not enemies then return nil end
-
-    for _, npc in ipairs(enemies:GetChildren()) do
-        local hrp = npc:FindFirstChild("HumanoidRootPart")
-        local state = npc:FindFirstChild("State")
-        local progress = state and state:GetAttribute("Distance") or 0
-        local hp = state and state:GetAttribute("Health") or 0
-
-        if hrp and hp > 0 then
-            local dist = (hrp.Position - root.Position).Magnitude
-            
-            -- Cek apakah musuh di dalam Jarak (Range)
-            if dist <= range then
-                -- Cek apakah musuh berada di dalam sudut (Angle FOV) Gatling Gun
-                local dirToNpc = (hrp.Position - root.Position).Unit
-                local lookDir = root.CFrame.LookVector
-                local dotProduct = lookDir:Dot(dirToNpc)
-                local requiredDot = math.cos(math.rad(angle / 2)) -- Konversi angle ke dot product limit
-
-                if dotProduct >= requiredDot then
-                    -- Pilih musuh yang paling jauh berjalan (Target First)
-                    if progress > highestProgress then
-                        highestProgress = progress
-                        bestTargetPos = hrp.Position
-                    end
-                end
-            end
-        end
-    end
-
-    return bestTargetPos
-end
-
-local function StartGatlingAutomation()
-    if GatlingRunning then return end
-    GatlingRunning = true
-
-    task.spawn(function()
-        local RS = game:GetService("ReplicatedStorage")
-        local success, NewNetwork = pcall(function() return require(RS.Shared.Modules.NewNetwork) end)
-        if not success then GatlingRunning = false return end
-
-        local GatlingChannel = NewNetwork.Channel("GatlingGun")
-
-        while task.wait(0.05) do -- Loop sangat cepat karena Gatling nembak secepat kilat
-            if GameState ~= "GAME" then continue end
-            if not Globals.GatlingAimbot and not Globals.GatlingAutoReload then continue end
-
-            local TowersFolder = workspace:FindFirstChild("Towers")
-            if not TowersFolder then continue end
-
-            for _, tower in ipairs(TowersFolder:GetChildren()) do
-                local rep = tower:FindFirstChild("TowerReplicator")
-                
-                -- Cek apakah tower ini Gatling Gun dan milik kita
-                if rep and rep:GetAttribute("Name") == "Gatling Gun" and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
-                    local ammo = rep:GetAttribute("Ammo") or 0
-                    local isReloading = rep:GetAttribute("Reloading") or false
-                    
-                    -- [AUTO RELOAD LOGIC]
-                    if ammo <= 0 and not isReloading then
-                        if Globals.GatlingAutoReload then
-                            pcall(function() GatlingChannel:fireServer("Reload") end)
-                        end
-                        continue
-                    end
-
-                    -- [SILENT AIM LOGIC]
-                    if ammo > 0 and not isReloading and Globals.GatlingAimbot then
-                        -- Ambil stats asli tower (berubah saat diupgrade)
-                        local range = rep:GetAttribute("Range") or 25
-                        local angle = rep:GetAttribute("Angle") or 40
-
-                        local targetPos = GetBestGatlingTarget(tower, range, angle)
-
-                        if targetPos then
-                            local sync = workspace:GetAttribute("Sync") or 0
-                            local serverTime = workspace:GetServerTimeNow()
-
-                            pcall(function()
-                                -- Kirim data seolah-olah kamera kita nge-aim ke musuh
-                                GatlingChannel:fireUnreliableServer("ReplicateAimPosition", targetPos)
-                                -- Kirim data tembakan
-                                GatlingChannel:fireServer("Fire", targetPos, sync, serverTime)
-                            end)
-                        end
-                    end
-                end
-            end
-        end
-        GatlingRunning = false
-    end)
-end
-
 -- // Feature Activators
 local function StartAutoSkip()
     if AutoSkipRunning or not Globals.AutoSkip then return end
@@ -2803,6 +2671,86 @@ local function StartSellFarm()
     end)
 end
 
+local AutoGatlingRunning = false
+
+local function StartAutoGatling()
+    if AutoGatlingRunning or not Globals.AutoGatling then return end
+    AutoGatlingRunning = true
+
+    task.spawn(function()
+        local RS = game:GetService("ReplicatedStorage")
+        local success, NewNetwork = pcall(require, RS.Shared.Modules.NewNetwork)
+        
+        if not success then 
+            AutoGatlingRunning = false 
+            return 
+        end
+        
+        local GatlingChannel = NewNetwork.Channel("GatlingGun")
+
+        while Globals.AutoGatling do
+            if GameState == "GAME" then
+                local TowersFolder = workspace:FindFirstChild("Towers")
+                local npcs = workspace:FindFirstChild("NPCs")
+
+                if TowersFolder and npcs then
+                    for _, tower in ipairs(TowersFolder:GetChildren()) do
+                        local rep = tower:FindFirstChild("TowerReplicator")
+                        
+                        -- Cek apakah tower ini Gatling Gun dan milik kita
+                        if rep and rep:GetAttribute("Name") == "Gatling Gun" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId then
+
+                            local ammo = rep:GetAttribute("Ammo") or 0
+                            local reloading = rep:GetAttribute("Reloading")
+
+                            if ammo <= 0 and not reloading then
+                                -- Otomatis Reload jika peluru habis
+                                pcall(function() GatlingChannel:fireServer("Reload") end)
+                            elseif ammo > 0 and not reloading then
+                                -- Cari musuh terdekat (Aimbot logic)
+                                local root = tower:FindFirstChild("HumanoidRootPart") or tower.PrimaryPart
+                                if root then
+                                    local bestPos = nil
+                                    local closestDist = 120 -- Jangkauan maksimal Gatling (Bisa disesuaikan)
+
+                                    for _, npc in ipairs(npcs:GetChildren()) do
+                                        local hrp = npc:FindFirstChild("HumanoidRootPart")
+                                        local hum = npc:FindFirstChild("Humanoid")
+                                        
+                                        if hrp and hum and hum.Health > 0 then
+                                            local dist = (hrp.Position - root.Position).Magnitude
+                                            if dist < closestDist then
+                                                closestDist = dist
+                                                bestPos = hrp.Position
+                                            end
+                                        end
+                                    end
+
+                                    if bestPos then
+                                        pcall(function()
+                                            -- 1. Beritahu server kita "masuk" FPS mode (agar damage & piercing tembus)
+                                            GatlingChannel:fireServer("FpsEnabled", true)
+                                            -- 2. Arahkan Gatling ke koordinat musuh
+                                            GatlingChannel:fireUnreliableServer("ReplicateAimPosition", bestPos)
+                                            -- 3. Tembak!
+                                            GatlingChannel:fireServer("Fire", bestPos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
+                                        end)
+                                    else
+                                        -- Jika tidak ada musuh, hentikan tembakan agar peluru tidak terbuang
+                                        pcall(function() GatlingChannel:fireServer("StopFiring") end)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            task.wait(0.08) -- Delay 0.08s (menyamai fire-rate minigun agar tidak di kick karena spam)
+        end
+        AutoGatlingRunning = false
+    end)
+end
+
 -- ==========================================
 -- // PUBLIC API (For Strategy Scripts)
 -- ==========================================
@@ -3098,9 +3046,7 @@ task.spawn(function()
         if Globals.SellFarms and not SellFarmsRunning then StartSellFarm() end
         if Globals.AntiLag and not AntiLagRunning then StartAntiLag() end
         if Globals.AutoRejoin and not BackToLobbyRunning then StartBackToLobby() end
-        if (Globals.GatlingAimbot or Globals.GatlingAutoReload) and not GatlingRunning then 
-            StartGatlingAutomation() 
-        end
+        if Globals.AutoGatling and not AutoGatlingRunning then StartAutoGatling() end
         task.wait(1)
     end
 end)
