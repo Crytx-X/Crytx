@@ -1664,7 +1664,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     local function CreateTrackerUI()
-        if TrackerUI then TrackerUI:Destroy() end
+        -- Hapus UI lama jika script di execute ulang agar tidak numpuk
+        local existingUI = game:GetService("CoreGui"):FindFirstChild("ADS_PremiumTracker")
+        if existingUI then existingUI:Destroy() end
+
         LastProcessedWave, CachedModeModule = -1, nil
         
         TrackerUI = Instance.new("ScreenGui")
@@ -1683,18 +1686,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         MainStroke.Color = Color3.fromRGB(60, 65, 80)
         MainStroke.Transparency = 0.3
         MainStroke.Thickness = 1
-
-        local TopAccent = Instance.new("Frame", MainFrame)
-        TopAccent.Size = UDim2.new(1, -16, 0, 2)
-        TopAccent.Position = UDim2.new(0, 8, 0, 0)
-        TopAccent.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        TopAccent.BorderSizePixel = 0
-        local AccentGradient = Instance.new("UIGradient", TopAccent)
-        AccentGradient.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 150, 255)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(180, 80, 255)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 80, 100))
-        })
 
         local UpcomingTitle = Instance.new("TextLabel", MainFrame)
         UpcomingTitle.Size = UDim2.new(1, -24, 0, 24)
@@ -1784,8 +1775,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             if v then
                 local UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
                 
+                if TrackerConnection then TrackerConnection:Disconnect() end
+                
                 TrackerConnection = RunService.Heartbeat:Connect(function()
-                    if not Globals.EnemyTracker then return end
+                    if not Globals.EnemyTracker or not TrackerUI or not TrackerUI.Parent then 
+                        if TrackerConnection then TrackerConnection:Disconnect() end
+                        return 
+                    end
                     
                     local currentWave = GetFastWave()
                     if currentWave ~= LastProcessedWave then
@@ -2094,8 +2090,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 Window:Notify({Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error"})
                 SetSetting("SilentAimEnabled", false)
                 Globals.SilentAimEnabled = false
-            else
-                Window:Notify({Title = "Silent Aim", Desc = state and "Activated!" or "Deactivated!", Time = 3, Type = "normal"})
+            elseif state then
+                Window:Notify({Title = "Silent Aim", Desc = "Activated!", Time = 3, Type = "normal"})
             end
         end
     })
