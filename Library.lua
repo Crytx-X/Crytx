@@ -213,9 +213,8 @@ local DefaultSettings = {
     PathVisuals = false, MilitaryPath = false, MercenaryPath = false,
     AutoSkip = false, AutoChain = false, SupportCaravan = false, AutoDJ = false,
     AutoNecro = false, AutoRejoin = true, TimeScaleEnabled = false, TimeScaleValue = 2,
-    SellFarms = false, AutoMercenary = false, AutoMilitary = false, Frost = false,
-    Fallen = false, Easy = false, AntiLag = false, Disable3DRendering = false,
-    SendWebhook = false, NoRecoil = false, SellFarmsWave = 1, WebhookURL = "", 
+    SellFarms = false, AutoMercenary = false, AutoMilitary = false, AntiLag = false, Disable3DRendering = false,
+    SendWebhook = false, SellFarmsWave = 1, WebhookURL = "", 
     StreamerMode = false, HideUsername = false, StreamerName = "", tagName = "None", 
     Modifiers = {}, EnemyTracker = false
 }
@@ -1305,52 +1304,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         if table.find(StatNames, child.Name) then QueueStatsUpdate() end
     end)
     QueueStatsUpdate()
-end
-
-Window:Line()
-
-local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
-    Strategies:Section({Title = "Survival Strategies"})
-    
-    local function LoadStrat(url)
-        task.spawn(function()
-            local content = game:HttpGet(url)
-            while not (TDS and TDS.Loadout) do task.wait(0.5) end
-            local func = loadstring(content)
-            if func then func() Window:Notify({ Title = "ADS", Desc = "Running Strategy...", Time = 3 }) end
-        end)
-    end
-
-    Strategies:Toggle({
-        Title = "Frost Mode", Desc = "Skill tree: MAX\n\nTowers:\nGolden Scout, Firework Technician, Hacker, Brawler, DJ Booth, Commander, Engineer, Accelerator, Turret, Mercenary Base",
-        Value = Globals.Frost, Callback = function(v) SetSetting("Frost", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Frost.lua") end end
-    })
-
-    Strategies:Toggle({
-        Title = "Fallen Mode", Desc = "Skill tree: Not needed\n\nTowers:\nGolden Scout, Brawler, Mercenary Base, Electroshocker, Engineer",
-        Value = Globals.Fallen, Callback = function(v) SetSetting("Fallen", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Fallen.lua") end end
-    })
-
-    Strategies:Toggle({
-        Title = "Intermediate Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner, Crook Boss",
-        Value = Globals.Intermediate, Callback = function(v) SetSetting("Intermediate", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Intermediate.lua") end end
-    })
-
-    Strategies:Toggle({
-        Title = "Casual Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner",
-        Value = Globals.Casual, Callback = function(v) SetSetting("Casual", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Casual.lua") end end
-    })
-
-    Strategies:Toggle({
-        Title = "Easy Mode", Desc = "Skill tree: Not needed\n\nTowers:\nNormal Scout",
-        Value = Globals.Easy, Callback = function(v) SetSetting("Easy", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Easy.lua") end end
-    })
-
-    Strategies:Section({Title = "Other Strategies"})
-    Strategies:Toggle({
-        Title = "Hardcore Mode", Desc = "Towers:\nFarm, Golden Scout, DJ Booth, Commander, Electroshocker, Ranger, Freezer, Golden Minigunner",
-        Value = Globals.Hardcore, Callback = function(v) SetSetting("Hardcore", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Hardcore.lua") end end
-    })
 end
 
 Window:Line()
