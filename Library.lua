@@ -1376,68 +1376,99 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local modeObj = state:FindFirstChild("Mode")
         local diffObj = state:FindFirstChild("Difficulty")
 
-        local modeName = (modeObj and modeObj.Value ~= "") and modeObj.Value or nil
-        local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or nil
+        -- Ambil data State
+        local modeName = (modeObj and type(modeObj.Value) == "string") and modeObj.Value or ""
+        local diffName = (diffObj and type(diffObj.Value) == "string") and diffObj.Value or ""
 
-        -- FIX HARDCORE: Jika Difficulty kosong (seperti di Hardcore/Event), gunakan Mode sebagai patokan
-        if not diffName and modeName then diffName = modeName end
-        if not modeName and not diffName then return nil, "None" end
+        -- Jika belum ada data sama sekali, tunggu sebentar
+        if modeName == "" and diffName == "" then 
+            return nil, "Waiting for Match State..." 
+        end
         
-        CachedModeName = diffName
+        CachedModeName = (diffName ~= "" and diffName) or modeName
 
         local content = ReplicatedStorage:FindFirstChild("Content")
         local gamemodes = content and content:FindFirstChild("Gamemodes")
         if not gamemodes then return nil, "Missing Gamemodes Folder" end
 
-        local function cleanString(str) return str:lower():gsub("[%s%p]", "") end
-        local safeMode = cleanString(modeName)
-        local safeDiff = cleanString(diffName)
+        -- Fungsi kustom untuk mencari file TANPA mempedulikan huruf besar/kecil
+        local function GetChildNoCase(parent, name)
+            if not parent or not name then return nil end
+            local target = name:lower():gsub("[%s%p]", "")
+            for _, child in ipairs(parent:GetChildren()) do
+                if child.Name:lower():gsub("[%s%p]", "") == target then return child end
+            end
+            return nil
+        end
 
-        -- Translasi internal TDS untuk mode spesial
-        local internalMap = {
-            ["pizzaparty"] = "halloween",
-            ["badlands"] = "badlands",
-            ["pollutedwasteland"] = "polluted"
+        -- Mapping internal TDS
+        local map = {
+            ["pizzaparty"] = "halloween", ["halloween"] = "halloween",
+            ["badlands"] = "badlands", ["pollutedwasteland"] = "polluted",
+            ["polluted"] = "polluted", ["hardcore"] = "hardcore",
+            ["survival"] = "survival"
         }
-        local mappedDiff = internalMap[safeDiff] or safeDiff
-        local mappedMode = internalMap[safeMode] or safeMode
 
+        local mName = map[modeName:lower():gsub("[%s%p]", "")] or modeName
+        local dName = map[diffName:lower():gsub("[%s%p]", "")] or diffName
+
+        -- 5 Kombinasi Struktur Folder TDS (Akan dicoba satu per satu)
+        local possiblePaths = {
+            {mName, "Difficulties", dName, "Waves"},            -- Normal / Molten / Fallen
+            {mName, "Waves"},                                   -- Beberapa Mode Event
+            {dName, "Waves"},                                   -- Hardcore (Versi Lama)
+            {dName, "Difficulties", dName, "Waves"},            -- Struktur Ganda
+            {"Survival", "Difficulties", dName, "Waves"}        -- Hardcore (Jika dimasukkan ke Survival)
+        }
+
+        -- Tes semua kombinasi jalur folder di atas
+        for _, path in ipairs(possiblePaths) do
+            local current = gamemodes
+            local isValid = true
+            
+            for _, nodeName in ipairs(path) do
+                if nodeName == "" then isValid = false break end
+                current = GetChildNoCase(current, nodeName)
+                if not current then isValid = false break end
+            end
+
+            -- Jika berhasil menemukan modul Waves
+            if isValid and current and current:IsA("ModuleScript") then
+                CachedModeModule = current
+                return CachedModeModule, CachedModeName
+            end
+        end
+
+        -- JIKA SEMUA JALUR GAGAL: Lakukan scan paksa ke seluruh isi folder Gamemodes
         local Candidates = {}
-
-        -- Pindai SEMUA file gelombang (Wave) di dalam memori game
         for _, desc in ipairs(gamemodes:GetDescendants()) do
-            if desc:IsA("ModuleScript") then
-                local dName = cleanString(desc.Name)
-                -- Cari module yang bernama "Waves", "WaveData", atau mengandung kata "wave"
-                if dName == "waves" or dName == "wavedata" or dName:find("wave") then
-                    local pathStr = cleanString(desc:GetFullName())
-                    local score = 0
-                    
-                    if pathStr:find(mappedDiff) then score = score + 10 end
-                    if pathStr:find(mappedMode) then score = score + 5 end
-                    if cleanString(desc.Parent.Name) == mappedDiff then score = score + 20 end
-
-                    -- Booster Khusus Hardcore (Memaksa script mengunci file hardcore)
-                    if (safeMode == "hardcore" or safeDiff == "hardcore") and pathStr:find("hardcore") then
-                        score = score + 50
-                    end
-
-                    -- Jika cocok, masukkan ke daftar kandidat
-                    if score > 0 then
-                        table.insert(Candidates, {Module = desc, Score = score})
-                    end
+            if desc:IsA("ModuleScript") and (desc.Name:lower() == "waves" or desc.Name:lower() == "wavedata") then
+                local pName = desc.Parent.Name:lower():gsub("[%s%p]", "")
+                local fName = desc:GetFullName():lower():gsub("[%s%p]", "")
+                local mCheck = mName:lower():gsub("[%s%p]", "")
+                local dCheck = dName:lower():gsub("[%s%p]", "")
+                
+                local score = 0
+                if dCheck ~= "" and pName == dCheck then score = score + 100
+                elseif mCheck ~= "" and pName == mCheck then score = score + 50
+                elseif dCheck ~= "" and string.find(fName, dCheck) then score = score + 10
+                elseif mCheck ~= "" and string.find(fName, mCheck) then score = score + 5 end
+                
+                if score > 0 then
+                    table.insert(Candidates, {Module = desc, Score = score})
                 end
             end
         end
 
-        -- Pilih file Wave dengan kecocokan (skor) tertinggi
+        -- Pilih file hasil scan yang paling akurat
         if #Candidates > 0 then
             table.sort(Candidates, function(a, b) return a.Score > b.Score end)
             CachedModeModule = Candidates[1].Module
             return CachedModeModule, CachedModeName
         end
 
-        return nil, "Waves Not Found"
+        -- JIKA TETAP GAGAL: Tampilkan nilai internal State ke layar
+        return nil, "Waves Not Found [M:" .. (modeName~="" and modeName or "nil") .. " D:" .. (diffName~="" and diffName or "nil") .. "]"
     end
 
     local function GetFastWave()
