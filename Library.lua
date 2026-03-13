@@ -1355,6 +1355,56 @@ end
 
 Window:Line()
 
+local FPSMods = Window:Tab({Title = "FPS Mods", Icon = "crosshair"}) do
+    FPSMods:Section({Title = "Gatling Gun / FPS Towers"})
+
+    FPSMods:Toggle({
+        Title = "FPS Auto Aimbot (Silent Aim)",
+        Desc = "Otomatis menembak musuh terdekat/terkuat saat kamu masuk mode FPS.",
+        Value = false,
+        Callback = function(v)
+            Globals.FPSAimbot = v
+            SetSetting("FPSAimbot", v)
+        end
+    })
+
+    FPSMods:Toggle({
+        Title = "FPS Auto Reload",
+        Desc = "Otomatis mengirim sinyal reload saat peluru habis.",
+        Value = false,
+        Callback = function(v)
+            Globals.FPSAutoReload = v
+            SetSetting("FPSAutoReload", v)
+        end
+    })
+
+    FPSMods:Toggle({
+        Title = "Remove Spread (No Recoil)",
+        Desc = "Menghapus penyebaran peluru (Client-side).",
+        Value = false,
+        Callback = function(v)
+            Globals.NoFPSSpread = v
+            SetSetting("NoFPSSpread", v)
+            
+            -- Inject ke UI Store untuk menghilangkan spread crosshair
+            if v then
+                pcall(function()
+                    local RS = game:GetService("ReplicatedStorage")
+                    local Stores = require(RS.Client.Interfaces.Stores)
+                    if Stores and Stores.CrosshairStore then
+                        Stores.CrosshairStore.store:dispatch({
+                            type = "removeSpread",
+                            spread = 99999
+                        })
+                    end
+                end)
+            end
+        end
+    })
+end
+
+Window:Line()
+
 local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Section({Title = "Misc"})
     Misc:Toggle({ Title = "Enable Anti-Lag", Desc = "Boosts your FPS", Value = Globals.AntiLag, Callback = function(v) SetSetting("AntiLag", v) end })
@@ -1376,99 +1426,56 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local modeObj = state:FindFirstChild("Mode")
         local diffObj = state:FindFirstChild("Difficulty")
 
-        -- Ambil data State
-        local modeName = (modeObj and type(modeObj.Value) == "string") and modeObj.Value or ""
-        local diffName = (diffObj and type(diffObj.Value) == "string") and diffObj.Value or ""
+        local modeName = (modeObj and modeObj.Value ~= "") and modeObj.Value or nil
+        local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or nil
 
-        -- Jika belum ada data sama sekali, tunggu sebentar
-        if modeName == "" and diffName == "" then 
-            return nil, "Waiting for Match State..." 
-        end
-        
-        CachedModeName = (diffName ~= "" and diffName) or modeName
+        if not modeName or not diffName then return nil, "None" end
+        CachedModeName = diffName
 
         local content = ReplicatedStorage:FindFirstChild("Content")
         local gamemodes = content and content:FindFirstChild("Gamemodes")
         if not gamemodes then return nil, "Missing Gamemodes Folder" end
 
-        -- Fungsi kustom untuk mencari file TANPA mempedulikan huruf besar/kecil
-        local function GetChildNoCase(parent, name)
-            if not parent or not name then return nil end
-            local target = name:lower():gsub("[%s%p]", "")
-            for _, child in ipairs(parent:GetChildren()) do
-                if child.Name:lower():gsub("[%s%p]", "") == target then return child end
-            end
-            return nil
-        end
+        local function cleanString(str) return str:lower():gsub("[%s%p]", "") end
+        local safeMode, safeDiff = cleanString(modeName), cleanString(diffName)
 
-        -- Mapping internal TDS
-        local map = {
-            ["pizzaparty"] = "halloween", ["halloween"] = "halloween",
-            ["badlands"] = "badlands", ["pollutedwasteland"] = "polluted",
-            ["polluted"] = "polluted", ["hardcore"] = "hardcore",
-            ["survival"] = "survival"
-        }
-
-        local mName = map[modeName:lower():gsub("[%s%p]", "")] or modeName
-        local dName = map[diffName:lower():gsub("[%s%p]", "")] or diffName
-
-        -- 5 Kombinasi Struktur Folder TDS (Akan dicoba satu per satu)
-        local possiblePaths = {
-            {mName, "Difficulties", dName, "Waves"},            -- Normal / Molten / Fallen
-            {mName, "Waves"},                                   -- Beberapa Mode Event
-            {dName, "Waves"},                                   -- Hardcore (Versi Lama)
-            {dName, "Difficulties", dName, "Waves"},            -- Struktur Ganda
-            {"Survival", "Difficulties", dName, "Waves"}        -- Hardcore (Jika dimasukkan ke Survival)
-        }
-
-        -- Tes semua kombinasi jalur folder di atas
-        for _, path in ipairs(possiblePaths) do
-            local current = gamemodes
-            local isValid = true
-            
-            for _, nodeName in ipairs(path) do
-                if nodeName == "" then isValid = false break end
-                current = GetChildNoCase(current, nodeName)
-                if not current then isValid = false break end
-            end
-
-            -- Jika berhasil menemukan modul Waves
-            if isValid and current and current:IsA("ModuleScript") then
-                CachedModeModule = current
-                return CachedModeModule, CachedModeName
-            end
-        end
-
-        -- JIKA SEMUA JALUR GAGAL: Lakukan scan paksa ke seluruh isi folder Gamemodes
-        local Candidates = {}
-        for _, desc in ipairs(gamemodes:GetDescendants()) do
-            if desc:IsA("ModuleScript") and (desc.Name:lower() == "waves" or desc.Name:lower() == "wavedata") then
-                local pName = desc.Parent.Name:lower():gsub("[%s%p]", "")
-                local fName = desc:GetFullName():lower():gsub("[%s%p]", "")
-                local mCheck = mName:lower():gsub("[%s%p]", "")
-                local dCheck = dName:lower():gsub("[%s%p]", "")
-                
-                local score = 0
-                if dCheck ~= "" and pName == dCheck then score = score + 100
-                elseif mCheck ~= "" and pName == mCheck then score = score + 50
-                elseif dCheck ~= "" and string.find(fName, dCheck) then score = score + 10
-                elseif mCheck ~= "" and string.find(fName, mCheck) then score = score + 5 end
-                
-                if score > 0 then
-                    table.insert(Candidates, {Module = desc, Score = score})
+        local mFolder = gamemodes:FindFirstChild(modeName)
+        if mFolder then
+            local diffsFolder = mFolder:FindFirstChild("Difficulties")
+            if diffsFolder then
+                local targetDiff = diffsFolder:FindFirstChild(diffName)
+                if targetDiff and targetDiff:FindFirstChild("Waves") then
+                    CachedModeModule = targetDiff.Waves
+                    return CachedModeModule, CachedModeName
                 end
             end
         end
 
-        -- Pilih file hasil scan yang paling akurat
-        if #Candidates > 0 then
-            table.sort(Candidates, function(a, b) return a.Score > b.Score end)
-            CachedModeModule = Candidates[1].Module
-            return CachedModeModule, CachedModeName
+        for _, mDir in ipairs(gamemodes:GetChildren()) do
+            if cleanString(mDir.Name) == safeMode or string.find(cleanString(mDir.Name), safeMode) then
+                local diffsDir = mDir:FindFirstChild("Difficulties")
+                if diffsDir then
+                    for _, dDir in ipairs(diffsDir:GetChildren()) do
+                        if cleanString(dDir.Name) == safeDiff or string.find(cleanString(dDir.Name), safeDiff) then
+                            if dDir:FindFirstChild("Waves") then
+                                CachedModeModule = dDir.Waves
+                                return CachedModeModule, CachedModeName .. " (Fuzzy)"
+                            end
+                        end
+                    end
+                end
+            end
         end
 
-        -- JIKA TETAP GAGAL: Tampilkan nilai internal State ke layar
-        return nil, "Waves Not Found [M:" .. (modeName~="" and modeName or "nil") .. " D:" .. (diffName~="" and diffName or "nil") .. "]"
+        for _, folder in ipairs(gamemodes:GetDescendants()) do
+            if folder:IsA("Folder") and cleanString(folder.Name) == safeDiff then
+                if folder:FindFirstChild("Waves") then
+                    CachedModeModule = folder.Waves
+                    return CachedModeModule, CachedModeName .. " (Deep Scan)"
+                end
+            end
+        end
+        return nil, "Waves Not Found"
     end
 
     local function GetFastWave()
@@ -2489,6 +2496,99 @@ local function StartAntiLag()
     end)
 end
 
+local NewNetwork
+pcall(function()
+    NewNetwork = require(ReplicatedStorage.Shared.Modules.NewNetwork)
+end)
+
+local FPSAimbotRunning = false
+local function StartFPSAimbot()
+    if FPSAimbotRunning then return end
+    FPSAimbotRunning = true
+
+    task.spawn(function()
+        local GatlingChannel = NewNetwork and NewNetwork.Channel("GatlingGun")
+        
+        while task.wait() do
+            if not Globals.FPSAimbot and not Globals.FPSAutoReload then 
+                task.wait(1)
+                continue 
+            end
+
+            -- Pastikan channel network tersedia dan kita sedang di dalam GAME
+            if GatlingChannel and GameState == "GAME" then
+                -- Cek apakah player sedang mengontrol FPS tower (Mengecek state replicator)
+                local isFPSMode = false
+                local myAmmo = 0
+                local isReloading = false
+
+                local StateReplicators = RS:FindFirstChild("StateReplicators")
+                if StateReplicators then
+                    for _, folder in ipairs(StateReplicators:GetChildren()) do
+                        if folder.Name == "TowerReplicator" and folder:GetAttribute("OwnerId") == LocalPlayer.UserId then
+                            if folder:GetAttribute("FPS") == true then
+                                isFPSMode = true
+                                myAmmo = folder:GetAttribute("Ammo") or 0
+                                isReloading = folder:GetAttribute("Reloading") or false
+                                break
+                            end
+                        end
+                    end
+                end
+
+                if isFPSMode then
+                    -- 1. Logika Auto Reload
+                    if Globals.FPSAutoReload and myAmmo == 0 and not isReloading then
+                        GatlingChannel:fireServer("Reload")
+                    end
+
+                    -- 2. Logika Auto Aimbot (Silent Aim)
+                    if Globals.FPSAimbot and myAmmo > 0 and not isReloading then
+                        -- Cari musuh paling depan atau terdekat
+                        local targetEnemy = nil
+                        local maxProg = -1
+                        
+                        local NPCs = workspace:FindFirstChild("NPCs")
+                        if NPCs then
+                            for _, enemy in ipairs(NPCs:GetChildren()) do
+                                local root = enemy:FindFirstChild("HumanoidRootPart")
+                                local state = enemy:FindFirstChild("State")
+                                if root and state then
+                                    local hp = state:GetAttribute("Health") or 0
+                                    local prog = state:GetAttribute("Progress") or 0
+                                    if hp > 0 and prog > maxProg then
+                                        maxProg = prog
+                                        targetEnemy = enemy
+                                    end
+                                end
+                            end
+                        end
+
+                        if targetEnemy then
+                            local targetPos = targetEnemy.HumanoidRootPart.Position
+                            local sync = workspace:GetAttribute("Sync")
+                            local timeNow = workspace:GetServerTimeNow()
+
+                            -- Kirim orientasi palsu agar terlihat menembak ke arah musuh
+                            GatlingChannel:fireUnreliableServer("ReplicateAimPosition", targetPos)
+                            
+                            -- Tembak musuh tersebut secara instan
+                            GatlingChannel:fireServer("Fire", targetPos, sync, timeNow)
+                        else
+                            -- Kalau tidak ada musuh, berhentikan wind-up agar tidak buang ammo
+                            GatlingChannel:fireServer("StopFiring")
+                        end
+                        task.wait(0.05) -- Cooldown tembakan (Bisa disesuaikan dengan fire rate Gatling)
+                    end
+                end
+            else
+                task.wait(1)
+            end
+        end
+        FPSAimbotRunning = false
+    end)
+end
+
 local function StartAutoChain()
     if AutoChainRunning or not Globals.AutoChain then return end
     AutoChainRunning = true
@@ -3050,6 +3150,9 @@ task.spawn(function()
         if Globals.SellFarms and not SellFarmsRunning then StartSellFarm() end
         if Globals.AntiLag and not AntiLagRunning then StartAntiLag() end
         if Globals.AutoRejoin and not BackToLobbyRunning then StartBackToLobby() end
+        if (Globals.FPSAimbot or Globals.FPSAutoReload) and not FPSAimbotRunning then 
+            StartFPSAimbot() 
+        end
         task.wait(1)
     end
 end)
