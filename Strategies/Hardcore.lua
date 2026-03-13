@@ -1,4 +1,3 @@
-Local TDS = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Library.lua"))()
 TDS:Loadout("Farm", "Scout", "DJ Booth", "Electroshocker", "Commander")
 TDS:Mode("Hardcore")
 TDS:GameInfo("Crossroads", {})
