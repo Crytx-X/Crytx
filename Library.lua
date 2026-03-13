@@ -212,11 +212,11 @@ local AllModifiers = {
 local DefaultSettings = {
     PathVisuals = false, MilitaryPath = false, MercenaryPath = false,
     AutoSkip = false, AutoChain = false, SupportCaravan = false, AutoDJ = false,
-    AutoNecro = false, AutoRejoin = true, TimeScaleEnabled = false, TimeScaleValue = 2,
+    AutoNecro = false, AutoGatling = false, AutoRejoin = true, TimeScaleEnabled = false, TimeScaleValue = 2,
     SellFarms = false, AutoMercenary = false, AutoMilitary = false, AntiLag = false, Disable3DRendering = false,
     SendWebhook = false, SellFarmsWave = 1, WebhookURL = "", 
     StreamerMode = false, HideUsername = false, StreamerName = "", tagName = "None", 
-    Modifiers = {}, EnemyTracker = false, AutoGatling = false
+    Modifiers = {}, EnemyTracker = false
 }
 
 local TimeScaleValues = {0.5, 1, 1.5, 2}
@@ -922,7 +922,7 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
     Autostrat:Section({Title = "Abilities"})
     Autostrat:Toggle({
         Title = "Auto Gatling Gun",
-        Desc = "Aimbot otomatis Gatling Gun tanpa mengunci layar/kamera FPS.",
+        Desc = "Enters FPS mode, aims, shoots, and reloads automatically.",
         Value = Globals.AutoGatling,
         Callback = function(v) SetSetting("AutoGatling", v) end
     })
@@ -2485,6 +2485,81 @@ local function StartAutoDjBooth()
     end)
 end
 
+local function StartAutoGatling()
+    if AutoGatlingRunning or not Globals.AutoGatling then return end
+    AutoGatlingRunning = true
+
+    task.spawn(function()
+        local RS = game:GetService("ReplicatedStorage")
+        local NewNetwork = nil
+        pcall(function()
+            NewNetwork = require(RS.Shared.Modules.NewNetwork)
+        end)
+
+        while Globals.AutoGatling do
+            if GameState == "GAME" and NewNetwork then
+                local GatlingChannel
+                pcall(function() GatlingChannel = NewNetwork.Channel("GatlingGun") end)
+
+                if GatlingChannel then
+                    local TowersFolder = workspace:FindFirstChild("Towers")
+                    local EnemiesFolder = workspace:FindFirstChild("NPCs")
+
+                    if TowersFolder and EnemiesFolder then
+                        for _, tower in ipairs(TowersFolder:GetChildren()) do
+                            local rep = tower:FindFirstChild("TowerReplicator")
+                            -- Cek apakah tower ini adalah Gatling Gun milik player
+                            if rep and rep:GetAttribute("Name") == "Gatling Gun" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId then
+                                
+                                local ammo = rep:GetAttribute("Ammo") or 0
+                                local reloading = rep:GetAttribute("Reloading")
+
+                                -- Auto Reload jika peluru habis
+                                if ammo <= 0 and not reloading then
+                                    pcall(function() GatlingChannel:fireServer("Reload") end)
+                                    task.wait(0.2)
+                                    continue
+                                end
+
+                                local targetPos = nil
+                                -- Cari musuh pertama yang valid
+                                for _, npc in ipairs(EnemiesFolder:GetChildren()) do
+                                    local root = npc:FindFirstChild("HumanoidRootPart")
+                                    if root then
+                                        targetPos = root.Position
+                                        break
+                                    end
+                                end
+
+                                if targetPos and not reloading then
+                                    pcall(function()
+                                        -- Paksa masuk FPS Mode agar mendapat buff Piercing
+                                        if not rep:GetAttribute("FPS") then
+                                            GatlingChannel:fireServer("FpsEnabled", true)
+                                        end
+                                        
+                                        local sync = workspace:GetAttribute("Sync") or 0
+                                        local serverTime = workspace:GetServerTimeNow()
+                                        
+                                        -- Replikasi bidikan dan tembak
+                                        GatlingChannel:fireUnreliableServer("ReplicateAimPosition", targetPos)
+                                        GatlingChannel:fireServer("Fire", targetPos, sync, serverTime)
+                                    end)
+                                else
+                                    -- Jika tidak ada musuh atau sedang reload, berhenti menembak
+                                    pcall(function() GatlingChannel:fireServer("StopFiring") end)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            task.wait(0.1) -- Kecepatan tembak otomatis (0.1 detik cukup aman untuk server)
+        end
+        AutoGatlingRunning = false
+    end)
+end
+
 local function StartAutoNecro()
     if AutoNecroRunning or not Globals.AutoNecro then return end
     AutoNecroRunning = true
@@ -2668,135 +2743,6 @@ local function StartSellFarm()
             task.wait(1)
         end
         SellFarmsRunning = false
-    end)
-end
-
-local AutoGatlingRunning = false
-
-local function StartAutoGatling()
-    if AutoGatlingRunning or not Globals.AutoGatling then return end
-    AutoGatlingRunning = true
-
-    task.spawn(function()
-        local RS = game:GetService("ReplicatedStorage")
-        local RemoteFunc = RS:WaitForChild("RemoteFunction")
-        local successNet, NewNetwork = pcall(require, RS.Shared.Modules.NewNetwork)
-        
-        if not successNet then 
-            AutoGatlingRunning = false 
-            return 
-        end
-        
-        local GatlingChannel = NewNetwork.Channel("GatlingGun")
-
-        -- 1. Hook CameraController agar kamera player tidak dipaksa masuk ke Gatling Gun
-        local successCam, CamController = pcall(require, RS.Content.Tower["Gatling Gun"].Animator.CameraController)
-        if successCam and CamController then
-            if not CamController.OldToggle then
-                CamController.OldToggle = CamController.toggle
-            end
-            CamController.toggle = function(self, enabled, towerObj)
-                if Globals.AutoGatling then return end -- Bypass kamera lock!
-                return CamController.OldToggle(self, enabled, towerObj)
-            end
-        end
-
-        -- 2. Hook ViewController agar Hotbar (menu build tower) tidak dihilangkan
-        local successUI, ViewController = pcall(require, RS.Client.Interfaces.LegacyInterface.Controllers.ViewController)
-
-        while Globals.AutoGatling do
-            if GameState == "GAME" then
-                local TowersFolder = workspace:FindFirstChild("Towers")
-                local npcs = workspace:FindFirstChild("NPCs")
-
-                if TowersFolder and npcs then
-                    local myGatling = nil
-                    for _, tower in ipairs(TowersFolder:GetChildren()) do
-                        local rep = tower:FindFirstChild("TowerReplicator")
-                        -- Cari Gatling Gun milik kita
-                        if rep and rep:GetAttribute("Name") == "Gatling Gun" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId then
-                            myGatling = tower
-                            break 
-                        end
-                    end
-
-                    if myGatling then
-                        local rep = myGatling:FindFirstChild("TowerReplicator")
-                        local isFPS = rep and rep:GetAttribute("FPS")
-                        
-                        -- Jika server belum tahu kita masuk FPS Mode, paksa masuk
-                        if not isFPS then
-                            pcall(function()
-                                RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = myGatling, Name = "FPS" })
-                            end)
-                            task.wait(0.5) -- Tunggu server merespon
-                            
-                            -- Kembalikan UI agar kita tetap bisa pasang tower
-                            if successUI and ViewController then
-                                pcall(function() ViewController:setView("Hotbar") end)
-                            end
-                            continue
-                        end
-
-                        -- == LOGIC MENEMBAK & AIMBOT ==
-                        local ammo = rep:GetAttribute("Ammo") or 0
-                        local reloading = rep:GetAttribute("Reloading")
-
-                        if ammo <= 0 and not reloading then
-                            pcall(function() GatlingChannel:fireServer("Reload") end)
-                        elseif ammo > 0 and not reloading then
-                            local targetPos = nil
-                            local closestDist = math.huge
-                            local root = myGatling.PrimaryPart or myGatling:FindFirstChild("HumanoidRootPart")
-
-                            -- Cari Musuh Terdekat
-                            if root then
-                                for _, npc in ipairs(npcs:GetChildren()) do
-                                    local hrp = npc:FindFirstChild("HumanoidRootPart")
-                                    local hum = npc:FindFirstChild("Humanoid")
-                                    if hrp and hum and hum.Health > 0 then
-                                        local dist = (hrp.Position - root.Position).Magnitude
-                                        if dist < closestDist then
-                                            closestDist = dist
-                                            targetPos = hrp.Position
-                                        end
-                                    end
-                                end
-                            end
-
-                            -- Jika musuh ditemukan, Tembak!
-                            if targetPos then
-                                pcall(function()
-                                    local sync = workspace:GetAttribute("Sync") or 0
-                                    local sTime = workspace:GetServerTimeNow()
-                                    GatlingChannel:fireUnreliableServer("ReplicateAimPosition", targetPos)
-                                    GatlingChannel:fireServer("Fire", targetPos, sync, sTime)
-                                end)
-                            else
-                                -- Hentikan tembakan jika tidak ada musuh
-                                pcall(function() GatlingChannel:fireServer("StopFiring") end)
-                            end
-                        end
-                    end
-                end
-            end
-            task.wait(0.08) -- Menyesuaikan Fire Rate
-        end
-
-        -- Cleanup: Keluar dari FPS mode jika toggle dimatikan
-        local TowersFolder = workspace:FindFirstChild("Towers")
-        if TowersFolder then
-            for _, tower in ipairs(TowersFolder:GetChildren()) do
-                local rep = tower:FindFirstChild("TowerReplicator")
-                if rep and rep:GetAttribute("Name") == "Gatling Gun" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId and rep:GetAttribute("FPS") then
-                    pcall(function()
-                        RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = tower, Name = "FPS" })
-                    end)
-                end
-            end
-        end
-
-        AutoGatlingRunning = false
     end)
 end
 
