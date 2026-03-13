@@ -1389,6 +1389,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local function cleanString(str) return str:lower():gsub("[%s%p]", "") end
         local safeMode, safeDiff = cleanString(modeName), cleanString(diffName)
 
+        -- 1. Cek Struktur Standar (Survival -> Difficulties -> Normal/Fallen)
         local mFolder = gamemodes:FindFirstChild(modeName)
         if mFolder then
             local diffsFolder = mFolder:FindFirstChild("Difficulties")
@@ -1399,8 +1400,22 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     return CachedModeModule, CachedModeName
                 end
             end
+            
+            -- 2. Cek Struktur Spesial (Misal: Hardcore/Badlands langsung memiliki modul 'Waves')
+            if mFolder:FindFirstChild("Waves") then
+                CachedModeModule = mFolder.Waves
+                return CachedModeModule, CachedModeName
+            end
         end
 
+        -- 3. Cek Jika nama folder sama dengan nama Difficulty (Fallback 1)
+        local diffFolderAsMode = gamemodes:FindFirstChild(diffName)
+        if diffFolderAsMode and diffFolderAsMode:FindFirstChild("Waves") then
+            CachedModeModule = diffFolderAsMode.Waves
+            return CachedModeModule, CachedModeName
+        end
+
+        -- 4. Fuzzy Scan (Pencarian nama yang mirip)
         for _, mDir in ipairs(gamemodes:GetChildren()) do
             if cleanString(mDir.Name) == safeMode or string.find(cleanString(mDir.Name), safeMode) then
                 local diffsDir = mDir:FindFirstChild("Difficulties")
@@ -1417,14 +1432,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             end
         end
 
+        -- 5. Deep Scan Terakhir (Mencari ke seluruh pelosok folder Gamemodes)
         for _, folder in ipairs(gamemodes:GetDescendants()) do
-            if folder:IsA("Folder") and cleanString(folder.Name) == safeDiff then
+            if folder:IsA("Folder") and (cleanString(folder.Name) == safeDiff or cleanString(folder.Name) == safeMode) then
                 if folder:FindFirstChild("Waves") then
                     CachedModeModule = folder.Waves
                     return CachedModeModule, CachedModeName .. " (Deep Scan)"
                 end
             end
         end
+        
         return nil, "Waves Not Found"
     end
 
