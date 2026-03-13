@@ -23,195 +23,71 @@ local FileName = "ADS_Config.json"
 
 -- // Data Tables
 local TowerSkins = {
-    ["Accelerator"] = {
-        ["Champion"] = "rbxassetid://90324305122544", ["Cupid"] = "rbxassetid://16742017040", ["Dank"] = "rbxassetid://18549604688", ["Default"] = "rbxassetid://16742017289", ["Disco"] = "rbxassetid://96135720673651", ["Ducky"] = "rbxassetid://16742017439", ["Eclipse"] = "rbxassetid://16742017644", ["Elite"] = "rbxassetid://16742017935", ["Fallen"] = "rbxassetid://18848269402", ["Ghost Buster"] = "rbxassetid://16742018196", ["Ice Witch"] = "rbxassetid://16742018426", ["Legend"] = "rbxassetid://16742018621", ["Mage"] = "rbxassetid://16742018781", ["Magician"] = "rbxassetid://104973122569052", ["Navy"] = "rbxassetid://16742018971", ["Nuclear"] = "rbxassetid://16742019185", ["Octopus"] = "rbxassetid://138359133170089", ["Patient Zero"] = "rbxassetid://88972169285855", ["Plushie"] = "rbxassetid://16742019393", ["Red"] = "rbxassetid://16742019754", ["Senator"] = "rbxassetid://17363277841", ["Speaker Titan"] = "rbxassetid://16997023622", ["Vigilante"] = "rbxassetid://16742019956"
-    },
-    ["Ace Pilot"] = {
-        ["Aerial Ace"] = "rbxassetid://17859245825", ["Default"] = "rbxassetid://17859246260", ["Easter"] = "rbxassetid://137734270861409", ["Green"] = "rbxassetid://17859246778", ["Navy"] = "rbxassetid://17859247163", ["Pumpkin"] = "rbxassetid://17859247510", ["Purple"] = "rbxassetid://17859247791", ["Red"] = "rbxassetid://17859248266", ["Toy Plane"] = "rbxassetid://90411909913759", ["Yellow"] = "rbxassetid://17859248807"
-    },
-    ["Archer"] = {
-        ["Default"] = "rbxassetid://102469025012991", ["Elf"] = "rbxassetid://118017603574255", ["Huntsman"] = "rbxassetid://108057864574863", ["Ice Soul"] = "rbxassetid://125693199171973", ["Spooky"] = "rbxassetid://109768712967611", ["Valentines"] = "rbxassetid://88010001274532"
-    },
-    ["Assassin"] = {
-        ["Actor"] = "rbxassetid://112178399627918", ["Default"] = "rbxassetid://117970650222627", ["Saber Tooth Tiger"] = "rbxassetid://129525356172974"
-    },
-    ["Biologist"] = {
-        ["Default"] = "rbxassetid://101795075923269", ["Grim"] = "rbxassetid://126912872410229"
-    },
-    ["Brawler"] = {
-        ["Banned"] = "rbxassetid://84628371320634", ["Blazing"] = "rbxassetid://18549605468", ["Default"] = "rbxassetid://17506304027", ["Fallen"] = "rbxassetid://18835925180", ["Horse"] = "rbxassetid://101555481625059", ["Jordan"] = "rbxassetid://70748904383488", ["Loader"] = "rbxassetid://131316320823683", ["Lobster"] = "rbxassetid://123985511698683", ["Lovestriker"] = "rbxassetid://83049730035300", ["Rudolph"] = "rbxassetid://122757939585280", ["Werewolf"] = "rbxassetid://105319960862894"
-    },
-    ["Combatant"] = {
-        ["Default"] = "rbxassetid://16742022822"
-    },
-    ["Commander"] = {
-        ["Aqua"] = "rbxassetid://89379123461384", ["Bloxy"] = "rbxassetid://16742023051", ["Brisk"] = "rbxassetid://16742023299", ["Bunny"] = "rbxassetid://17507647451", ["Candy Cane"] = "rbxassetid://115979067743950", ["Default"] = "rbxassetid://17507647561", ["Director"] = "rbxassetid://140380406065215", ["Ducky"] = "rbxassetid://16742023989", ["Eclipse"] = "rbxassetid://16742024255", ["Eggrypted"] = "rbxassetid://16742024613", ["Fallen"] = "rbxassetid://80567934657980", ["Frost"] = "rbxassetid://16742024893", ["Galactic"] = "rbxassetid://17507647660", ["Gargoyle"] = "rbxassetid://17507647804", ["General"] = "rbxassetid://17507647965", ["Ghost"] = "rbxassetid://17507648068", ["Green"] = "rbxassetid://17507648232", ["Holiday"] = "rbxassetid://16742026260", ["Lifeguard"] = "rbxassetid://16742026508", ["Maid"] = "rbxassetid://17507648382", ["Neko"] = "rbxassetid://17507648601", ["Patriotic"] = "rbxassetid://18323544710", ["Pattern"] = "rbxassetid://17507648760", ["Phantom"] = "rbxassetid://16742027114", ["Pirate"] = "rbxassetid://16742027462", ["Plushie"] = "rbxassetid://16742027624", ["Red"] = "rbxassetid://17507648923", ["Santa"] = "rbxassetid://117501182181139", ["Spring Time"] = "rbxassetid://17507649066", ["Umbra"] = "rbxassetid://16742028241", ["Valentines"] = "rbxassetid://16742028419", ["Victorian"] = "rbxassetid://17507649166", ["Vigilante"] = "rbxassetid://17507649270", ["War Lord"] = "rbxassetid://16742028910", ["Wasteland"] = "rbxassetid://93243165798255", ["Werewolf"] = "rbxassetid://110092626333388", ["Wonderland"] = "rbxassetid://86397469450446"
-    },
-    ["Commando"] = {
-        ["Default"] = "rbxassetid://140552401698797", ["Pirate"] = "rbxassetid://135452131994371", ["Trooper"] = "rbxassetid://81411979969960"
-    },
-    ["Cowboy"] = {
-        ["Agent"] = "rbxassetid://16742029625", ["Badlands"] = "rbxassetid://16742029785", ["Bandit"] = "rbxassetid://16742029974", ["Bounty Hunter"] = "rbxassetid://16742030178", ["Cop"] = "rbxassetid://16742030440", ["Cyberpunk"] = "rbxassetid://16742030746", ["Dark Frost"] = "rbxassetid://78872525322359", ["Default"] = "rbxassetid://16742031062", ["Ducky"] = "rbxassetid://16742031273", ["Fallen"] = "rbxassetid://18848220133", ["Golden"] = "rbxassetid://16742031462", ["Holiday"] = "rbxassetid://16742031725", ["Kasodus"] = "rbxassetid://16742031988", ["Masquerade"] = "rbxassetid://16742032218", ["Mecha Bunny"] = "rbxassetid://70870846433248", ["Megalodon"] = "rbxassetid://129525988654572", ["Noir"] = "rbxassetid://16742032406", ["Plushie"] = "rbxassetid://84617405752906", ["Pumpkin"] = "rbxassetid://16742032605", ["Redemption"] = "rbxassetid://16742032735", ["Retired"] = "rbxassetid://16742032911", ["Spring Time"] = "rbxassetid://127656855808415", ["Valentines"] = "rbxassetid://16742033284", ["Vampire Hunter"] = "rbxassetid://99306749260135"
-    },
-    ["Crook Boss"] = {
-        ["Alien Focus"] = "rbxassetid://133134889361359", ["Assassin"] = "rbxassetid://16742033599", ["Blue"] = "rbxassetid://16742033877", ["Checker"] = "rbxassetid://16742034068", ["Corso"] = "rbxassetid://16742034286", ["Cupid"] = "rbxassetid://16742034551", ["Cybernetic"] = "rbxassetid://16996940813", ["DRKSHDW"] = "rbxassetid://16742034843", ["Dark Frost"] = "rbxassetid://125130339305089", ["Default"] = "rbxassetid://16742035067", ["Demon"] = "rbxassetid://16742035383", ["Easter"] = "rbxassetid://101408307745429", ["Game Master"] = "rbxassetid://75261782948960", ["Golden"] = "rbxassetid://16742035712", ["Holiday"] = "rbxassetid://16742036050", ["Intern"] = "rbxassetid://16742036260", ["Narrator"] = "rbxassetid://92111450115834", ["Necromancer"] = "rbxassetid://16742036503", ["Null"] = "rbxassetid://102269930328399", ["Pirate"] = "rbxassetid://16742036700", ["Rat King"] = "rbxassetid://99680623337214", ["Red"] = "rbxassetid://16742036972", ["Soviet"] = "rbxassetid://17363278550", ["Spooky"] = "rbxassetid://16742037577", ["SteamPunk"] = "rbxassetid://16742037752", ["Victorian"] = "rbxassetid://95810120766308", ["Xmas"] = "rbxassetid://16742038000"
-    },
-    ["Cryomancer"] = {
-        ["Default"] = "rbxassetid://16742059533", ["Krampus Slayer"] = "rbxassetid://16742059785"
-    },
-    ["DJ Booth"] = {
-        ["Default"] = "rbxassetid://90127560097295", ["Ducky"] = "rbxassetid://108324875176244", ["Garage Band"] = "rbxassetid://102404432745932", ["Ghost"] = "rbxassetid://111981689753740", ["Gingerbread"] = "rbxassetid://88595674290447", ["Mako"] = "rbxassetid://105492996309734", ["Masquerade"] = "rbxassetid://16742060736", ["Neko"] = "rbxassetid://115310627249069", ["Neon Rave"] = "rbxassetid://88395223637973", ["Plushie"] = "rbxassetid://16742061708", ["Seal"] = "rbxassetid://124438946534088"
-    },
-    ["Demoman"] = {
-        ["Blue"] = "rbxassetid://16742061940", ["Default"] = "rbxassetid://16742062171", ["Ducky"] = "rbxassetid://112748767260662", ["Fortress"] = "rbxassetid://16742062515", ["Ghost"] = "rbxassetid://81760835645289", ["Green"] = "rbxassetid://16742062839", ["Military"] = "rbxassetid://16742063163", ["Pirate"] = "rbxassetid://16742063574", ["Pumpkin"] = "rbxassetid://16742063839", ["Red"] = "rbxassetid://16742064120", ["Yellow"] = "rbxassetid://16742064313"
-    },
-    ["Electroshocker"] = {
-        ["Banned"] = "rbxassetid://118823738322908", ["Bunny"] = "rbxassetid://16742064560", ["Classic"] = "rbxassetid://17744633836", ["Dark Frost"] = "rbxassetid://92937669662901", ["Default"] = "rbxassetid://16742064918", ["Ducky"] = "rbxassetid://16742065360", ["Frankenstein"] = "rbxassetid://16742065631", ["Ghost"] = "rbxassetid://16742065873", ["Hazmat"] = "rbxassetid://16742066166", ["Jellyfish"] = "rbxassetid://85663070964840", ["Korblox"] = "rbxassetid://122538908879439", ["Lovestriker"] = "rbxassetid://106374635483378", ["TeeVee"] = "rbxassetid://16997023926", ["Valentines"] = "rbxassetid://16742066423", ["Vigilante"] = "rbxassetid://16742066740"
-    },
-    ["Elementalist"] = {
-        ["Default"] = "rbxassetid://78382857674962"
-    },
-    ["Elf Camp"] = {
-        ["Chocolatier"] = "rbxassetid://79600048176341", ["Classic"] = "rbxassetid://89043476285776", ["Default"] = "rbxassetid://90684298180076"
-    },
-    ["Engineer"] = {
-        ["Beach"] = "rbxassetid://70830745549464", ["Dark Frost"] = "rbxassetid://72967186484602", ["Default"] = "rbxassetid://16742067184", ["DraxRex"] = "rbxassetid://18549606104", ["Ducky"] = "rbxassetid://16742040216", ["Fallen"] = "rbxassetid://18950630600", ["Ghost"] = "rbxassetid://104901982243529", ["Grave Digger"] = "rbxassetid://16742067352", ["Heartbreak"] = "rbxassetid://16742067565", ["Holiday"] = "rbxassetid://16742067797", ["Mechanic"] = "rbxassetid://16742068076", ["Phantom"] = "rbxassetid://16742068314", ["Plushie"] = "rbxassetid://16742068525", ["Wikia"] = "rbxassetid://16742068760"
-    },
-    ["Executioner"] = {
-        ["Default"] = "rbxassetid://16742069000", ["Eclipse"] = "rbxassetid://16742069213", ["Heartbreak"] = "rbxassetid://100643097900090", ["Vanquisher"] = "rbxassetid://17363278858"
-    },
-    ["Farm"] = {
-        ["Arcade"] = "rbxassetid://16742069471", ["Booth"] = "rbxassetid://114387520669997", ["Cinema"] = "rbxassetid://113467369649039", ["Cozy Camp"] = "rbxassetid://140408163540785", ["Crab"] = "rbxassetid://80117562627776", ["Crypto"] = "rbxassetid://16742069733", ["Cube"] = "rbxassetid://80832036812275", ["Default"] = "rbxassetid://16742069981", ["Ducky"] = "rbxassetid://16742070242", ["Graveyard"] = "rbxassetid://16742070511", ["Lemonade Stand"] = "rbxassetid://81915340530819", ["Null Soul"] = "rbxassetid://81613076972732", ["PNG"] = "rbxassetid://102229660485968", ["Pirate"] = "rbxassetid://16742070778", ["Present"] = "rbxassetid://16742071112", ["Tycoon"] = "rbxassetid://16742071421", ["Vendor"] = "rbxassetid://16742071670", ["Wasteland"] = "rbxassetid://115389901462450", ["Xmas"] = "rbxassetid://16742072101"
-    },
-    ["Firework Technician"] = {
-        ["2026"] = "rbxassetid://122550929943456", ["Default"] = "rbxassetid://113647654122910", ["Inventor"] = "rbxassetid://76009529192577"
-    },
-    ["Freezer"] = {
-        ["Cryptid"] = "rbxassetid://16742072500", ["Deep Freeze"] = "rbxassetid://16742072779", ["Default"] = "rbxassetid://16742073034", ["Foam"] = "rbxassetid://16742073341", ["Frost Legion"] = "rbxassetid://80819236795571", ["IcyTea"] = "rbxassetid://16742073604", ["Mint Choco"] = "rbxassetid://16742073860", ["Polar Bear"] = "rbxassetid://78779113854366", ["Vendor"] = "rbxassetid://109388902986099"
-    },
-    ["Frost Blaster"] = {
-        ["Default"] = "rbxassetid://16742074063"
-    },
-    ["Gatling Gun"] = {
-        ["Default"] = "rbxassetid://81281360352088", ["Easter"] = "rbxassetid://102642733564095"
-    },
-    ["Gladiator"] = {
-        ["Beach"] = "rbxassetid://16742074319", ["Cameraman"] = "rbxassetid://17119429753", ["Default"] = "rbxassetid://16742074569", ["Demon"] = "rbxassetid://16742074780", ["Galactic"] = "rbxassetid://16742075002", ["Phantom"] = "rbxassetid://16742075283", ["Pirate"] = "rbxassetid://16742075600", ["Pumpkin"] = "rbxassetid://16742075866", ["Slugger"] = "rbxassetid://16742076100", ["Umbrella"] = "rbxassetid://16742076293", ["Vigilante"] = "rbxassetid://16742076549"
-    },
-    ["Hacker"] = {
-        ["Camera Operator"] = "rbxassetid://83759196809017", ["Default"] = "rbxassetid://111199743077047", ["Fallen"] = "rbxassetid://122092656436424", ["Reindeer Mech"] = "rbxassetid://71250983401324", ["Triumphant"] = "rbxassetid://122127536135971"
-    },
-    ["Hallow Punk"] = {
-        ["Default"] = "rbxassetid://134504826386080", ["Lunar"] = "rbxassetid://108437763960397"
-    },
-    ["Harvester"] = {
-        ["Default"] = "rbxassetid://87684607767207", ["Lunar"] = "rbxassetid://137379745720939", ["Wasteland"] = "rbxassetid://74677227259405"
-    },
-    ["Hunter"] = {
-        ["Blue"] = "rbxassetid://16742076812", ["Default"] = "rbxassetid://16742077024", ["Ducky"] = "rbxassetid://16742077321", ["Halloween"] = "rbxassetid://16742077487", ["Pirate"] = "rbxassetid://16742077780", ["Vampire Slayer"] = "rbxassetid://16742078183"
-    },
-    ["Jester"] = {
-        ["Clown"] = "rbxassetid://17744634147", ["Default"] = "rbxassetid://16742096294", ["Heartbreak"] = "rbxassetid://119670783538459", ["The Beast"] = "rbxassetid://75863398247354", ["The Flea"] = "rbxassetid://105377590942476"
-    },
-    ["Juggernaut"] = {
-        ["Default"] = "rbxassetid://16742096516"
-    },
-    ["Kingpin"] = {
-        ["Default"] = "rbxassetid://16742128592"
-    },
-    ["Mecha Base"] = {
-        ["Default"] = "rbxassetid://16742097118"
-    },
-    ["Medic"] = {
-        ["Bartender"] = "rbxassetid://76122446126363", ["Bunny"] = "rbxassetid://81292807669872", ["Cyber"] = "rbxassetid://77947916767981", ["Default"] = "rbxassetid://70910607127530", ["Fallen"] = "rbxassetid://131777122693897", ["Masquerade"] = "rbxassetid://102457549018286", ["Mermaid"] = "rbxassetid://107509961893175", ["Plague"] = "rbxassetid://86420908708799", ["Second Chance"] = "rbxassetid://103107154309507", ["Stranded"] = "rbxassetid://97722323410544", ["Toy Ballerina"] = "rbxassetid://87046562754510", ["Valentines"] = "rbxassetid://98455922318086", ["Witch"] = "rbxassetid://120995785751376"
-    },
-    ["Mercenary Base"] = {
-        ["Default"] = "rbxassetid://17202640474", ["Frost Legion"] = "rbxassetid://78931994632689", ["Graveyard"] = "rbxassetid://98029015468306", ["Liberator"] = "rbxassetid://17767106489"
-    },
-    ["Militant"] = {
-        ["Ace Pilot"] = "rbxassetid://16742099577", ["Acheron"] = "rbxassetid://114000424593798", ["Arsenal"] = "rbxassetid://16742099799", ["Beach"] = "rbxassetid://16742100038", ["Chocolatier"] = "rbxassetid://16742100398", ["Davinchi"] = "rbxassetid://16742100635", ["Default"] = "rbxassetid://16742100840", ["Ducky"] = "rbxassetid://16742101071", ["Easter"] = "rbxassetid://86436209069316", ["Fallen"] = "rbxassetid://18835926439", ["Ghost"] = "rbxassetid://16742101377", ["Hazmat"] = "rbxassetid://16742101622", ["John"] = "rbxassetid://16742101804", ["Lumberjack"] = "rbxassetid://16742102093", ["Pumpkin"] = "rbxassetid://16742102372", ["Star Spartan"] = "rbxassetid://76196766882530", ["Undead"] = "rbxassetid://99237916719964", ["Wasteland"] = "rbxassetid://140245000984082"
-    },
-    ["Military Base"] = {
-        ["Base 1776"] = "rbxassetid://82822915671522", ["Classic"] = "rbxassetid://16997024256", ["Cyber"] = "rbxassetid://109839701132351", ["Default"] = "rbxassetid://16997024735", ["Wasteland"] = "rbxassetid://78972347785643"
-    },
-    ["Minigunner"] = {
-        ["Beach"] = "rbxassetid://16742103082", ["Black Ops"] = "rbxassetid://16742103323", ["Blue"] = "rbxassetid://16742103560", ["Bunny"] = "rbxassetid://16742103808", ["Chad"] = "rbxassetid://16997025666", ["Chocolatier"] = "rbxassetid://123838075161800", ["Community"] = "rbxassetid://16742104107", ["Crusader"] = "rbxassetid://16742104409", ["Cursed"] = "rbxassetid://120591121926081", ["Default"] = "rbxassetid://16742104678", ["Ducky"] = "rbxassetid://16742104895", ["Fallen"] = "rbxassetid://18739982182", ["Frost"] = "rbxassetid://16742105137", ["Gardener"] = "rbxassetid://82544636570442", ["Ghost"] = "rbxassetid://16742105452", ["Golden"] = "rbxassetid://16742105731", ["Golden Plushie"] = "rbxassetid://18563673298", ["Green"] = "rbxassetid://16742105989", ["Hazmat"] = "rbxassetid://16742106200", ["Heavy"] = "rbxassetid://16742106470", ["Holiday"] = "rbxassetid://16742106731", ["Nutcracker"] = "rbxassetid://123307115343441", ["Ox"] = "rbxassetid://74202120404385", ["Party"] = "rbxassetid://16742106926", ["Phantom"] = "rbxassetid://16742107196", ["Plushie"] = "rbxassetid://16742107455", ["Pumpkin"] = "rbxassetid://16742107785", ["Road Rage"] = "rbxassetid://127265987839477", ["Space Elite"] = "rbxassetid://16742108056", ["Sweaking"] = "rbxassetid://16742108280", ["Toy"] = "rbxassetid://16742108498", ["Trucker"] = "rbxassetid://16997026080", ["Twitter"] = "rbxassetid://16742108697", ["Warlord"] = "rbxassetid://16742108927", ["Wraith"] = "rbxassetid://16742109128", ["Xmas"] = "rbxassetid://16742109340"
-    },
-    ["Mortar"] = {
-        ["Baseball"] = "rbxassetid://18549606696", ["Bunny"] = "rbxassetid://16742109548", ["Dark Frost"] = "rbxassetid://75806838714392", ["Default"] = "rbxassetid://16742109840", ["DefaultOld"] = "rbxassetid://16742110099", ["Defender"] = "rbxassetid://16742110354", ["Ducky"] = "rbxassetid://16742110596", ["Eclipse"] = "rbxassetid://16742110815", ["Fallen"] = "rbxassetid://18835927281", ["Festive"] = "rbxassetid://136722938963670", ["Frost"] = "rbxassetid://119613427526708", ["Krampus"] = "rbxassetid://91368433364360", ["Mecha Ducky"] = "rbxassetid://70538066358366", ["Pirate"] = "rbxassetid://16742111011", ["Valentines"] = "rbxassetid://133447641741866", ["Vigilante"] = "rbxassetid://16742111168"
-    },
-    ["Necromancer"] = {
-        ["Creepy Santa"] = "rbxassetid://121558895628032", ["Default"] = "rbxassetid://16742111373", ["Duck"] = "rbxassetid://106663322139673", ["Fallen"] = "rbxassetid://18950652558", ["Mage"] = "rbxassetid://16997026277"
-    },
-    ["Operator"] = {
-        ["Default"] = "rbxassetid://16742111580"
-    },
-    ["Paintballer"] = {
-        ["Bunny"] = "rbxassetid://16742111855", ["Default"] = "rbxassetid://16742112045", ["Green"] = "rbxassetid://17766383428", ["Red"] = "rbxassetid://16742112218"
-    },
-    ["Pursuit"] = {
-        ["Default"] = "rbxassetid://71565475215945", ["Dragon"] = "rbxassetid://75987818617959", ["Eggy"] = "rbxassetid://129121886854482"
-    },
-    ["Pyromancer"] = {
-        ["Acidic"] = "rbxassetid://16742112759", ["Barbecue"] = "rbxassetid://16742112955", ["Blue"] = "rbxassetid://16742113148", ["Bunny"] = "rbxassetid://16742113383", ["Default"] = "rbxassetid://16742113730", ["Dwarf"] = "rbxassetid://16742114045", ["Fire Breather"] = "rbxassetid://87818829094012", ["Frost"] = "rbxassetid://16742114293", ["Ghost"] = "rbxassetid://16742114699", ["Golden"] = "rbxassetid://16742128811", ["Hallow Punk"] = "rbxassetid://100038154702519", ["Hazmat"] = "rbxassetid://16742128975", ["Mage"] = "rbxassetid://16742129185", ["Plushie"] = "rbxassetid://110949683234465", ["Pool Party"] = "rbxassetid://104604814725961", ["Reindeer"] = "rbxassetid://128884594892871", ["Scarecrow"] = "rbxassetid://16742129397", ["Valentines"] = "rbxassetid://16742129623", ["Vigilante"] = "rbxassetid://16742129830"
-    },
-    ["Ranger"] = {
-        ["5ouls"] = "rbxassetid://18549607210", ["Badlands"] = "rbxassetid://16801603418", ["Beast Slayer"] = "rbxassetid://16742130037", ["Black Ops"] = "rbxassetid://16742130258", ["Blue"] = "rbxassetid://16742130444", ["Bunny"] = "rbxassetid://16742130675", ["Classic"] = "rbxassetid://16742130816", ["Dark Matter"] = "rbxassetid://16742131006", ["Default"] = "rbxassetid://16742131160", ["Eclipse"] = "rbxassetid://16742131402", ["Eskimo"] = "rbxassetid://128714714796489", ["Frankenstein"] = "rbxassetid://123830216490388", ["Frost"] = "rbxassetid://16742131549", ["Green"] = "rbxassetid://16742131725", ["Gun Gale"] = "rbxassetid://16742131902", ["Mecha Ducky"] = "rbxassetid://111106612615105", ["Partisan"] = "rbxassetid://16742132072", ["Phantom"] = "rbxassetid://16742132284", ["Propellars"] = "rbxassetid://16742132454", ["Pumpkin"] = "rbxassetid://16742048328", ["Railgunner"] = "rbxassetid://16742132622", ["Shark"] = "rbxassetid://118641195806072", ["SteamPunk"] = "rbxassetid://17766383629", ["Valentines"] = "rbxassetid://16742132842", ["Wraith"] = "rbxassetid://16742133100"
-    },
-    ["Rocketeer"] = {
-        ["Bosanka"] = "rbxassetid://97562066551955", ["Dark Matter"] = "rbxassetid://82619969731160", ["Default"] = "rbxassetid://72053097584198", ["Duck"] = "rbxassetid://82581428525440", ["Fortress"] = "rbxassetid://104029788106610", ["Ghost"] = "rbxassetid://126109130686279", ["Lovestriker"] = "rbxassetid://122261435962808", ["Lunar"] = "rbxassetid://106246370633835", ["Pumpkin"] = "rbxassetid://103379695538461", ["Steampunk"] = "rbxassetid://132152532289629", ["Toy"] = "rbxassetid://125539379459445", ["Trombone"] = "rbxassetid://127541134546574", ["Xmas"] = "rbxassetid://94263168154969"
-    },
-    ["Scout"] = {
-        ["Banned"] = "rbxassetid://98679998862541", ["Beach"] = "rbxassetid://16742135002", ["Black Ops"] = "rbxassetid://16742135175", ["Blue"] = "rbxassetid://16742135394", ["Bunny"] = "rbxassetid://16742135669", ["Cookie"] = "rbxassetid://16742135838", ["Default"] = "rbxassetid://16742136020", ["Ducky"] = "rbxassetid://16742136236", ["Eclipse"] = "rbxassetid://16742136452", ["Fallen"] = "rbxassetid://18739982633", ["Frost Hunter"] = "rbxassetid://16742136608", ["Golden"] = "rbxassetid://16742136768", ["Green"] = "rbxassetid://16742136919", ["Guest"] = "rbxassetid://17571579155", ["Haz3mn"] = "rbxassetid://130252324129434", ["Holiday"] = "rbxassetid://16742137176", ["Intern"] = "rbxassetid://16742137311", ["King of Rock"] = "rbxassetid://117402710044000", ["Masquerade"] = "rbxassetid://16742137522", ["Party"] = "rbxassetid://16742137715", ["Penguin"] = "rbxassetid://102209448087896", ["Phantom"] = "rbxassetid://16742137918", ["Plushie"] = "rbxassetid://16742138111", ["Prime Raven"] = "rbxassetid://16742138286", ["Red"] = "rbxassetid://16742138539", ["Shark"] = "rbxassetid://89854318503673", ["Skull Trooper"] = "rbxassetid://16742138815", ["Survivor"] = "rbxassetid://16742139178", ["Toilet"] = "rbxassetid://16997026586", ["Valentines"] = "rbxassetid://16742139334", ["Valhalla"] = "rbxassetid://16742139584"
-    },
-    ["Shotgunner"] = {
-        ["Classic"] = "rbxassetid://16742139792", ["Dance Fever"] = "rbxassetid://139385538174792", ["Default"] = "rbxassetid://16742140018", ["Ducky"] = "rbxassetid://16742140221", ["Gardener"] = "rbxassetid://98658379166107", ["Hallow Punk"] = "rbxassetid://16742140448", ["Holiday"] = "rbxassetid://16742140772", ["Null"] = "rbxassetid://93120520148959", ["Phantom"] = "rbxassetid://16742140988", ["Slayer"] = "rbxassetid://16998519554", ["Spooky"] = "rbxassetid://16742141438", ["Trumpeter"] = "rbxassetid://96004685279062", ["Vigilante"] = "rbxassetid://16742050157"
-    },
-    ["Slasher"] = {
-        ["Default"] = "rbxassetid://85826790424914", ["Jason"] = "rbxassetid://80815511240891", ["Spooky"] = "rbxassetid://87446356234317", ["Spring Time"] = "rbxassetid://100945870370166"
-    },
-    ["Sledger"] = {
-        ["Brave Soul"] = "rbxassetid://16742142332", ["Chocolatier"] = "rbxassetid://128749730055893", ["Default"] = "rbxassetid://75780199539960", ["Fallen"] = "rbxassetid://18961805501", ["Phantom"] = "rbxassetid://16742142970"
-    },
-    ["Sniper"] = {
-        ["Blue"] = "rbxassetid://16742143211", ["Bunny"] = "rbxassetid://16742143396", ["Davinchi"] = "rbxassetid://16742143675", ["Default"] = "rbxassetid://16742143963", ["Ducky"] = "rbxassetid://16742144110", ["Frost Legion"] = "rbxassetid://93332491661008", ["Ghillie"] = "rbxassetid://16742144423", ["Red"] = "rbxassetid://16742144687", ["Redemption"] = "rbxassetid://16997027118", ["Shrimp"] = "rbxassetid://139661519405754", ["Silent"] = "rbxassetid://16742144921", ["Valentines"] = "rbxassetid://16742158141"
-    },
-    ["Snowballer"] = {
-        ["Default"] = "rbxassetid://114134096038917"
-    },
-    ["Soldier"] = {
-        ["Aerobics"] = "rbxassetid://104435661189010", ["Beast Slayer"] = "rbxassetid://16742158393", ["Blue"] = "rbxassetid://16742158617", ["Bunny"] = "rbxassetid://90125360452717", ["Classic"] = "rbxassetid://16742158900", ["Cold Soldier"] = "rbxassetid://16742159220", ["Dark Frost"] = "rbxassetid://79808121861280", ["Default"] = "rbxassetid://16742159440", ["Doughboy"] = "rbxassetid://16742159744", ["Ducky"] = "rbxassetid://16742159991", ["Golden"] = "rbxassetid://16742160355", ["Grand Theft"] = "rbxassetid://16742160584", ["Holiday"] = "rbxassetid://16742160760", ["Korblox"] = "rbxassetid://70787227887803", ["Liberator"] = "rbxassetid://16997027649", ["Null"] = "rbxassetid://124579321748902", ["Party"] = "rbxassetid://16742161040", ["Red"] = "rbxassetid://16742161237", ["Stealth Ops"] = "rbxassetid://100325781772079", ["Toilet"] = "rbxassetid://16997028225", ["Toy"] = "rbxassetid://16742161627", ["Valentines"] = "rbxassetid://16742161860"
-    },
-    ["Spotlight Tech"] = {
-        ["Default"] = "rbxassetid://100541687228569"
-    },
-    ["Swarmer"] = {
-        ["Default"] = "rbxassetid://130558134123777"
-    },
-    ["Tesla"] = {
-        ["Default"] = "rbxassetid://82978810572655"
-    },
-    ["Toxic Gunner"] = {
-        ["Default"] = "rbxassetid://73834896430233", ["Phantom"] = "rbxassetid://16742162641"
-    },
-    ["Trapper"] = {
-        ["Banned"] = "rbxassetid://138302025230911", ["Chocolatier"] = "rbxassetid://97990283366444", ["Dark Frost"] = "rbxassetid://120378214035608", ["Default"] = "rbxassetid://16742162831", ["Hermit"] = "rbxassetid://132047366954925", ["Holiday"] = "rbxassetid://135434192278722", ["Jolly Tree"] = "rbxassetid://122626004746795", ["Mallard Duck"] = "rbxassetid://128010558189605", ["Plushie"] = "rbxassetid://17362851197"
-    },
-    ["Turret"] = {
-        ["Crossbow"] = "rbxassetid://114313678039848", ["Default"] = "rbxassetid://98957331113953", ["Grinch"] = "rbxassetid://121152276423958", ["Jetski"] = "rbxassetid://135352734380419", ["XR300"] = "rbxassetid://107330122678487", ["XR500"] = "rbxassetid://88505927728819"
-    },
-    ["War Machine"] = {
-        ["Default"] = "rbxassetid://16742163808"
-    },
-    ["Warden"] = {
-        ["Baseball"] = "rbxassetid://16742164022", ["Dark Frost"] = "rbxassetid://137394918093332", ["Default"] = "rbxassetid://16742164273", ["Ducky"] = "rbxassetid://16742051899", ["Fallen"] = "rbxassetid://18960948589", ["Freddy"] = "rbxassetid://106739389283977", ["Galactic"] = "rbxassetid://16742164510", ["Isaac"] = "rbxassetid://16742164667", ["Korblox"] = "rbxassetid://16742164799", ["Masquerade"] = "rbxassetid://16742165002", ["Pirate"] = "rbxassetid://16742165168", ["Shark"] = "rbxassetid://70941336840822", ["Slaughter"] = "rbxassetid://16742165310"
-    },
-    ["Warlock"] = {
-        ["Default"] = "rbxassetid://91902523805977", ["Rockstar"] = "rbxassetid://82651587906745", ["Tiger"] = "rbxassetid://139541269723119"
-    }
+    ["Accelerator"] = { ["Champion"] = "rbxassetid://90324305122544", ["Cupid"] = "rbxassetid://16742017040", ["Dank"] = "rbxassetid://18549604688", ["Default"] = "rbxassetid://16742017289", ["Disco"] = "rbxassetid://96135720673651", ["Ducky"] = "rbxassetid://16742017439", ["Eclipse"] = "rbxassetid://16742017644", ["Elite"] = "rbxassetid://16742017935", ["Fallen"] = "rbxassetid://18848269402", ["Ghost Buster"] = "rbxassetid://16742018196", ["Ice Witch"] = "rbxassetid://16742018426", ["Legend"] = "rbxassetid://16742018621", ["Mage"] = "rbxassetid://16742018781", ["Magician"] = "rbxassetid://104973122569052", ["Navy"] = "rbxassetid://16742018971", ["Nuclear"] = "rbxassetid://16742019185", ["Octopus"] = "rbxassetid://138359133170089", ["Patient Zero"] = "rbxassetid://88972169285855", ["Plushie"] = "rbxassetid://16742019393", ["Red"] = "rbxassetid://16742019754", ["Senator"] = "rbxassetid://17363277841", ["Speaker Titan"] = "rbxassetid://16997023622", ["Vigilante"] = "rbxassetid://16742019956" },
+    ["Ace Pilot"] = { ["Aerial Ace"] = "rbxassetid://17859245825", ["Default"] = "rbxassetid://17859246260", ["Easter"] = "rbxassetid://137734270861409", ["Green"] = "rbxassetid://17859246778", ["Navy"] = "rbxassetid://17859247163", ["Pumpkin"] = "rbxassetid://17859247510", ["Purple"] = "rbxassetid://17859247791", ["Red"] = "rbxassetid://17859248266", ["Toy Plane"] = "rbxassetid://90411909913759", ["Yellow"] = "rbxassetid://17859248807" },
+    ["Archer"] = { ["Default"] = "rbxassetid://102469025012991", ["Elf"] = "rbxassetid://118017603574255", ["Huntsman"] = "rbxassetid://108057864574863", ["Ice Soul"] = "rbxassetid://125693199171973", ["Spooky"] = "rbxassetid://109768712967611", ["Valentines"] = "rbxassetid://88010001274532" },
+    ["Assassin"] = { ["Actor"] = "rbxassetid://112178399627918", ["Default"] = "rbxassetid://117970650222627", ["Saber Tooth Tiger"] = "rbxassetid://129525356172974" },
+    ["Biologist"] = { ["Default"] = "rbxassetid://101795075923269", ["Grim"] = "rbxassetid://126912872410229" },
+    ["Brawler"] = { ["Banned"] = "rbxassetid://84628371320634", ["Blazing"] = "rbxassetid://18549605468", ["Default"] = "rbxassetid://17506304027", ["Fallen"] = "rbxassetid://18835925180", ["Horse"] = "rbxassetid://101555481625059", ["Jordan"] = "rbxassetid://70748904383488", ["Loader"] = "rbxassetid://131316320823683", ["Lobster"] = "rbxassetid://123985511698683", ["Lovestriker"] = "rbxassetid://83049730035300", ["Rudolph"] = "rbxassetid://122757939585280", ["Werewolf"] = "rbxassetid://105319960862894" },
+    ["Combatant"] = { ["Default"] = "rbxassetid://16742022822" },
+    ["Commander"] = { ["Aqua"] = "rbxassetid://89379123461384", ["Bloxy"] = "rbxassetid://16742023051", ["Brisk"] = "rbxassetid://16742023299", ["Bunny"] = "rbxassetid://17507647451", ["Candy Cane"] = "rbxassetid://115979067743950", ["Default"] = "rbxassetid://17507647561", ["Director"] = "rbxassetid://140380406065215", ["Ducky"] = "rbxassetid://16742023989", ["Eclipse"] = "rbxassetid://16742024255", ["Eggrypted"] = "rbxassetid://16742024613", ["Fallen"] = "rbxassetid://80567934657980", ["Frost"] = "rbxassetid://16742024893", ["Galactic"] = "rbxassetid://17507647660", ["Gargoyle"] = "rbxassetid://17507647804", ["General"] = "rbxassetid://17507647965", ["Ghost"] = "rbxassetid://17507648068", ["Green"] = "rbxassetid://17507648232", ["Holiday"] = "rbxassetid://16742026260", ["Lifeguard"] = "rbxassetid://16742026508", ["Maid"] = "rbxassetid://17507648382", ["Neko"] = "rbxassetid://17507648601", ["Patriotic"] = "rbxassetid://18323544710", ["Pattern"] = "rbxassetid://17507648760", ["Phantom"] = "rbxassetid://16742027114", ["Pirate"] = "rbxassetid://16742027462", ["Plushie"] = "rbxassetid://16742027624", ["Red"] = "rbxassetid://17507648923", ["Santa"] = "rbxassetid://117501182181139", ["Spring Time"] = "rbxassetid://17507649066", ["Umbra"] = "rbxassetid://16742028241", ["Valentines"] = "rbxassetid://16742028419", ["Victorian"] = "rbxassetid://17507649166", ["Vigilante"] = "rbxassetid://17507649270", ["War Lord"] = "rbxassetid://16742028910", ["Wasteland"] = "rbxassetid://93243165798255", ["Werewolf"] = "rbxassetid://110092626333388", ["Wonderland"] = "rbxassetid://86397469450446" },
+    ["Commando"] = { ["Default"] = "rbxassetid://140552401698797", ["Pirate"] = "rbxassetid://135452131994371", ["Trooper"] = "rbxassetid://81411979969960" },
+    ["Cowboy"] = { ["Agent"] = "rbxassetid://16742029625", ["Badlands"] = "rbxassetid://16742029785", ["Bandit"] = "rbxassetid://16742029974", ["Bounty Hunter"] = "rbxassetid://16742030178", ["Cop"] = "rbxassetid://16742030440", ["Cyberpunk"] = "rbxassetid://16742030746", ["Dark Frost"] = "rbxassetid://78872525322359", ["Default"] = "rbxassetid://16742031062", ["Ducky"] = "rbxassetid://16742031273", ["Fallen"] = "rbxassetid://18848220133", ["Golden"] = "rbxassetid://16742031462", ["Holiday"] = "rbxassetid://16742031725", ["Kasodus"] = "rbxassetid://16742031988", ["Masquerade"] = "rbxassetid://16742032218", ["Mecha Bunny"] = "rbxassetid://70870846433248", ["Megalodon"] = "rbxassetid://129525988654572", ["Noir"] = "rbxassetid://16742032406", ["Plushie"] = "rbxassetid://84617405752906", ["Pumpkin"] = "rbxassetid://16742032605", ["Redemption"] = "rbxassetid://16742032735", ["Retired"] = "rbxassetid://16742032911", ["Spring Time"] = "rbxassetid://127656855808415", ["Valentines"] = "rbxassetid://16742033284", ["Vampire Hunter"] = "rbxassetid://99306749260135" },
+    ["Crook Boss"] = { ["Alien Focus"] = "rbxassetid://133134889361359", ["Assassin"] = "rbxassetid://16742033599", ["Blue"] = "rbxassetid://16742033877", ["Checker"] = "rbxassetid://16742034068", ["Corso"] = "rbxassetid://16742034286", ["Cupid"] = "rbxassetid://16742034551", ["Cybernetic"] = "rbxassetid://16996940813", ["DRKSHDW"] = "rbxassetid://16742034843", ["Dark Frost"] = "rbxassetid://125130339305089", ["Default"] = "rbxassetid://16742035067", ["Demon"] = "rbxassetid://16742035383", ["Easter"] = "rbxassetid://101408307745429", ["Game Master"] = "rbxassetid://75261782948960", ["Golden"] = "rbxassetid://16742035712", ["Holiday"] = "rbxassetid://16742036050", ["Intern"] = "rbxassetid://16742036260", ["Narrator"] = "rbxassetid://92111450115834", ["Necromancer"] = "rbxassetid://16742036503", ["Null"] = "rbxassetid://102269930328399", ["Pirate"] = "rbxassetid://16742036700", ["Rat King"] = "rbxassetid://99680623337214", ["Red"] = "rbxassetid://16742036972", ["Soviet"] = "rbxassetid://17363278550", ["Spooky"] = "rbxassetid://16742037577", ["SteamPunk"] = "rbxassetid://16742037752", ["Victorian"] = "rbxassetid://95810120766308", ["Xmas"] = "rbxassetid://16742038000" },
+    ["Cryomancer"] = { ["Default"] = "rbxassetid://16742059533", ["Krampus Slayer"] = "rbxassetid://16742059785" },
+    ["DJ Booth"] = { ["Default"] = "rbxassetid://90127560097295", ["Ducky"] = "rbxassetid://108324875176244", ["Garage Band"] = "rbxassetid://102404432745932", ["Ghost"] = "rbxassetid://111981689753740", ["Gingerbread"] = "rbxassetid://88595674290447", ["Mako"] = "rbxassetid://105492996309734", ["Masquerade"] = "rbxassetid://16742060736", ["Neko"] = "rbxassetid://115310627249069", ["Neon Rave"] = "rbxassetid://88395223637973", ["Plushie"] = "rbxassetid://16742061708", ["Seal"] = "rbxassetid://124438946534088" },
+    ["Demoman"] = { ["Blue"] = "rbxassetid://16742061940", ["Default"] = "rbxassetid://16742062171", ["Ducky"] = "rbxassetid://112748767260662", ["Fortress"] = "rbxassetid://16742062515", ["Ghost"] = "rbxassetid://81760835645289", ["Green"] = "rbxassetid://16742062839", ["Military"] = "rbxassetid://16742063163", ["Pirate"] = "rbxassetid://16742063574", ["Pumpkin"] = "rbxassetid://16742063839", ["Red"] = "rbxassetid://16742064120", ["Yellow"] = "rbxassetid://16742064313" },
+    ["Electroshocker"] = { ["Banned"] = "rbxassetid://118823738322908", ["Bunny"] = "rbxassetid://16742064560", ["Classic"] = "rbxassetid://17744633836", ["Dark Frost"] = "rbxassetid://92937669662901", ["Default"] = "rbxassetid://16742064918", ["Ducky"] = "rbxassetid://16742065360", ["Frankenstein"] = "rbxassetid://16742065631", ["Ghost"] = "rbxassetid://16742065873", ["Hazmat"] = "rbxassetid://16742066166", ["Jellyfish"] = "rbxassetid://85663070964840", ["Korblox"] = "rbxassetid://122538908879439", ["Lovestriker"] = "rbxassetid://106374635483378", ["TeeVee"] = "rbxassetid://16997023926", ["Valentines"] = "rbxassetid://16742066423", ["Vigilante"] = "rbxassetid://16742066740" },
+    ["Elementalist"] = { ["Default"] = "rbxassetid://78382857674962" },
+    ["Elf Camp"] = { ["Chocolatier"] = "rbxassetid://79600048176341", ["Classic"] = "rbxassetid://89043476285776", ["Default"] = "rbxassetid://90684298180076" },
+    ["Engineer"] = { ["Beach"] = "rbxassetid://70830745549464", ["Dark Frost"] = "rbxassetid://72967186484602", ["Default"] = "rbxassetid://16742067184", ["DraxRex"] = "rbxassetid://18549606104", ["Ducky"] = "rbxassetid://16742040216", ["Fallen"] = "rbxassetid://18950630600", ["Ghost"] = "rbxassetid://104901982243529", ["Grave Digger"] = "rbxassetid://16742067352", ["Heartbreak"] = "rbxassetid://16742067565", ["Holiday"] = "rbxassetid://16742067797", ["Mechanic"] = "rbxassetid://16742068076", ["Phantom"] = "rbxassetid://16742068314", ["Plushie"] = "rbxassetid://16742068525", ["Wikia"] = "rbxassetid://16742068760" },
+    ["Executioner"] = { ["Default"] = "rbxassetid://16742069000", ["Eclipse"] = "rbxassetid://16742069213", ["Heartbreak"] = "rbxassetid://100643097900090", ["Vanquisher"] = "rbxassetid://17363278858" },
+    ["Farm"] = { ["Arcade"] = "rbxassetid://16742069471", ["Booth"] = "rbxassetid://114387520669997", ["Cinema"] = "rbxassetid://113467369649039", ["Cozy Camp"] = "rbxassetid://140408163540785", ["Crab"] = "rbxassetid://80117562627776", ["Crypto"] = "rbxassetid://16742069733", ["Cube"] = "rbxassetid://80832036812275", ["Default"] = "rbxassetid://16742069981", ["Ducky"] = "rbxassetid://16742070242", ["Graveyard"] = "rbxassetid://16742070511", ["Lemonade Stand"] = "rbxassetid://81915340530819", ["Null Soul"] = "rbxassetid://81613076972732", ["PNG"] = "rbxassetid://102229660485968", ["Pirate"] = "rbxassetid://16742070778", ["Present"] = "rbxassetid://16742071112", ["Tycoon"] = "rbxassetid://16742071421", ["Vendor"] = "rbxassetid://16742071670", ["Wasteland"] = "rbxassetid://115389901462450", ["Xmas"] = "rbxassetid://16742072101" },
+    ["Firework Technician"] = { ["2026"] = "rbxassetid://122550929943456", ["Default"] = "rbxassetid://113647654122910", ["Inventor"] = "rbxassetid://76009529192577" },
+    ["Freezer"] = { ["Cryptid"] = "rbxassetid://16742072500", ["Deep Freeze"] = "rbxassetid://16742072779", ["Default"] = "rbxassetid://16742073034", ["Foam"] = "rbxassetid://16742073341", ["Frost Legion"] = "rbxassetid://80819236795571", ["IcyTea"] = "rbxassetid://16742073604", ["Mint Choco"] = "rbxassetid://16742073860", ["Polar Bear"] = "rbxassetid://78779113854366", ["Vendor"] = "rbxassetid://109388902986099" },
+    ["Frost Blaster"] = { ["Default"] = "rbxassetid://16742074063" },
+    ["Gatling Gun"] = { ["Default"] = "rbxassetid://81281360352088", ["Easter"] = "rbxassetid://102642733564095" },
+    ["Gladiator"] = { ["Beach"] = "rbxassetid://16742074319", ["Cameraman"] = "rbxassetid://17119429753", ["Default"] = "rbxassetid://16742074569", ["Demon"] = "rbxassetid://16742074780", ["Galactic"] = "rbxassetid://16742075002", ["Phantom"] = "rbxassetid://16742075283", ["Pirate"] = "rbxassetid://16742075600", ["Pumpkin"] = "rbxassetid://16742075866", ["Slugger"] = "rbxassetid://16742076100", ["Umbrella"] = "rbxassetid://16742076293", ["Vigilante"] = "rbxassetid://16742076549" },
+    ["Hacker"] = { ["Camera Operator"] = "rbxassetid://83759196809017", ["Default"] = "rbxassetid://111199743077047", ["Fallen"] = "rbxassetid://122092656436424", ["Reindeer Mech"] = "rbxassetid://71250983401324", ["Triumphant"] = "rbxassetid://122127536135971" },
+    ["Hallow Punk"] = { ["Default"] = "rbxassetid://134504826386080", ["Lunar"] = "rbxassetid://108437763960397" },
+    ["Harvester"] = { ["Default"] = "rbxassetid://87684607767207", ["Lunar"] = "rbxassetid://137379745720939", ["Wasteland"] = "rbxassetid://74677227259405" },
+    ["Hunter"] = { ["Blue"] = "rbxassetid://16742076812", ["Default"] = "rbxassetid://16742077024", ["Ducky"] = "rbxassetid://16742077321", ["Halloween"] = "rbxassetid://16742077487", ["Pirate"] = "rbxassetid://16742077780", ["Vampire Slayer"] = "rbxassetid://16742078183" },
+    ["Jester"] = { ["Clown"] = "rbxassetid://17744634147", ["Default"] = "rbxassetid://16742096294", ["Heartbreak"] = "rbxassetid://119670783538459", ["The Beast"] = "rbxassetid://75863398247354", ["The Flea"] = "rbxassetid://105377590942476" },
+    ["Juggernaut"] = { ["Default"] = "rbxassetid://16742096516" },
+    ["Kingpin"] = { ["Default"] = "rbxassetid://16742128592" },
+    ["Mecha Base"] = { ["Default"] = "rbxassetid://16742097118" },
+    ["Medic"] = { ["Bartender"] = "rbxassetid://76122446126363", ["Bunny"] = "rbxassetid://81292807669872", ["Cyber"] = "rbxassetid://77947916767981", ["Default"] = "rbxassetid://70910607127530", ["Fallen"] = "rbxassetid://131777122693897", ["Masquerade"] = "rbxassetid://102457549018286", ["Mermaid"] = "rbxassetid://107509961893175", ["Plague"] = "rbxassetid://86420908708799", ["Second Chance"] = "rbxassetid://103107154309507", ["Stranded"] = "rbxassetid://97722323410544", ["Toy Ballerina"] = "rbxassetid://87046562754510", ["Valentines"] = "rbxassetid://98455922318086", ["Witch"] = "rbxassetid://120995785751376" },
+    ["Mercenary Base"] = { ["Default"] = "rbxassetid://17202640474", ["Frost Legion"] = "rbxassetid://78931994632689", ["Graveyard"] = "rbxassetid://98029015468306", ["Liberator"] = "rbxassetid://17767106489" },
+    ["Militant"] = { ["Ace Pilot"] = "rbxassetid://16742099577", ["Acheron"] = "rbxassetid://114000424593798", ["Arsenal"] = "rbxassetid://16742099799", ["Beach"] = "rbxassetid://16742100038", ["Chocolatier"] = "rbxassetid://16742100398", ["Davinchi"] = "rbxassetid://16742100635", ["Default"] = "rbxassetid://16742100840", ["Ducky"] = "rbxassetid://16742101071", ["Easter"] = "rbxassetid://86436209069316", ["Fallen"] = "rbxassetid://18835926439", ["Ghost"] = "rbxassetid://16742101377", ["Hazmat"] = "rbxassetid://16742101622", ["John"] = "rbxassetid://16742101804", ["Lumberjack"] = "rbxassetid://16742102093", ["Pumpkin"] = "rbxassetid://16742102372", ["Star Spartan"] = "rbxassetid://76196766882530", ["Undead"] = "rbxassetid://99237916719964", ["Wasteland"] = "rbxassetid://140245000984082" },
+    ["Military Base"] = { ["Base 1776"] = "rbxassetid://82822915671522", ["Classic"] = "rbxassetid://16997024256", ["Cyber"] = "rbxassetid://109839701132351", ["Default"] = "rbxassetid://16997024735", ["Wasteland"] = "rbxassetid://78972347785643" },
+    ["Minigunner"] = { ["Beach"] = "rbxassetid://16742103082", ["Black Ops"] = "rbxassetid://16742103323", ["Blue"] = "rbxassetid://16742103560", ["Bunny"] = "rbxassetid://16742103808", ["Chad"] = "rbxassetid://16997025666", ["Chocolatier"] = "rbxassetid://123838075161800", ["Community"] = "rbxassetid://16742104107", ["Crusader"] = "rbxassetid://16742104409", ["Cursed"] = "rbxassetid://120591121926081", ["Default"] = "rbxassetid://16742104678", ["Ducky"] = "rbxassetid://16742104895", ["Fallen"] = "rbxassetid://18739982182", ["Frost"] = "rbxassetid://16742105137", ["Gardener"] = "rbxassetid://82544636570442", ["Ghost"] = "rbxassetid://16742105452", ["Golden"] = "rbxassetid://16742105731", ["Golden Plushie"] = "rbxassetid://18563673298", ["Green"] = "rbxassetid://16742105989", ["Hazmat"] = "rbxassetid://16742106200", ["Heavy"] = "rbxassetid://16742106470", ["Holiday"] = "rbxassetid://16742106731", ["Nutcracker"] = "rbxassetid://123307115343441", ["Ox"] = "rbxassetid://74202120404385", ["Party"] = "rbxassetid://16742106926", ["Phantom"] = "rbxassetid://16742107196", ["Plushie"] = "rbxassetid://16742107455", ["Pumpkin"] = "rbxassetid://16742107785", ["Road Rage"] = "rbxassetid://127265987839477", ["Space Elite"] = "rbxassetid://16742108056", ["Sweaking"] = "rbxassetid://16742108280", ["Toy"] = "rbxassetid://16742108498", ["Trucker"] = "rbxassetid://16997026080", ["Twitter"] = "rbxassetid://16742108697", ["Warlord"] = "rbxassetid://16742108927", ["Wraith"] = "rbxassetid://16742109128", ["Xmas"] = "rbxassetid://16742109340" },
+    ["Mortar"] = { ["Baseball"] = "rbxassetid://18549606696", ["Bunny"] = "rbxassetid://16742109548", ["Dark Frost"] = "rbxassetid://75806838714392", ["Default"] = "rbxassetid://16742109840", ["DefaultOld"] = "rbxassetid://16742110099", ["Defender"] = "rbxassetid://16742110354", ["Ducky"] = "rbxassetid://16742110596", ["Eclipse"] = "rbxassetid://16742110815", ["Fallen"] = "rbxassetid://18835927281", ["Festive"] = "rbxassetid://136722938963670", ["Frost"] = "rbxassetid://119613427526708", ["Krampus"] = "rbxassetid://91368433364360", ["Mecha Ducky"] = "rbxassetid://70538066358366", ["Pirate"] = "rbxassetid://16742111011", ["Valentines"] = "rbxassetid://133447641741866", ["Vigilante"] = "rbxassetid://16742111168" },
+    ["Necromancer"] = { ["Creepy Santa"] = "rbxassetid://121558895628032", ["Default"] = "rbxassetid://16742111373", ["Duck"] = "rbxassetid://106663322139673", ["Fallen"] = "rbxassetid://18950652558", ["Mage"] = "rbxassetid://16997026277" },
+    ["Operator"] = { ["Default"] = "rbxassetid://16742111580" },
+    ["Paintballer"] = { ["Bunny"] = "rbxassetid://16742111855", ["Default"] = "rbxassetid://16742112045", ["Green"] = "rbxassetid://17766383428", ["Red"] = "rbxassetid://16742112218" },
+    ["Pursuit"] = { ["Default"] = "rbxassetid://71565475215945", ["Dragon"] = "rbxassetid://75987818617959", ["Eggy"] = "rbxassetid://129121886854482" },
+    ["Pyromancer"] = { ["Acidic"] = "rbxassetid://16742112759", ["Barbecue"] = "rbxassetid://16742112955", ["Blue"] = "rbxassetid://16742113148", ["Bunny"] = "rbxassetid://16742113383", ["Default"] = "rbxassetid://16742113730", ["Dwarf"] = "rbxassetid://16742114045", ["Fire Breather"] = "rbxassetid://87818829094012", ["Frost"] = "rbxassetid://16742114293", ["Ghost"] = "rbxassetid://16742114699", ["Golden"] = "rbxassetid://16742128811", ["Hallow Punk"] = "rbxassetid://100038154702519", ["Hazmat"] = "rbxassetid://16742128975", ["Mage"] = "rbxassetid://16742129185", ["Plushie"] = "rbxassetid://110949683234465", ["Pool Party"] = "rbxassetid://104604814725961", ["Reindeer"] = "rbxassetid://128884594892871", ["Scarecrow"] = "rbxassetid://16742129397", ["Valentines"] = "rbxassetid://16742129623", ["Vigilante"] = "rbxassetid://16742129830" },
+    ["Ranger"] = { ["5ouls"] = "rbxassetid://18549607210", ["Badlands"] = "rbxassetid://16801603418", ["Beast Slayer"] = "rbxassetid://16742130037", ["Black Ops"] = "rbxassetid://16742130258", ["Blue"] = "rbxassetid://16742130444", ["Bunny"] = "rbxassetid://16742130675", ["Classic"] = "rbxassetid://16742130816", ["Dark Matter"] = "rbxassetid://16742131006", ["Default"] = "rbxassetid://16742131160", ["Eclipse"] = "rbxassetid://16742131402", ["Eskimo"] = "rbxassetid://128714714796489", ["Frankenstein"] = "rbxassetid://123830216490388", ["Frost"] = "rbxassetid://16742131549", ["Green"] = "rbxassetid://16742131725", ["Gun Gale"] = "rbxassetid://16742131902", ["Mecha Ducky"] = "rbxassetid://111106612615105", ["Partisan"] = "rbxassetid://16742132072", ["Phantom"] = "rbxassetid://16742132284", ["Propellars"] = "rbxassetid://16742132454", ["Pumpkin"] = "rbxassetid://16742048328", ["Railgunner"] = "rbxassetid://16742132622", ["Shark"] = "rbxassetid://118641195806072", ["SteamPunk"] = "rbxassetid://17766383629", ["Valentines"] = "rbxassetid://16742132842", ["Wraith"] = "rbxassetid://16742133100" },
+    ["Rocketeer"] = { ["Bosanka"] = "rbxassetid://97562066551955", ["Dark Matter"] = "rbxassetid://82619969731160", ["Default"] = "rbxassetid://72053097584198", ["Duck"] = "rbxassetid://82581428525440", ["Fortress"] = "rbxassetid://104029788106610", ["Ghost"] = "rbxassetid://126109130686279", ["Lovestriker"] = "rbxassetid://122261435962808", ["Lunar"] = "rbxassetid://106246370633835", ["Pumpkin"] = "rbxassetid://103379695538461", ["Steampunk"] = "rbxassetid://132152532289629", ["Toy"] = "rbxassetid://125539379459445", ["Trombone"] = "rbxassetid://127541134546574", ["Xmas"] = "rbxassetid://94263168154969" },
+    ["Scout"] = { ["Banned"] = "rbxassetid://98679998862541", ["Beach"] = "rbxassetid://16742135002", ["Black Ops"] = "rbxassetid://16742135175", ["Blue"] = "rbxassetid://16742135394", ["Bunny"] = "rbxassetid://16742135669", ["Cookie"] = "rbxassetid://16742135838", ["Default"] = "rbxassetid://16742136020", ["Ducky"] = "rbxassetid://16742136236", ["Eclipse"] = "rbxassetid://16742136452", ["Fallen"] = "rbxassetid://18739982633", ["Frost Hunter"] = "rbxassetid://16742136608", ["Golden"] = "rbxassetid://16742136768", ["Green"] = "rbxassetid://16742136919", ["Guest"] = "rbxassetid://17571579155", ["Haz3mn"] = "rbxassetid://130252324129434", ["Holiday"] = "rbxassetid://16742137176", ["Intern"] = "rbxassetid://16742137311", ["King of Rock"] = "rbxassetid://117402710044000", ["Masquerade"] = "rbxassetid://16742137522", ["Party"] = "rbxassetid://16742137715", ["Penguin"] = "rbxassetid://102209448087896", ["Phantom"] = "rbxassetid://16742137918", ["Plushie"] = "rbxassetid://16742138111", ["Prime Raven"] = "rbxassetid://16742138286", ["Red"] = "rbxassetid://16742138539", ["Shark"] = "rbxassetid://89854318503673", ["Skull Trooper"] = "rbxassetid://16742138815", ["Survivor"] = "rbxassetid://16742139178", ["Toilet"] = "rbxassetid://16997026586", ["Valentines"] = "rbxassetid://16742139334", ["Valhalla"] = "rbxassetid://16742139584" },
+    ["Shotgunner"] = { ["Classic"] = "rbxassetid://16742139792", ["Dance Fever"] = "rbxassetid://139385538174792", ["Default"] = "rbxassetid://16742140018", ["Ducky"] = "rbxassetid://16742140221", ["Gardener"] = "rbxassetid://98658379166107", ["Hallow Punk"] = "rbxassetid://16742140448", ["Holiday"] = "rbxassetid://16742140772", ["Null"] = "rbxassetid://93120520148959", ["Phantom"] = "rbxassetid://16742140988", ["Slayer"] = "rbxassetid://16998519554", ["Spooky"] = "rbxassetid://16742141438", ["Trumpeter"] = "rbxassetid://96004685279062", ["Vigilante"] = "rbxassetid://16742050157" },
+    ["Slasher"] = { ["Default"] = "rbxassetid://85826790424914", ["Jason"] = "rbxassetid://80815511240891", ["Spooky"] = "rbxassetid://87446356234317", ["Spring Time"] = "rbxassetid://100945870370166" },
+    ["Sledger"] = { ["Brave Soul"] = "rbxassetid://16742142332", ["Chocolatier"] = "rbxassetid://128749730055893", ["Default"] = "rbxassetid://75780199539960", ["Fallen"] = "rbxassetid://18961805501", ["Phantom"] = "rbxassetid://16742142970" },
+    ["Sniper"] = { ["Blue"] = "rbxassetid://16742143211", ["Bunny"] = "rbxassetid://16742143396", ["Davinchi"] = "rbxassetid://16742143675", ["Default"] = "rbxassetid://16742143963", ["Ducky"] = "rbxassetid://16742144110", ["Frost Legion"] = "rbxassetid://93332491661008", ["Ghillie"] = "rbxassetid://16742144423", ["Red"] = "rbxassetid://16742144687", ["Redemption"] = "rbxassetid://16997027118", ["Shrimp"] = "rbxassetid://139661519405754", ["Silent"] = "rbxassetid://16742144921", ["Valentines"] = "rbxassetid://16742158141" },
+    ["Snowballer"] = { ["Default"] = "rbxassetid://114134096038917" },
+    ["Soldier"] = { ["Aerobics"] = "rbxassetid://104435661189010", ["Beast Slayer"] = "rbxassetid://16742158393", ["Blue"] = "rbxassetid://16742158617", ["Bunny"] = "rbxassetid://90125360452717", ["Classic"] = "rbxassetid://16742158900", ["Cold Soldier"] = "rbxassetid://16742159220", ["Dark Frost"] = "rbxassetid://79808121861280", ["Default"] = "rbxassetid://16742159440", ["Doughboy"] = "rbxassetid://16742159744", ["Ducky"] = "rbxassetid://16742159991", ["Golden"] = "rbxassetid://16742160355", ["Grand Theft"] = "rbxassetid://16742160584", ["Holiday"] = "rbxassetid://16742160760", ["Korblox"] = "rbxassetid://70787227887803", ["Liberator"] = "rbxassetid://16997027649", ["Null"] = "rbxassetid://124579321748902", ["Party"] = "rbxassetid://16742161040", ["Red"] = "rbxassetid://16742161237", ["Stealth Ops"] = "rbxassetid://100325781772079", ["Toilet"] = "rbxassetid://16997028225", ["Toy"] = "rbxassetid://16742161627", ["Valentines"] = "rbxassetid://16742161860" },
+    ["Spotlight Tech"] = { ["Default"] = "rbxassetid://100541687228569" },
+    ["Swarmer"] = { ["Default"] = "rbxassetid://130558134123777" },
+    ["Tesla"] = { ["Default"] = "rbxassetid://82978810572655" },
+    ["Toxic Gunner"] = { ["Default"] = "rbxassetid://73834896430233", ["Phantom"] = "rbxassetid://16742162641" },
+    ["Trapper"] = { ["Banned"] = "rbxassetid://138302025230911", ["Chocolatier"] = "rbxassetid://97990283366444", ["Dark Frost"] = "rbxassetid://120378214035608", ["Default"] = "rbxassetid://16742162831", ["Hermit"] = "rbxassetid://132047366954925", ["Holiday"] = "rbxassetid://135434192278722", ["Jolly Tree"] = "rbxassetid://122626004746795", ["Mallard Duck"] = "rbxassetid://128010558189605", ["Plushie"] = "rbxassetid://17362851197" },
+    ["Turret"] = { ["Crossbow"] = "rbxassetid://114313678039848", ["Default"] = "rbxassetid://98957331113953", ["Grinch"] = "rbxassetid://121152276423958", ["Jetski"] = "rbxassetid://135352734380419", ["XR300"] = "rbxassetid://107330122678487", ["XR500"] = "rbxassetid://88505927728819" },
+    ["War Machine"] = { ["Default"] = "rbxassetid://16742163808" },
+    ["Warden"] = { ["Baseball"] = "rbxassetid://16742164022", ["Dark Frost"] = "rbxassetid://137394918093332", ["Default"] = "rbxassetid://16742164273", ["Ducky"] = "rbxassetid://16742051899", ["Fallen"] = "rbxassetid://18960948589", ["Freddy"] = "rbxassetid://106739389283977", ["Galactic"] = "rbxassetid://16742164510", ["Isaac"] = "rbxassetid://16742164667", ["Korblox"] = "rbxassetid://16742164799", ["Masquerade"] = "rbxassetid://16742165002", ["Pirate"] = "rbxassetid://16742165168", ["Shark"] = "rbxassetid://70941336840822", ["Slaughter"] = "rbxassetid://16742165310" },
+    ["Warlock"] = { ["Default"] = "rbxassetid://91902523805977", ["Rockstar"] = "rbxassetid://82651587906745", ["Tiger"] = "rbxassetid://139541269723119" }
 }
 
--- // Tower Resolver Logic (For Equipper & Unequipper)
+-- // Tower Resolver Logic
 local ValidTowersList = {
     "Scout", "Sniper", "Paintballer", "Demoman", "Hunter", "Soldier", "Militant",
     "Freezer", "Assassin", "Shotgunner", "Pyromancer", "Ace Pilot", "Medic", "Farm",
@@ -225,29 +101,22 @@ local ValidTowersList = {
     "Firework Technician", "Biologist", "Warlock", "Spotlight Tech", "Mecha Base"
 }
 
-local function NormalizeString(s)
-    return s:lower():gsub("[^a-z0-9]", "")
-end
+local function NormalizeString(s) return s:lower():gsub("[^a-z0-9]", "") end
 
 local NormalizedTowers = {}
 for _, name in ipairs(ValidTowersList) do
-    NormalizedTowers[#NormalizedTowers + 1] = {
+    table.insert(NormalizedTowers, {
         raw = name,
         norm = NormalizeString(name),
         words = name:lower():split(" ")
-    }
+    })
 end
 
 local function ResolveTowerName(input)
     if input == "" then return end
     local n = NormalizeString(input)
-
-    for _, t in ipairs(NormalizedTowers) do
-        if t.norm == n then return t.raw end
-    end
-    for _, t in ipairs(NormalizedTowers) do
-        if t.norm:sub(1, #n) == n then return t.raw end
-    end
+    for _, t in ipairs(NormalizedTowers) do if t.norm == n then return t.raw end end
+    for _, t in ipairs(NormalizedTowers) do if t.norm:sub(1, #n) == n then return t.raw end end
     for _, t in ipairs(NormalizedTowers) do
         for _, w in ipairs(t.words) do
             if w:sub(1, #n) == n then return t.raw end
@@ -258,15 +127,10 @@ end
 
 -- // Anti-Idle & Auto Reconnect
 task.spawn(function()
-    local function DisableIdled()
-        local success, connections = pcall(getconnections, LocalPlayer.Idled)
-        if success then
-            for _, v in pairs(connections) do
-                v:Disable()
-            end
-        end
+    local success, connections = pcall(getconnections, LocalPlayer.Idled)
+    if success then
+        for _, v in pairs(connections) do v:Disable() end
     end
-    DisableIdled()
 end)
 
 task.spawn(function()
@@ -279,7 +143,6 @@ end)
 task.spawn(function()
     local CoreGui = game:GetService("CoreGui")
     local overlay = CoreGui:WaitForChild("RobloxPromptGui"):WaitForChild("promptOverlay")
-
     overlay.ChildAdded:Connect(function(child)
         if child.Name == 'ErrorPrompt' then
             while true do
@@ -291,20 +154,13 @@ task.spawn(function()
 end)
 
 local function IdentifyGameState()
-    local players = game:GetService("Players")
-    local TempPlayer = players.LocalPlayer or players.PlayerAdded:Wait()
-    local TempGui = TempPlayer:WaitForChild("PlayerGui")
-
+    local TempGui = LocalPlayer:WaitForChild("PlayerGui")
     while true do
-        if TempGui:FindFirstChild("ReactLobbyHud") then
-            return "LOBBY"
-        elseif TempGui:FindFirstChild("ReactUniversalHotbar") then
-            return "GAME"
-        end
+        if TempGui:FindFirstChild("ReactLobbyHud") then return "LOBBY"
+        elseif TempGui:FindFirstChild("ReactUniversalHotbar") then return "GAME" end
         task.wait(1)
     end
 end
-
 local GameState = IdentifyGameState()
 
 local function StartAntiAfk()
@@ -320,16 +176,11 @@ local function StartAntiAfk()
         end
     end)
 end
-
 StartAntiAfk()
 
 -- // Network Functions
 local SendRequest = request or http_request or httprequest or (GetDevice and GetDevice().request)
-
-if not SendRequest then 
-    warn("failure: no http function") 
-    return 
-end
+if not SendRequest then warn("failure: no http function") return end
 
 -- // Variables & Toggles
 local BackToLobbyRunning = false
@@ -349,9 +200,7 @@ local SellFarmsRunning = false
 local MaxPathDistance = 300 
 local MilMarker = nil
 local MercMarker = nil
-
 local CurrentEquippedTowers = {"None"}
-
 local StackEnabled = false
 local SelectedTower = nil
 local StackSphere = nil
@@ -363,57 +212,24 @@ local AllModifiers = {
 }
 
 local DefaultSettings = {
-    PathVisuals = false,
-    MilitaryPath = false,
-    MercenaryPath = false,
-    AutoSkip = false,
-    AutoChain = false,
-    SupportCaravan = false,
-    AutoDJ = false,
-    AutoNecro = false,
-    AutoRejoin = true,
-    TimeScaleEnabled = false,
-    TimeScaleValue = 2,
-    SellFarms = false,
-    AutoMercenary = false,
-    AutoMilitary = false,
-    Frost = false,
-    Fallen = false,
-    Easy = false,
-    AntiLag = false,
-    Disable3DRendering = false,
-    AutoPickups = false,
-    ClaimRewards = false,
-    SendWebhook = false,
-    NoRecoil = false,
-    SellFarmsWave = 1,
-    WebhookURL = "",
-    Cooldown = 0.01,
-    Multiply = 1,
-    AutoCooldown = 0.01,
-    AutoMultiply = 1,
-    AutoGatling = false,
-    TargetChamsEnabled = false,
-    TargetChamsType = "Highlight",
-    PickupMethod = "Pathfinding",
-    StreamerMode = false,
-    HideUsername = false,
-    StreamerName = "",
-    tagName = "None",
-    Modifiers = {},
-    SilentAimEnabled = false,
-    TargetPriority = "First",
-    AutoGatlingPriority = "First"
+    PathVisuals = false, MilitaryPath = false, MercenaryPath = false,
+    AutoSkip = false, AutoChain = false, SupportCaravan = false, AutoDJ = false,
+    AutoNecro = false, AutoRejoin = true, TimeScaleEnabled = false, TimeScaleValue = 2,
+    SellFarms = false, AutoMercenary = false, AutoMilitary = false, Frost = false,
+    Fallen = false, Easy = false, AntiLag = false, Disable3DRendering = false,
+    AutoPickups = false, ClaimRewards = false, SendWebhook = false, NoRecoil = false,
+    SellFarmsWave = 1, WebhookURL = "", Cooldown = 0.01, Multiply = 1, AutoCooldown = 0.01,
+    AutoMultiply = 1, AutoGatling = false, TargetChamsEnabled = false,
+    TargetChamsType = "Highlight", PickupMethod = "Pathfinding", StreamerMode = false,
+    HideUsername = false, StreamerName = "", tagName = "None", Modifiers = {},
+    SilentAimEnabled = false, TargetPriority = "First", AutoGatlingPriority = "First"
 }
 
 local TimeScaleValues = {0.5, 1, 1.5, 2}
-
 local function NormalizeTimeScaleValue(val)
     val = tonumber(val)
     if not val then return nil end
-    for _, v in ipairs(TimeScaleValues) do
-        if v == val then return v end
-    end
+    for _, v in ipairs(TimeScaleValues) do if v == val then return v end end
     return nil
 end
 
@@ -427,28 +243,18 @@ local function GetTimescaleFrame()
     return frame and frame:FindFirstChild("timescale")
 end
 
-local StartTimeScale
-local ApplyTimeScaleOnce
+local StartTimeScale, ApplyTimeScaleOnce
 
 local ItemNames = {
-    ["17447507910"] = "Timescale Ticket(s)",
-    ["17438486690"] = "Range Flag(s)",
-    ["17438486138"] = "Damage Flag(s)",
-    ["17438487774"] = "Cooldown Flag(s)",
-    ["17429537022"] = "Blizzard(s)",
-    ["17448596749"] = "Napalm Strike(s)",
-    ["18493073533"] = "Spin Ticket(s)",
-    ["17429548305"] = "Supply Drop(s)",
-    ["18443277308"] = "Low Grade Consumable Crate(s)",
-    ["136180382135048"] = "Santa Radio(s)",
-    ["18443277106"] = "Mid Grade Consumable Crate(s)",
-    ["18443277591"] = "High Grade Consumable Crate(s)",
-    ["132155797622156"] = "Christmas Tree(s)",
-    ["124065875200929"] = "Fruit Cake(s)",
-    ["17429541513"] = "Barricade(s)",
-    ["110415073436604"] = "Holy Hand Grenade(s)",
-    ["17429533728"] = "Frag Grenade(s)",
-    ["17437703262"] = "Molotov(s)",
+    ["17447507910"] = "Timescale Ticket(s)", ["17438486690"] = "Range Flag(s)",
+    ["17438486138"] = "Damage Flag(s)", ["17438487774"] = "Cooldown Flag(s)",
+    ["17429537022"] = "Blizzard(s)", ["17448596749"] = "Napalm Strike(s)",
+    ["18493073533"] = "Spin Ticket(s)", ["17429548305"] = "Supply Drop(s)",
+    ["18443277308"] = "Low Grade Consumable Crate(s)", ["136180382135048"] = "Santa Radio(s)",
+    ["18443277106"] = "Mid Grade Consumable Crate(s)", ["18443277591"] = "High Grade Consumable Crate(s)",
+    ["132155797622156"] = "Christmas Tree(s)", ["124065875200929"] = "Fruit Cake(s)",
+    ["17429541513"] = "Barricade(s)", ["110415073436604"] = "Holy Hand Grenade(s)",
+    ["17429533728"] = "Frag Grenade(s)", ["17437703262"] = "Molotov(s)",
     ["139414922355803"] = "Present Clusters(s)"
 }
 
@@ -456,56 +262,40 @@ TDS = {
     PlacedTowers = {},
     ActiveStrat = true,
     MatchmakingMap = {
-        ["Hardcore"] = "hardcore",
-        ["Pizza Party"] = "halloween",
-        ["Badlands"] = "badlands",
-        ["Polluted"] = "polluted"
+        ["Hardcore"] = "hardcore", ["Pizza Party"] = "halloween",
+        ["Badlands"] = "badlands", ["Polluted"] = "polluted"
     }
 }
 TDS["placed_towers"] = TDS.PlacedTowers
 TDS["active_strat"] = TDS.ActiveStrat
 TDS["matchmaking_map"] = TDS.MatchmakingMap
-
 local UpgradeHistory = {}
 shared.TDSTable = TDS
 shared["TDS_Table"] = TDS
 
--- // Settings Logic
 local function SaveSettings()
     local DataToSave = {}
-    for key, _ in pairs(DefaultSettings) do
-        DataToSave[key] = Globals[key]
-    end
+    for key, _ in pairs(DefaultSettings) do DataToSave[key] = Globals[key] end
     writefile(FileName, HttpService:JSONEncode(DataToSave))
 end
 
 local function LoadSettings()
     if isfile(FileName) then
-        local success, data = pcall(function()
-            return HttpService:JSONDecode(readfile(FileName))
-        end)
+        local success, data = pcall(function() return HttpService:JSONDecode(readfile(FileName)) end)
         if success and type(data) == "table" then
             for key, DefaultVal in pairs(DefaultSettings) do
-                if data[key] ~= nil then
-                    Globals[key] = data[key]
-                else
-                    Globals[key] = DefaultVal
-                end
+                if data[key] ~= nil then Globals[key] = data[key] else Globals[key] = DefaultVal end
             end
             return
         end
     end
-    for key, value in pairs(DefaultSettings) do
-        Globals[key] = value
-    end
+    for key, value in pairs(DefaultSettings) do Globals[key] = value end
     SaveSettings()
 end
 
 local function SetSetting(name, value)
     if DefaultSettings[name] ~= nil then
-        if name == "TimeScaleValue" then
-            value = CoerceTimeScaleValue(value, Globals.TimeScaleValue or 2)
-        end
+        if name == "TimeScaleValue" then value = CoerceTimeScaleValue(value, Globals.TimeScaleValue or 2) end
         Globals[name] = value
         SaveSettings()
     end
@@ -516,12 +306,12 @@ end
 -- ==========================================
 Globals.CurrentTargetModel = nil
 Globals.CurrentHighlight = nil
-Globals.LockedTargetPosition = nil -- Posisi yang akan ditembak oleh Gatling/Silent Aim
+Globals.LockedTargetPosition = nil
+local MyCachedGatlingPos = nil
 
 local function ClearESP()
     if Globals.CurrentHighlight then
-        Globals.CurrentHighlight:Destroy()
-        Globals.CurrentHighlight = nil
+        Globals.CurrentHighlight.Adornee = nil
     end
     Globals.CurrentTargetModel = nil
 end
@@ -531,61 +321,38 @@ local function ApplyTargetChams(enemyModel)
         ClearESP()
         return 
     end
-
     if Globals.CurrentTargetModel ~= enemyModel then
-        ClearESP() -- Hapus highlight dari musuh lama
-        
-        -- Buat Highlight baru ke musuh yang baru
-        local highlight = Instance.new("Highlight")
-        highlight.FillColor = Color3.fromRGB(255, 0, 0)
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.FillTransparency = 0.5
-        highlight.OutlineTransparency = 0
-        highlight.Adornee = enemyModel
-        -- Simpan di CoreGui agar tidak error saat musuh terhapus
-        highlight.Parent = game:GetService("CoreGui") 
-
-        Globals.CurrentHighlight = highlight
+        if not Globals.CurrentHighlight then
+            Globals.CurrentHighlight = Instance.new("Highlight")
+            Globals.CurrentHighlight.FillColor = Color3.fromRGB(255, 0, 0)
+            Globals.CurrentHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            Globals.CurrentHighlight.FillTransparency = 0.5
+            Globals.CurrentHighlight.OutlineTransparency = 0
+            Globals.CurrentHighlight.Parent = game:GetService("CoreGui")
+        end
+        Globals.CurrentHighlight.Adornee = enemyModel
         Globals.CurrentTargetModel = enemyModel
     end
 end
 
--- // LOOP RADAR: BERJALAN 60x PER DETIK SECARA REAL-TIME
 RunService.Heartbeat:Connect(function()
-    -- 1. Bersihkan semua jika fitur mati
     if not Globals.AutoGatling and not Globals.SilentAimEnabled then
         ClearESP()
         Globals.LockedTargetPosition = nil
         return
     end
 
-    -- 2. Cari Posisi Tower / Kamera untuk hitungan jarak (Priority: Close)
-    local towerPos = workspace.CurrentCamera.CFrame.Position
-    local towersFolder = workspace:FindFirstChild("Towers")
-    if towersFolder then
-        for _, tower in pairs(towersFolder:GetChildren()) do
-            local rep = tower:FindFirstChild("TowerReplicator")
-            if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
-                if tower.PrimaryPart then
-                    towerPos = tower.PrimaryPart.Position
-                    break
-                end
-            end
-        end
-    end
-
-    -- 3. Mulai mencari musuh
+    local towerPos = MyCachedGatlingPos or workspace.CurrentCamera.CFrame.Position
     local BestTargetEnemy = nil
     local TargetHitbox = nil
     local MaxDistance = -1
     local MaxHealth = -1
     local MinDist = math.huge
-    local MinDistancePath = math.huge -- Tambahan untuk target "Last"
+    local MinDistancePath = math.huge
     
-    -- Auto Gatling priority menimpa Silent Aim priority jika Auto Gatling menyala
     local activePriority = Globals.AutoGatling and Globals.AutoGatlingPriority or Globals.TargetPriority
-
     local npcs = workspace:FindFirstChild("NPCs")
+    
     if npcs then
         for _, enemy in pairs(npcs:GetChildren()) do
             local hitbox = enemy:FindFirstChild("HumanoidRootPart")
@@ -622,14 +389,12 @@ RunService.Heartbeat:Connect(function()
         end
     end
 
-    -- 4. Simpan posisi target untuk ditembak
     if TargetHitbox then
         Globals.LockedTargetPosition = TargetHitbox.Position
     else
         Globals.LockedTargetPosition = nil
     end
 
-    -- 5. Urus Highlight Visual secara instan
     if BestTargetEnemy and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Highlight" or Globals.TargetChamsType == "Both") then
         ApplyTargetChams(BestTargetEnemy)
     else
@@ -637,32 +402,24 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- // Visual Tracer
 local function CreateTracer(targetPos)
-    local startPos = nil
-    local towersFolder = workspace:FindFirstChild("Towers")
-    if towersFolder then
-        for _, tower in pairs(towersFolder:GetChildren()) do
-            local rep = tower:FindFirstChild("TowerReplicator")
-            if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
-                local weapon = tower:FindFirstChild("Weapon")
-                if weapon then
-                    local main = weapon:FindFirstChild("Main")
-                    local barrel = main and main:FindFirstChild("Barrel")
-                    
-                    if barrel then
-                        startPos = barrel.Position
-                    elseif weapon.PrimaryPart then
-                        startPos = weapon.PrimaryPart.Position
+    local startPos = MyCachedGatlingPos
+    if not startPos then
+        local towersFolder = workspace:FindFirstChild("Towers")
+        if towersFolder then
+            for _, tower in pairs(towersFolder:GetChildren()) do
+                local rep = tower:FindFirstChild("TowerReplicator")
+                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                    local weapon = tower:FindFirstChild("Weapon")
+                    if weapon then
+                        local main = weapon:FindFirstChild("Main")
+                        local barrel = main and main:FindFirstChild("Barrel")
+                        if barrel then startPos = barrel.Position
+                        elseif weapon.PrimaryPart then startPos = weapon.PrimaryPart.Position end
                     end
-                end
-                
-                if not startPos and tower.PrimaryPart then
-                    startPos = tower.PrimaryPart.Position
-                end
-                
-                if startPos then
-                    break
+                    if not startPos and tower.PrimaryPart then startPos = tower.PrimaryPart.Position end
+                    MyCachedGatlingPos = startPos
+                    if startPos then break end
                 end
             end
         end
@@ -680,7 +437,6 @@ local function CreateTracer(targetPos)
     
     local distance = (targetPos - startPos).Magnitude
     tracer.Size = Vector3.new(0.15, 0.15, distance) 
-    
     tracer.CFrame = CFrame.lookAt(startPos, targetPos) * CFrame.new(0, 0, -(distance / 2))
     tracer.Parent = workspace.Terrain
 
@@ -688,7 +444,6 @@ local function CreateTracer(targetPos)
     game:GetService("Debris"):AddItem(tracer, 0.15)
 end
 
--- // Hook Remote
 if hookmetamethod then
     local lastTracerTime = 0
     local oldNamecall
@@ -769,7 +524,9 @@ LoadSettings()
 Globals.TimeScaleValue = CoerceTimeScaleValue(Globals.TimeScaleValue, 2)
 Apply3dRendering()
 
+-- ==========================================
 -- // Tag Changer / Spoofing Logic
+-- ==========================================
 local isTagChangerRunning = false
 local tagChangerConn = nil
 local tagChangerTag = nil
@@ -826,19 +583,13 @@ local function startTagChanger()
                         tagChangerConn = nil
                     end
                     tagChangerTag = tag
-                    if tagChangerOrig == nil then
-                        tagChangerOrig = tag.Value
-                    end
+                    if tagChangerOrig == nil then tagChangerOrig = tag.Value end
                 end
-                if tag.Value ~= Globals.tagName then
-                    tag.Value = Globals.tagName
-                end
+                if tag.Value ~= Globals.tagName then tag.Value = Globals.tagName end
                 if not tagChangerConn then
                     tagChangerConn = tag:GetPropertyChangedSignal("Value"):Connect(function()
                         if Globals.tagName and Globals.tagName ~= "" and Globals.tagName ~= "None" then
-                            if tag.Value ~= Globals.tagName then
-                                tag.Value = Globals.tagName
-                            end
+                            if tag.Value ~= Globals.tagName then tag.Value = Globals.tagName end
                         end
                     end)
                 end
@@ -1095,7 +846,9 @@ local function UpdatePrivacyState()
 end
 UpdatePrivacyState()
 
+-- ==========================================
 -- // Pathing & Visuals
+-- ==========================================
 local function FindPath()
     local MapFolder = workspace:FindFirstChild("Map")
     if not MapFolder then return nil end
@@ -1106,9 +859,7 @@ local function FindPath()
 
     local PathNodes = {}
     for _, node in ipairs(PathFolder:GetChildren()) do
-        if node:IsA("BasePart") then
-            table.insert(PathNodes, node)
-        end
+        if node:IsA("BasePart") then table.insert(PathNodes, node) end
     end
 
     table.sort(PathNodes, function(a, b)
@@ -1208,47 +959,34 @@ local function UpdatePathVisuals()
 end
 
 -- === DUMMY ADDONS FUNCTION ===
-function TDS:Addons()
-    -- Fitur Premium / Key System Bypassed!
-    return true
-end
+function TDS:Addons() return true end
 
 -- === NATIVE EQUIP AND UNEQUIP ===
 function TDS:Equip(tower_name)
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-    local success, err = pcall(function()
-        return remote:InvokeServer("Inventory", "Equip", "tower", tower_name)
-    end)
+    local success, err = pcall(function() return remote:InvokeServer("Inventory", "Equip", "tower", tower_name) end)
     return success
 end
 
 function TDS:Unequip(tower_name)
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-    local success, err = pcall(function()
-        return remote:InvokeServer("Inventory", "Unequip", "tower", tower_name)
-    end)
+    local success, err = pcall(function() return remote:InvokeServer("Inventory", "Unequip", "tower", tower_name) end)
     return success
 end
 
 local function GetEquippedTowers()
     local towers = {}
     local StateReplicators = ReplicatedStorage:FindFirstChild("StateReplicators")
-
     if StateReplicators then
         for _, folder in ipairs(StateReplicators:GetChildren()) do
             if folder.Name == "PlayerReplicator" and folder:GetAttribute("UserId") == LocalPlayer.UserId then
                 local equipped = folder:GetAttribute("EquippedTowers")
                 if type(equipped) == "string" then
                     local CleanedJson = equipped:match("%[.*%]") 
-                    local success, TowerTable = pcall(function()
-                        return HttpService:JSONDecode(CleanedJson)
-                    end)
-
+                    local success, TowerTable = pcall(function() return HttpService:JSONDecode(CleanedJson) end)
                     if success and type(TowerTable) == "table" then
                         for i = 1, 5 do
-                            if TowerTable[i] then
-                                table.insert(towers, TowerTable[i])
-                            end
+                            if TowerTable[i] then table.insert(towers, TowerTable[i]) end
                         end
                     end
                 end
@@ -1260,9 +998,9 @@ end
 
 CurrentEquippedTowers = GetEquippedTowers()
 
--- // ==========================================
+-- ==========================================
 -- // UI CREATION
--- // ==========================================
+-- ==========================================
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Sources/UI.lua"))()
 
 local Window = Library:Window({
@@ -1271,10 +1009,7 @@ local Window = Library:Window({
     Theme = "Dark",
     DiscordLink = "https://discord.gg/autostrat",
     Icon = 126403638319957,
-    Config = {
-        Keybind = Enum.KeyCode.LeftControl,
-        Size = UDim2.new(0, 500, 0, 400)
-    }
+    Config = { Keybind = Enum.KeyCode.LeftControl, Size = UDim2.new(0, 500, 0, 400) }
 })
 
 local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
@@ -1284,54 +1019,42 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
         Title = "Auto Rejoin",
         Desc = "Rejoins the gamemode after you've won and does the strategy again.",
         Value = Globals.AutoRejoin,
-        Callback = function(v)
-            SetSetting("AutoRejoin", v)
-        end
+        Callback = function(v) SetSetting("AutoRejoin", v) end
     })
 
     Autostrat:Toggle({
         Title = "Auto Skip Waves",
         Desc = "Skips all Waves",
         Value = Globals.AutoSkip,
-        Callback = function(v)
-            SetSetting("AutoSkip", v)
-        end
+        Callback = function(v) SetSetting("AutoSkip", v) end
     })
 
     Autostrat:Toggle({
         Title = "Auto Chain",
         Desc = "Chains Commander Ability",
         Value = Globals.AutoChain,
-        Callback = function(v)
-            SetSetting("AutoChain", v)
-        end
+        Callback = function(v) SetSetting("AutoChain", v) end
     })
 
     Autostrat:Toggle({
         Title = "Support Caravan",
         Desc = "Uses Commander Support Caravan",
         Value = Globals.SupportCaravan,
-        Callback = function(v)
-            SetSetting("SupportCaravan", v)
-        end
+        Callback = function(v) SetSetting("SupportCaravan", v) end
     })
 
     Autostrat:Toggle({
         Title = "Auto DJ Booth",
         Desc = "Uses DJ Booth Ability",
         Value = Globals.AutoDJ,
-        Callback = function(v)
-            SetSetting("AutoDJ", v)
-        end
+        Callback = function(v) SetSetting("AutoDJ", v) end
     })
 
     Autostrat:Toggle({
         Title = "Auto Necro",
         Desc = "Uses Necromancer Ability",
         Value = Globals.AutoNecro,
-        Callback = function(v)
-            SetSetting("AutoNecro", v)
-        end
+        Callback = function(v) SetSetting("AutoNecro", v) end
     })
 
     Autostrat:Section({Title = "TimeScale"})
@@ -1341,9 +1064,7 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
         Value = Globals.TimeScaleEnabled,
         Callback = function(v)
             SetSetting("TimeScaleEnabled", v)
-            if v then
-                StartTimeScale()
-            end
+            if v then StartTimeScale() end
         end
     })
 
@@ -1356,9 +1077,7 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
             local selected = type(choice) == "table" and choice[1] or choice
             local value = CoerceTimeScaleValue(selected, Globals.TimeScaleValue or 2)
             SetSetting("TimeScaleValue", value)
-            if Globals.TimeScaleEnabled then
-                ApplyTimeScaleOnce()
-            end
+            if Globals.TimeScaleEnabled then ApplyTimeScaleOnce() end
         end
     })
 
@@ -1367,9 +1086,7 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
         List = AllModifiers,
         Value = Globals.Modifiers,
         Multi = true,
-        Callback = function(choice)
-            SetSetting("Modifiers", choice)
-        end
+        Callback = function(choice) SetSetting("Modifiers", choice) end
     })
 
     Autostrat:Section({Title = "Farm"})
@@ -1377,9 +1094,7 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
         Title = "Sell Farms",
         Desc = "Sells all your farms on the specified wave",
         Value = Globals.SellFarms,
-        Callback = function(v)
-            SetSetting("SellFarms", v)
-        end
+        Callback = function(v) SetSetting("SellFarms", v) end
     })
 
     Autostrat:Textbox({
@@ -1393,12 +1108,7 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
             if number then
                 SetSetting("SellFarmsWave", number)
             else
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Invalid number entered!",
-                    Time = 3,
-                    Type = "error"
-                })
+                Window:Notify({ Title = "ADS", Desc = "Invalid number entered!", Time = 3, Type = "error" })
             end
         end
     })
@@ -1406,51 +1116,37 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
     Autostrat:Section({Title = "Abilities"})
     Autostrat:Toggle({
         Title = "Enable Path Distance Marker",
-        Desc = "Red = Mercenary Base, Green = Military Baset",
+        Desc = "Red = Mercenary Base, Green = Military Base",
         Value = Globals.PathVisuals,
-        Callback = function(v)
-            SetSetting("PathVisuals", v)
-        end
+        Callback = function(v) SetSetting("PathVisuals", v) end
     })
 
     Autostrat:Toggle({
         Title = "Auto Mercenary Base",
         Desc = "Uses Air-Drop Ability",
         Value = Globals.AutoMercenary,
-        Callback = function(v)
-            SetSetting("AutoMercenary", v)
-        end
+        Callback = function(v) SetSetting("AutoMercenary", v) end
     })
 
     MercenarySlider = Autostrat:Slider({
         Title = "Path Distance",
-        Min = 0,
-        Max = 300,
-        Rounding = 0,
+        Min = 0, Max = 300, Rounding = 0,
         Value = Globals.MercenaryPath,
-        Callback = function(val)
-            SetSetting("MercenaryPath", val)
-        end
+        Callback = function(val) SetSetting("MercenaryPath", val) end
     })
 
     Autostrat:Toggle({
         Title = "Auto Military Base",
         Desc = "Uses Airstrike Ability",
         Value = Globals.AutoMilitary,
-        Callback = function(v)
-            SetSetting("AutoMilitary", v)
-        end
+        Callback = function(v) SetSetting("AutoMilitary", v) end
     })
 
     MilitarySlider = Autostrat:Slider({
         Title = "Path Distance",
-        Min = 0,
-        Max = 300,
-        Rounding = 0,
+        Min = 0, Max = 300, Rounding = 0,
         Value = Globals.MilitaryPath,
-        Callback = function(val)
-            SetSetting("MilitaryPath", val)
-        end
+        Callback = function(val) SetSetting("MilitaryPath", val) end
     })
 
     task.spawn(function()
@@ -1471,9 +1167,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         Title = "Tower:",
         List = CurrentEquippedTowers,
         Value = CurrentEquippedTowers[1],
-        Callback = function(choice)
-            SelectedTower = choice
-        end
+        Callback = function(choice) SelectedTower = choice end
     })
 
     local function RefreshDropdown()
@@ -1488,9 +1182,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     end
 
     task.spawn(function()
-        while task.wait(2) do
-            RefreshDropdown()
-        end
+        while task.wait(2) do RefreshDropdown() end
     end)
 
     Main:Toggle({
@@ -1500,101 +1192,84 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         Callback = function(v)
             StackEnabled = v
             if StackEnabled then
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Make sure not to equip the tower, only select it and then place where you want to!",
-                    Time = 5,
-                    Type = "normal"
-                })
+                Window:Notify({ Title = "ADS", Desc = "Make sure not to equip the tower, only select it and then place where you want to!", Time = 5, Type = "normal" })
             end
         end
     })
 
     Main:Button({
         Title = "Upgrade Selected",
-        Desc = "",
         Callback = function()
             if SelectedTower then
-                for _, v in pairs(workspace.Towers:GetChildren()) do
-                    if v:FindFirstChild("TowerReplicator") and v.TowerReplicator:GetAttribute("Name") == SelectedTower and v.TowerReplicator:GetAttribute("OwnerId") == LocalPlayer.UserId then
-                        RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", {Troop = v})
+                local TowersFolder = workspace:FindFirstChild("Towers")
+                if TowersFolder then
+                    for _, v in ipairs(TowersFolder:GetChildren()) do
+                        local rep = v:FindFirstChild("TowerReplicator")
+                        if rep and rep:GetAttribute("Name") == SelectedTower and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
+                            RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", {Troop = v})
+                        end
                     end
                 end
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Attempted to upgrade all the selected towers!",
-                    Time = 3,
-                    Type = "normal"
-                })
+                Window:Notify({ Title = "ADS", Desc = "Attempted to upgrade all the selected towers!", Time = 3, Type = "normal" })
             end
         end
     })
 
     Main:Button({
         Title = "Sell Selected",
-        Desc = "",
         Callback = function()
             if SelectedTower then
-                for _, v in pairs(workspace.Towers:GetChildren()) do
-                    if v:FindFirstChild("TowerReplicator") and v.TowerReplicator:GetAttribute("Name") == SelectedTower and v.TowerReplicator:GetAttribute("OwnerId") == LocalPlayer.UserId then
-                        RemoteFunc:InvokeServer("Troops", "Sell", {Troop = v})
+                local TowersFolder = workspace:FindFirstChild("Towers")
+                if TowersFolder then
+                    for _, v in ipairs(TowersFolder:GetChildren()) do
+                        local rep = v:FindFirstChild("TowerReplicator")
+                        if rep and rep:GetAttribute("Name") == SelectedTower and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
+                            RemoteFunc:InvokeServer("Troops", "Sell", {Troop = v})
+                        end
                     end
                 end
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Attempted to sell all the selected towers!",
-                    Time = 3,
-                    Type = "normal"
-                })
+                Window:Notify({ Title = "ADS", Desc = "Attempted to sell all the selected towers!", Time = 3, Type = "normal" })
             end
         end
     })
 
     Main:Button({
         Title = "Upgrade All",
-        Desc = "",
         Callback = function()
-            for _, v in pairs(workspace.Towers:GetChildren()) do
-                if v:FindFirstChild("Owner") and v.Owner.Value == LocalPlayer.UserId then
-                    RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", {Troop = v})
+            local TowersFolder = workspace:FindFirstChild("Towers")
+            if TowersFolder then
+                for _, v in ipairs(TowersFolder:GetChildren()) do
+                    local owner = v:FindFirstChild("Owner")
+                    if owner and owner.Value == LocalPlayer.UserId then
+                        RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", {Troop = v})
+                    end
                 end
             end
-            Window:Notify({
-                Title = "ADS",
-                Desc = "Attempted to upgrade all the towers!",
-                Time = 3,
-                Type = "normal"
-            })
+            Window:Notify({ Title = "ADS", Desc = "Attempted to upgrade all the towers!", Time = 3, Type = "normal" })
         end
     })
 
     Main:Button({
         Title = "Sell All",
-        Desc = "",
         Callback = function()
             Window:Dialog({
                 Title = "Do you want to sell all the towers?",
                 Button1 = {
-                    Title = "Confirm",
-                    Color = Color3.fromRGB(226, 39, 6),
+                    Title = "Confirm", Color = Color3.fromRGB(226, 39, 6),
                     Callback = function()
-                        for _, v in pairs(workspace.Towers:GetChildren()) do
-                            if v:FindFirstChild("Owner") and v.Owner.Value == LocalPlayer.UserId then
-                                RemoteFunc:InvokeServer("Troops", "Sell", {Troop = v})
+                        local TowersFolder = workspace:FindFirstChild("Towers")
+                        if TowersFolder then
+                            for _, v in ipairs(TowersFolder:GetChildren()) do
+                                local owner = v:FindFirstChild("Owner")
+                                if owner and owner.Value == LocalPlayer.UserId then
+                                    RemoteFunc:InvokeServer("Troops", "Sell", {Troop = v})
+                                end
                             end
                         end
-                        Window:Notify({
-                            Title = "ADS",
-                            Desc = "Attempted to sell all the towers!",
-                            Time = 3,
-                            Type = "normal"
-                        })
+                        Window:Notify({ Title = "ADS", Desc = "Attempted to sell all the towers!", Time = 3, Type = "normal" })
                     end
                 },
-                Button2 = {
-                    Title = "Cancel",
-                    Color = Color3.fromRGB(0, 188, 0)
-                }
+                Button2 = { Title = "Cancel", Color = Color3.fromRGB(0, 188, 0) }
             })
         end
     })
@@ -1602,80 +1277,40 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Section({Title = "Equipper"})
     
     Main:Textbox({
-        Title = "Equip:",
-        Desc = "Type a tower name to equip",
-        Placeholder = "E.g. Gatling Gun",
-        Value = "",
-        ClearTextOnFocus = false,
+        Title = "Equip:", Placeholder = "E.g. Gatling Gun", Value = "", ClearTextOnFocus = false,
         Callback = function(text)
             if text == "" or text == nil then return end
             task.spawn(function()
                 local real_tower_name = ResolveTowerName(text)
                 if not real_tower_name then
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Tower not found: " .. tostring(text),
-                        Time = 3,
-                        Type = "error"
-                    })
+                    Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(text), Time = 3, Type = "error" })
                     return
                 end
-
                 local success = TDS:Equip(real_tower_name)
                 if success then
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Successfully equipped: " .. real_tower_name,
-                        Time = 3,
-                        Type = "normal"
-                    })
+                    Window:Notify({ Title = "ADS", Desc = "Successfully equipped: " .. real_tower_name, Time = 3, Type = "normal" })
                 else
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Failed to equip: " .. real_tower_name,
-                        Time = 3,
-                        Type = "error"
-                    })
+                    Window:Notify({ Title = "ADS", Desc = "Failed to equip: " .. real_tower_name, Time = 3, Type = "error" })
                 end
             end)
         end
     })
 
     Main:Textbox({
-        Title = "Unequip:",
-        Desc = "Type a tower name to unequip",
-        Placeholder = "E.g. Farm",
-        Value = "",
-        ClearTextOnFocus = false,
+        Title = "Unequip:", Placeholder = "E.g. Farm", Value = "", ClearTextOnFocus = false,
         Callback = function(text)
             if text == "" or text == nil then return end
             task.spawn(function()
                 local real_tower_name = ResolveTowerName(text)
                 if not real_tower_name then
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Tower not found: " .. tostring(text),
-                        Time = 3,
-                        Type = "error"
-                    })
+                    Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(text), Time = 3, Type = "error" })
                     return
                 end
-
                 local success = TDS:Unequip(real_tower_name)
                 if success then
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Successfully unequipped: " .. real_tower_name,
-                        Time = 3,
-                        Type = "normal"
-                    })
+                    Window:Notify({ Title = "ADS", Desc = "Successfully unequipped: " .. real_tower_name, Time = 3, Type = "normal" })
                 else
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Failed to unequip: " .. real_tower_name,
-                        Time = 3,
-                        Type = "error"
-                    })
+                    Window:Notify({ Title = "ADS", Desc = "Failed to unequip: " .. real_tower_name, Time = 3, Type = "error" })
                 end
             end)
         end
@@ -1684,9 +1319,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Section({Title = "Skins"})
     
     local tower_skin_list = {}
-    for t_name, _ in pairs(TowerSkins) do
-        table.insert(tower_skin_list, t_name)
-    end
+    for t_name, _ in pairs(TowerSkins) do table.insert(tower_skin_list, t_name) end
     table.sort(tower_skin_list)
 
     local selected_skin_tower = tower_skin_list[1]
@@ -1695,9 +1328,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     local function get_skins(tower)
         local list = {}
         if TowerSkins[tower] then
-            for s_name, _ in pairs(TowerSkins[tower]) do
-                table.insert(list, s_name)
-            end
+            for s_name, _ in pairs(TowerSkins[tower]) do table.insert(list, s_name) end
             table.sort(list)
         end
         return list
@@ -1706,63 +1337,35 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     local SkinDropdown
 
     Main:Dropdown({
-        Title = "Select Tower:",
-        List = tower_skin_list,
-        Value = selected_skin_tower,
+        Title = "Select Tower:", List = tower_skin_list, Value = selected_skin_tower,
         Callback = function(choice)
             selected_skin_tower = choice
             local new_skins = get_skins(choice)
             selected_skin_name = new_skins[1] or "Default"
-            
             if SkinDropdown then
                 SkinDropdown:Clear()
-                for _, s in ipairs(new_skins) do
-                    SkinDropdown:Add(s)
-                end
+                for _, s in ipairs(new_skins) do SkinDropdown:Add(s) end
                 SkinDropdown:SetValue(selected_skin_name)
             end
         end
     })
 
     SkinDropdown = Main:Dropdown({
-        Title = "Select Skin:",
-        List = get_skins(selected_skin_tower),
-        Value = selected_skin_name,
-        Callback = function(choice)
-            selected_skin_name = choice
-        end
+        Title = "Select Skin:", List = get_skins(selected_skin_tower), Value = selected_skin_name,
+        Callback = function(choice) selected_skin_name = choice end
     })
 
     Main:Button({
         Title = "Apply Skin",
         Callback = function()
             if selected_skin_tower and selected_skin_name then
-                local args = {
-                    "Inventory",
-                    "Equip",
-                    "Skin",
-                    selected_skin_tower,
-                    selected_skin_name
-                }
-                
-                local success, result = pcall(function()
-                    return game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
+                local success = pcall(function()
+                    return game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "Skin", selected_skin_tower, selected_skin_name)
                 end)
-
                 if success then
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Successfully equipped " .. selected_skin_name .. " skin for " .. selected_skin_tower .. "!",
-                        Time = 3,
-                        Type = "normal"
-                    })
+                    Window:Notify({ Title = "ADS", Desc = "Successfully equipped " .. selected_skin_name .. " skin for " .. selected_skin_tower .. "!", Time = 3, Type = "normal" })
                 else
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Failed to equip skin.",
-                        Time = 3,
-                        Type = "error"
-                    })
+                    Window:Notify({ Title = "ADS", Desc = "Failed to equip skin.", Time = 3, Type = "error" })
                 end
             end
         end
@@ -1775,23 +1378,11 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     local WinsLabel = Main:Label({Title = "Wins: 0", Desc = ""})
     local LosesLabel = Main:Label({Title = "Loses: 0", Desc = ""})
     local ExpLabel = Main:Label({Title = "Experience: 0 / 0", Desc = ""})
-    local ExpSlider = Main:Slider({
-        Title = "EXP",
-        Desc = "",
-        Min = 0,
-        Max = 100,
-        Rounding = 0,
-        Value = 0,
-        Callback = function() end
-    })
+    local ExpSlider = Main:Slider({ Title = "EXP", Desc = "", Min = 0, Max = 100, Rounding = 0, Value = 0, Callback = function() end })
 
     local function ParseNumber(val)
         if type(val) == "number" then return val end
-        if type(val) == "string" then
-            local cleaned = string.gsub(val, ",", "")
-            local n = tonumber(cleaned)
-            if n then return n end
-        end
+        if type(val) == "string" then return tonumber((string.gsub(val, ",", ""))) end
         if type(val) == "table" and val.get then
             local ok, v = pcall(function() return val:get() end)
             if ok then return ParseNumber(v) end
@@ -1810,32 +1401,14 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         local obj = LocalPlayer:FindFirstChild(name)
         local v = ReadValue(obj)
         if v ~= nil then return v end
-        local attr = LocalPlayer:GetAttribute(name)
-        v = ParseNumber(attr)
+        v = ParseNumber(LocalPlayer:GetAttribute(name))
         if v ~= nil then return v end
         return nil
     end
 
     local function PickExpMax()
         local ExpObj = LocalPlayer:FindFirstChild("Experience")
-        local AttrMax = ExpObj and ParseNumber(ExpObj:GetAttribute("Max"))
-        local AttrNeed = ExpObj and ParseNumber(ExpObj:GetAttribute("Required"))
-        local AttrNext = ExpObj and ParseNumber(ExpObj:GetAttribute("Next"))
-        return AttrMax
-            or AttrNeed
-            or AttrNext
-            or GetStatNumber("ExperienceMax")
-            or GetStatNumber("ExperienceNeeded")
-            or GetStatNumber("ExperienceRequired")
-            or GetStatNumber("ExperienceToNextLevel")
-            or GetStatNumber("ExperienceToLevel")
-            or GetStatNumber("NextLevelExp")
-            or GetStatNumber("ExpToNextLevel")
-            or GetStatNumber("ExpNeeded")
-            or GetStatNumber("ExpRequired")
-            or GetStatNumber("MaxExp")
-            or GetStatNumber("MaxExperience")
-            or 100
+        return (ExpObj and ParseNumber(ExpObj:GetAttribute("Max"))) or (ExpObj and ParseNumber(ExpObj:GetAttribute("Required"))) or (ExpObj and ParseNumber(ExpObj:GetAttribute("Next"))) or GetStatNumber("ExperienceMax") or GetStatNumber("ExperienceNeeded") or GetStatNumber("ExperienceRequired") or GetStatNumber("NextLevelExp") or GetStatNumber("MaxExperience") or 100
     end
 
     local GcExpCache = { t = nil, last = 0 }
@@ -1843,25 +1416,22 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         if not getgc then return nil end
         local t = GcExpCache.t
         if t then
-            local exp = ParseNumber(rawget(t, "exp") or rawget(t, "Exp") or rawget(t, "experience") or rawget(t, "Experience"))
-            local MaxExp = ParseNumber(rawget(t, "maxExp") or rawget(t, "MaxExp") or rawget(t, "maxEXP") or rawget(t, "MaxEXP") or rawget(t, "maxExperience") or rawget(t, "MaxExperience"))
-            local lvl = ParseNumber(rawget(t, "level") or rawget(t, "Level") or rawget(t, "lvl") or rawget(t, "Lvl"))
-            if exp and MaxExp then
-                return exp, MaxExp, lvl
-            end
+            local exp = ParseNumber(rawget(t, "exp") or rawget(t, "Exp") or rawget(t, "experience"))
+            local MaxExp = ParseNumber(rawget(t, "maxExp") or rawget(t, "MaxExp") or rawget(t, "maxExperience"))
+            local lvl = ParseNumber(rawget(t, "level") or rawget(t, "Level") or rawget(t, "lvl"))
+            if exp and MaxExp then return exp, MaxExp, lvl end
         end
         local now = os.clock()
         if now - GcExpCache.last < 3 then return nil end
-        
         GcExpCache.last = now
         local plvl = GetStatNumber("Level")
         
         for _, obj in ipairs(getgc(true)) do
             if type(obj) == "table" then
-                local exp = ParseNumber(rawget(obj, "exp") or rawget(obj, "Exp") or rawget(obj, "experience") or rawget(obj, "Experience"))
-                local MaxExp = ParseNumber(rawget(obj, "maxExp") or rawget(obj, "MaxExp") or rawget(obj, "maxEXP") or rawget(obj, "MaxEXP") or rawget(obj, "maxExperience") or rawget(obj, "MaxExperience"))
+                local exp = ParseNumber(rawget(obj, "exp") or rawget(obj, "Exp") or rawget(obj, "experience"))
+                local MaxExp = ParseNumber(rawget(obj, "maxExp") or rawget(obj, "MaxExp") or rawget(obj, "maxExperience"))
                 if exp and MaxExp then
-                    local lvl = ParseNumber(rawget(obj, "level") or rawget(obj, "Level") or rawget(obj, "lvl") or rawget(obj, "Lvl"))
+                    local lvl = ParseNumber(rawget(obj, "level") or rawget(obj, "Level"))
                     if not plvl or not lvl or lvl == plvl then
                         GcExpCache.t = obj
                         return exp, MaxExp, lvl
@@ -1883,8 +1453,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         local GcExp, GcMax, GcLvl = GetGcExp()
         
         if GcExp and GcMax then
-            exp = GcExp
-            MaxExp = GcMax
+            exp, MaxExp = GcExp, GcMax
             if GcLvl then lvl = GcLvl end
         end
         if MaxExp < 1 then MaxExp = 1 end
@@ -1896,11 +1465,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         if WinsLabel then WinsLabel:SetTitle("Wins: " .. tostring(wins)) end
         if LosesLabel then LosesLabel:SetTitle("Loses: " .. tostring(loses)) end
         if ExpLabel then ExpLabel:SetTitle("Experience: " .. tostring(exp) .. " / " .. tostring(MaxExp)) end
-        if ExpSlider then
-            ExpSlider:SetMin(0)
-            ExpSlider:SetMax(MaxExp)
-            ExpSlider:SetValue(exp)
-        end
+        if ExpSlider then ExpSlider:SetMin(0) ExpSlider:SetMax(MaxExp) ExpSlider:SetValue(exp) end
     end
 
     local StatsQueued = false
@@ -1922,34 +1487,16 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     end
 
     local StatNames = {"Coins", "Gems", "Level", "Triumphs", "Loses", "Experience"}
-    local ExpAttrNames = {
-        "ExperienceMax", "ExperienceNeeded", "ExperienceRequired",
-        "ExperienceToNextLevel", "ExperienceToLevel", "NextLevelExp",
-        "ExpToNextLevel", "ExpNeeded", "ExpRequired", "MaxExp", "MaxExperience"
-    }
-
     for _, name in ipairs(StatNames) do
         HookStatObj(LocalPlayer:FindFirstChild(name))
         LocalPlayer:GetAttributeChangedSignal(name):Connect(QueueStatsUpdate)
     end
-
-    for _, name in ipairs(ExpAttrNames) do
-        LocalPlayer:GetAttributeChangedSignal(name):Connect(QueueStatsUpdate)
-    end
-
     LocalPlayer.ChildAdded:Connect(function(child)
-        if table.find(StatNames, child.Name) then
-            HookStatObj(child)
-            QueueStatsUpdate()
-        end
+        if table.find(StatNames, child.Name) then HookStatObj(child) QueueStatsUpdate() end
     end)
-
     LocalPlayer.ChildRemoved:Connect(function(child)
-        if table.find(StatNames, child.Name) then
-            QueueStatsUpdate()
-        end
+        if table.find(StatNames, child.Name) then QueueStatsUpdate() end
     end)
-
     QueueStatsUpdate()
 end
 
@@ -1958,143 +1505,44 @@ Window:Line()
 local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
     Strategies:Section({Title = "Survival Strategies"})
     
+    local function LoadStrat(url)
+        task.spawn(function()
+            local content = game:HttpGet(url)
+            while not (TDS and TDS.Loadout) do task.wait(0.5) end
+            local func = loadstring(content)
+            if func then func() Window:Notify({ Title = "ADS", Desc = "Running Strategy...", Time = 3 }) end
+        end)
+    end
+
     Strategies:Toggle({
-        Title = "Frost Mode",
-        Desc = "Skill tree: MAX\n\nTowers:\nGolden Scout,\nFirework Technician,\nHacker,\nBrawler,\nDJ Booth,\nCommander,\nEngineer,\nAccelerator,\nTurret,\nMercenary Base",
-        Value = Globals.Frost,
-        Callback = function(v)
-            SetSetting("Frost", v)
-            if v then
-                 task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Frost.lua"
-                    local content = game:HttpGet(url)
-                    while not (TDS and TDS.Loadout) do
-                        task.wait(0.5) 
-                    end
-                    local func, err = loadstring(content)
-                    if func then
-                        func() 
-                        Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 })
-                    end
-                end)
-            end
-        end
+        Title = "Frost Mode", Desc = "Skill tree: MAX\n\nTowers:\nGolden Scout, Firework Technician, Hacker, Brawler, DJ Booth, Commander, Engineer, Accelerator, Turret, Mercenary Base",
+        Value = Globals.Frost, Callback = function(v) SetSetting("Frost", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Frost.lua") end end
     })
 
     Strategies:Toggle({
-        Title = "Fallen Mode",
-        Desc = "Skill tree: Not needed\n\nTowers:\nGolden Scout,\nBrawler,\nMercenary Base,\nElectroshocker,\nEngineer",
-        Value = Globals.Fallen,
-        Callback = function(v)
-            SetSetting("Fallen", v)
-            if v then
-                task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Fallen.lua"
-                    local content = game:HttpGet(url)
-                    while not (TDS and TDS.Loadout) do
-                        task.wait(0.5) 
-                    end
-                    local func, err = loadstring(content)
-                    if func then
-                        func() 
-                        Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 })
-                    end
-                end)
-            end
-        end
+        Title = "Fallen Mode", Desc = "Skill tree: Not needed\n\nTowers:\nGolden Scout, Brawler, Mercenary Base, Electroshocker, Engineer",
+        Value = Globals.Fallen, Callback = function(v) SetSetting("Fallen", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Fallen.lua") end end
     })
 
     Strategies:Toggle({
-        Title = "Intermediate Mode",
-        Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner,\nCrook Boss",
-        Value = Globals.Intermediate,
-        Callback = function(v)
-            SetSetting("Intermediate", v)
-            if v then
-                task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Intermediate.lua"
-                    local content = game:HttpGet(url)
-                    while not (TDS and TDS.Loadout) do
-                        task.wait(0.5) 
-                    end
-                    local func, err = loadstring(content)
-                    if func then
-                        func() 
-                        Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 })
-                    end
-                end)
-            end
-        end
+        Title = "Intermediate Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner, Crook Boss",
+        Value = Globals.Intermediate, Callback = function(v) SetSetting("Intermediate", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Intermediate.lua") end end
     })
 
     Strategies:Toggle({
-        Title = "Casual Mode",
-        Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner",
-        Value = Globals.Casual,
-        Callback = function(v)
-            SetSetting("Casual", v)
-            if v then
-                task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Casual.lua"
-                    local content = game:HttpGet(url)
-                    while not (TDS and TDS.Loadout) do
-                        task.wait(0.5) 
-                    end
-                    local func, err = loadstring(content)
-                    if func then
-                        func() 
-                        Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 })
-                    end
-                end)
-            end
-        end
+        Title = "Casual Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner",
+        Value = Globals.Casual, Callback = function(v) SetSetting("Casual", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Casual.lua") end end
     })
 
     Strategies:Toggle({
-        Title = "Easy Mode",
-        Desc = "Skill tree: Not needed\n\nTowers:\nNormal Scout",
-        Value = Globals.Easy,
-        Callback = function(v)
-            SetSetting("Easy", v)
-            if v then
-                task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Easy.lua"
-                    local content = game:HttpGet(url)
-                    while not (TDS and TDS.Loadout) do
-                        task.wait(0.5) 
-                    end
-                    local func, err = loadstring(content)
-                    if func then
-                        func() 
-                        Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 })
-                    end
-                end)
-            end
-        end
+        Title = "Easy Mode", Desc = "Skill tree: Not needed\n\nTowers:\nNormal Scout",
+        Value = Globals.Easy, Callback = function(v) SetSetting("Easy", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Easy.lua") end end
     })
 
     Strategies:Section({Title = "Other Strategies"})
     Strategies:Toggle({
-        Title = "Hardcore Mode",
-        Desc = "Towers:\nFarm,\nGolden Scout,\nDJ Booth,\nCommander,\nElectroshocker,\nRanger,\nFreezer,\nGolden Minigunner",
-        Value = Globals.Hardcore,
-        Callback = function(v)
-            SetSetting("Hardcore", v)
-            if v then
-                task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Hardcore.lua"
-                    local content = game:HttpGet(url)
-                    while not (TDS and TDS.Loadout) do
-                        task.wait(0.5) 
-                    end
-                    local func, err = loadstring(content)
-                    if func then
-                        func() 
-                        Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 })
-                    end
-                end)
-            end
-        end
+        Title = "Hardcore Mode", Desc = "Towers:\nFarm, Golden Scout, DJ Booth, Commander, Electroshocker, Ranger, Freezer, Golden Minigunner",
+        Value = Globals.Hardcore, Callback = function(v) SetSetting("Hardcore", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Hardcore.lua") end end
     })
 end
 
@@ -2102,29 +1550,12 @@ Window:Line()
 
 local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Section({Title = "Misc"})
-    Misc:Toggle({
-        Title = "Enable Anti-Lag",
-        Desc = "Boosts your FPS",
-        Value = Globals.AntiLag,
-        Callback = function(v)
-            SetSetting("AntiLag", v)
-        end
-    })
-
-    Misc:Toggle({
-        Title = "Disable 3d rendering",
-        Desc = "Turns off 3d rendering",
-        Value = Globals.Disable3DRendering,
-        Callback = function(v)
-            SetSetting("Disable3DRendering", v)
-            Apply3dRendering()
-        end
-    })
+    Misc:Toggle({ Title = "Enable Anti-Lag", Desc = "Boosts your FPS", Value = Globals.AntiLag, Callback = function(v) SetSetting("AntiLag", v) end })
+    Misc:Toggle({ Title = "Disable 3d rendering", Desc = "Turns off 3d rendering", Value = Globals.Disable3DRendering, Callback = function(v) SetSetting("Disable3DRendering", v) Apply3dRendering() end })
 
     -- // ==========================================
     -- // ADVANCED RADAR: ULTIMATE PREMIUM EDITION
     -- // ==========================================
-    
     local TrackerUI, TrackerConnection
     local GroupCards, EnemyPills = {}, {} 
     local CachedModeModule, CachedModeName
@@ -2507,10 +1938,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     if not Globals.EnemyTracker then return end
                     
                     local currentWave = GetFastWave()
-                    
-                    -- ==========================================
-                    -- 1. LOGIKA UPCOMING WAVE (DATA MODULE)
-                    -- ==========================================
                     if currentWave ~= LastProcessedWave then
                         LastProcessedWave = currentWave
                         local nextWaveNum = currentWave + 1
@@ -2540,6 +1967,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                             if modeData.ExtraOptions and modeData.ExtraOptions.ClearBonus then
                                                 local playersCount = #game:GetService("Players"):GetPlayers()
                                                 local bonusPct = modeData.ExtraOptions.ClearBonus.Percentage or 0.2
+                                                
                                                 if playersCount <= 1 and modeData.ExtraOptions.ClearBonus.SoloPercentage then
                                                     bonusPct = modeData.ExtraOptions.ClearBonus.SoloPercentage
                                                 end
@@ -2587,9 +2015,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
 
-                    -- ==========================================
-                    -- 2. LOGIKA LIVE RADAR (ANTI-NYANGKUT)
-                    -- ==========================================
                     local EnemyGroups, ProcessedEnemies = {}, {}
                     local NPCs = workspace:FindFirstChild("NPCs")
                     
@@ -2606,42 +2031,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local maxHP = state:GetAttribute("MaxHealth") or health
                                     local maxShield = state:GetAttribute("MaxShield") or shield
 
-                                    -- CEK MODIFIER LANGSUNG DARI MUSUH UNTUK MENCEGAH NYANGKUT
-                                    local liveMods = {}
-                                    for attrName, attrValue in pairs(state:GetAttributes()) do
-                                        if attrValue == true then
-                                            -- Pastikan attribute adalah modifier yang sah dari list TDS_Modifiers (Logika Upcoming Wave)
-                                            for _, validMod in pairs(TDS_Modifiers) do
-                                                if attrName == validMod then
-                                                    liveMods[attrName] = true
-                                                    break
-                                                end
-                                            end
-                                        end
-                                    end
-
-                                    -- Format teks agar 100% mirip dengan Upcoming Wave
-                                    local modList = {}
-                                    for m, _ in pairs(liveMods) do table.insert(modList, m) end
-                                    table.sort(modList)
-                                    local modString = #modList > 0 and " [" .. table.concat(modList, ", ") .. "]" or ""
-
-                                    -- KEY PEMISAH TAB: Nama Musuh + String Modifikator
-                                    local groupKey = name .. modString
-
-                                    if not EnemyGroups[groupKey] then 
-                                        EnemyGroups[groupKey] = { 
-                                            GroupKey = groupKey,
-                                            Name = name, 
-                                            ModString = modString,
-                                            Count = 0, 
-                                            MaxHP_Sample = maxHP, 
-                                            Individuals = {} 
-                                        } 
+                                    if not EnemyGroups[name] then 
+                                        EnemyGroups[name] = { Name = name, Count = 0, MaxHP_Sample = maxHP, Individuals = {} } 
                                     end
                                     
-                                    EnemyGroups[groupKey].Count = EnemyGroups[groupKey].Count + 1
-                                    table.insert(EnemyGroups[groupKey].Individuals, { 
+                                    EnemyGroups[name].Count = EnemyGroups[name].Count + 1
+                                    table.insert(EnemyGroups[name].Individuals, { 
                                         Obj = enemy, HP = health, MaxHP = maxHP, 
                                         Shield = shield, MaxShield = maxShield, 
                                         IsTargeted = (enemy == Globals.CurrentTargetModel) 
@@ -2652,14 +2047,13 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
 
-                    -- Render Live Radar Cards
                     local SortedGroups, ProcessedGroups = {}, {}
                     for _, gd in pairs(EnemyGroups) do table.insert(SortedGroups, gd) end
                     table.sort(SortedGroups, function(a, b) return a.MaxHP_Sample > b.MaxHP_Sample end)
 
                     for groupOrder, groupData in ipairs(SortedGroups) do
-                        ProcessedGroups[groupData.GroupKey] = true
-                        local groupUI = GroupCards[groupData.GroupKey] or CreateGroupCard(groupData.GroupKey, LiveScroll)
+                        ProcessedGroups[groupData.Name] = true
+                        local groupUI = GroupCards[groupData.Name] or CreateGroupCard(groupData.Name, LiveScroll)
                         groupUI.Card.Visible = true
                         groupUI.Card.LayoutOrder = groupOrder
                         
@@ -2667,14 +2061,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         if groupData.MaxHP_Sample > 15000 then icon = "👑"
                         elseif groupData.MaxHP_Sample > 5000 then icon = "💀" end
                         
-                        -- Pewarnaan Teks
-                        local nameColor = "#FFFFFF"
-                        if groupData.ModString ~= "" then nameColor = "#FF5050" end
-                        if groupData.Name:find("Boss") or groupData.Name:find("King") then nameColor = "#B450FF" end
-
-                        -- Setup Teks Judul Tab dengan RichText
-                        groupUI.Title.Text = string.format("%s <font color='%s'>%s</font><font color='#FFBB55'>%s</font> <font color='#666677'>[x%d]</font>", 
-                            icon, nameColor, groupData.Name, groupData.ModString, groupData.Count)
+                        groupUI.Title.Text = string.format("%s %s <font color='#666677'>[x%d]</font>", icon, groupData.Name, groupData.Count)
                         groupUI.Title.RichText = true
 
                         table.sort(groupData.Individuals, function(a, b)
@@ -2682,7 +2069,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                             return a.HP > b.HP
                         end)
 
-                        -- HP & Shield Bars
                         for pillOrder, indv in ipairs(groupData.Individuals) do
                             local pillUI = EnemyPills[indv.Obj] or CreatePill(indv.Obj, groupUI.Container)
                             pillUI.Pill.Visible = true
@@ -2724,10 +2110,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end 
                     end
 
-                    for groupKey, groupUI in pairs(GroupCards) do 
-                        if not ProcessedGroups[groupKey] then 
+                    for groupName, groupUI in pairs(GroupCards) do 
+                        if not ProcessedGroups[groupName] then 
                             groupUI.Card:Destroy()
-                            GroupCards[groupKey] = nil 
+                            GroupCards[groupName] = nil 
                         end 
                     end
                 end)
@@ -2742,21 +2128,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Title = "Auto Collect Pickups",
         Desc = "Collects Logbooks + Snowballs",
         Value = Globals.AutoPickups,
-        Callback = function(v)
-            SetSetting("AutoPickups", v)
-        end
+        Callback = function(v) SetSetting("AutoPickups", v) end
     })
 
     Misc:Dropdown({
         Title = "Pickup Method",
-        Desc = "",
         List = {"Pathfinding", "Instant"},
         Value = Globals.PickupMethod or "Pathfinding",
         Callback = function(choice)
             local selected = type(choice) == "table" and choice[1] or choice
-            if not selected or selected == "" then
-                selected = "Pathfinding"
-            end
+            if not selected or selected == "" then selected = "Pathfinding" end
             SetSetting("PickupMethod", selected)
         end
     })
@@ -2765,9 +2146,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Title = "Claim Rewards",
         Desc = "Claims your playtime and uses spin tickets in Lobby",
         Value = Globals.ClaimRewards,
-        Callback = function(v)
-            SetSetting("ClaimRewards", v)
-        end
+        Callback = function(v) SetSetting("ClaimRewards", v) end
     })
 
     Misc:Section({Title = "Target Visual"})
@@ -2791,10 +2170,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Callback = function(state)
             Globals.TargetChamsEnabled = state
             SetSetting("TargetChamsEnabled", state) 
-            
-            if not state then
-                ClearESP() 
-            end
+            if not state then ClearESP() end
         end
     })
 
@@ -2812,10 +2188,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Textbox({
-        Title = "Auto Cooldown:",
-        Placeholder = "0.01",
-        Value = tostring(Globals.AutoCooldown),
-        ClearTextOnFocus = true,
+        Title = "Auto Cooldown:", Placeholder = "0.01", Value = tostring(Globals.AutoCooldown), ClearTextOnFocus = true,
         Callback = function(value)
             if tonumber(value) then
                 Globals.AutoCooldown = tonumber(value)
@@ -2825,10 +2198,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Textbox({
-        Title = "Auto Multiply:",
-        Placeholder = "1",
-        Value = tostring(Globals.AutoMultiply),
-        ClearTextOnFocus = true,
+        Title = "Auto Multiply:", Placeholder = "1", Value = tostring(Globals.AutoMultiply), ClearTextOnFocus = true,
         Callback = function(value)
             if tonumber(value) then
                 Globals.AutoMultiply = tonumber(value)
@@ -2849,10 +2219,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     local towersFolder = workspace:FindFirstChild("Towers")
                     local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
                     if defaultTroop then
-                        local args = {
-                            "Troops", "Abilities", "Activate",
-                            { Troop = defaultTroop, Name = "FPS", Data = { enabled = isEnabled } }
-                        }
+                        local args = { "Troops", "Abilities", "Activate", { Troop = defaultTroop, Name = "FPS", Data = { enabled = isEnabled } } }
                         game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
                     end
                 end)
@@ -2894,12 +2261,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
 
                         if Globals.LockedTargetPosition then
                             for i = 1, Globals.AutoMultiply do
-                                pcall(function()
-                                    fireRemote:FireServer(Globals.LockedTargetPosition, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
-                                end)
+                                pcall(function() fireRemote:FireServer(Globals.LockedTargetPosition, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow()) end)
                             end
                         end
-
                         task.wait(Globals.AutoCooldown or 0.05)
                     end
                 end)
@@ -2909,7 +2273,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-    Misc:Section({Title = "Gatling Gun"})
+    Misc:Section({Title = "Gatling Gun (Silent Aim)"})
     
     Globals.CustomGatlingApplied = false 
 
@@ -2917,19 +2281,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local success, gganim = pcall(function()
             return require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
         end)
-
         if not success or not gganim then return false end
 
-        if not Globals.OriginalFireGun then
-            Globals.OriginalFireGun = gganim._fireGun
-        end
+        if not Globals.OriginalFireGun then Globals.OriginalFireGun = gganim._fireGun end
 
         gganim._fireGun = function(self)
             local TargetPosition = nil
 
-            if Globals.SilentAimEnabled and Globals.LockedTargetPosition then
-                TargetPosition = Globals.LockedTargetPosition
-            end
+            if Globals.SilentAimEnabled and Globals.LockedTargetPosition then TargetPosition = Globals.LockedTargetPosition end
 
             if not TargetPosition then
                 local CameraController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
@@ -2958,7 +2317,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 self:Wait(self:GetCooldown())
             end
         end
-
         return true
     end
 
@@ -2981,9 +2339,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             Globals.SilentAimEnabled = state
             SetSetting("SilentAimEnabled", state)
             
-            if not state then
-                ClearESP() 
-            end
+            if not state then ClearESP() end
             
             local hooked = EnsureGatlingHook()
             if not hooked and state then
@@ -2997,28 +2353,18 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     })
 
     Misc:Textbox({
-        Title = "Cooldown:",
-        Placeholder = "0.01",
-        Value = tostring(Globals.Cooldown),
-        ClearTextOnFocus = true,
+        Title = "Cooldown:", Placeholder = "0.01", Value = tostring(Globals.Cooldown), ClearTextOnFocus = true,
         Callback = function(value)
             local num = tonumber(value)
-            if num then
-                SetSetting("Cooldown", num)
-            end
+            if num then SetSetting("Cooldown", num) end
         end
     })
 
     Misc:Textbox({
-        Title = "Multiply:",
-        Placeholder = "1",
-        Value = tostring(Globals.Multiply),
-        ClearTextOnFocus = true,
+        Title = "Multiply:", Placeholder = "1", Value = tostring(Globals.Multiply), ClearTextOnFocus = true,
         Callback = function(value)
             local num = tonumber(value)
-            if num then
-                SetSetting("Multiply", num)
-            end
+            if num then SetSetting("Multiply", num) end
         end
     })
 
@@ -3027,11 +2373,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Callback = function()
             Globals.CustomGatlingApplied = true
             local hooked = EnsureGatlingHook()
-            if hooked then
-                Window:Notify({ Title = "ADS", Desc = "Successfully applied Custom Cooldown & Multiply!", Time = 3, Type = "normal" })
-            else
-                Window:Notify({ Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error" })
-            end
+            if hooked then Window:Notify({ Title = "ADS", Desc = "Successfully applied Custom Cooldown & Multiply!", Time = 3, Type = "normal" })
+            else Window:Notify({ Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error" }) end
         end
     })
 
@@ -3072,32 +2415,21 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Value = false,
         Callback = function(state)
             Globals.PartySpamEnabled = state
-            
             if state then
                 if GameState ~= "LOBBY" then
-                    Window:Notify({
-                        Title = "Error",
-                        Desc = "You can only use this feature in the Lobby!",
-                        Time = 3,
-                        Type = "error"
-                    })
+                    Window:Notify({ Title = "Error", Desc = "You can only use this feature in the Lobby!", Time = 3, Type = "error" })
                     Globals.PartySpamEnabled = false
                     return
                 end
-
                 Window:Notify({Title = "ADS", Desc = "Party Spam Enabled!", Time = 3, Type = "normal"})
-                
                 task.spawn(function()
                     local plrs = game:GetService("Players")
                     local rfunc = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-                    
                     while Globals.PartySpamEnabled do
                         pcall(function()
                             rfunc:InvokeServer("Party", "CreateParty")
                             for _, plr in ipairs(plrs:GetPlayers()) do
-                                if plr ~= plrs.LocalPlayer then
-                                    rfunc:InvokeServer("Party", "InvitePlayer", plr)
-                                end
+                                if plr ~= plrs.LocalPlayer then rfunc:InvokeServer("Party", "InvitePlayer", plr) end
                             end
                             rfunc:InvokeServer("Party", "LeaveParty")
                         end)
@@ -3140,24 +2472,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         Desc = "Keep in mind that some features such as selecting maps, spawning in enemies and changing tower stats will not work!",
         Callback = function()
             if GameState == "GAME" then
-                local args = {
-                    game.Players.LocalPlayer.UserId,
-                    true
-                }
+                local args = { game.Players.LocalPlayer.UserId, true }
                 game:GetService("ReplicatedStorage"):WaitForChild("Network"):WaitForChild("Sandbox"):WaitForChild("RE:SetAdmin"):FireServer(unpack(args))
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Successfully unlocked Admin+ Mode!",
-                    Time = 3,
-                    Type = "normal"
-                })
+                Window:Notify({ Title = "ADS", Desc = "Successfully unlocked Admin+ Mode!", Time = 3, Type = "normal" })
             else
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "You must be in Sandbox mode for this to work!",
-                    Time = 3,
-                    Type = "normal"
-                })
+                Window:Notify({ Title = "ADS", Desc = "You must be in Sandbox mode for this to work!", Time = 3, Type = "normal" })
             end
         end
     })
@@ -3176,14 +2495,7 @@ Window:Line()
 
 local RecorderInit = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Sources/Recorder.lua"))()
 if type(RecorderInit) == "function" then
-    RecorderInit({
-        Window = Window,
-        ReplicatedStorage = ReplicatedStorage,
-        LocalPlayer = LocalPlayer,
-        HttpService = HttpService,
-        GameState = GameState,
-        workspace = workspace
-    })
+    RecorderInit({ Window = Window, ReplicatedStorage = ReplicatedStorage, LocalPlayer = LocalPlayer, HttpService = HttpService, GameState = GameState, workspace = workspace })
 end
 
 Window:Line()
@@ -3194,12 +2506,7 @@ local Settings = Window:Tab({Title = "Settings", Icon = "settings"}) do
     Settings:Button({
         Title = "Save Settings",
         Callback = function()
-            Window:Notify({
-                Title = "ADS",
-                Desc = "Settings Saved!",
-                Time = 3,
-                Type = "normal"
-            })
+            Window:Notify({ Title = "ADS", Desc = "Settings Saved!", Time = 3, Type = "normal" })
             LoadSettings()
         end
     })
@@ -3207,12 +2514,7 @@ local Settings = Window:Tab({Title = "Settings", Icon = "settings"}) do
     Settings:Button({
         Title = "Load Settings",
         Callback = function()
-            Window:Notify({
-                Title = "ADS",
-                Desc = "Settings Loaded!",
-                Time = 3,
-                Type = "normal"
-            })
+            Window:Notify({ Title = "ADS", Desc = "Settings Loaded!", Time = 3, Type = "normal" })
             SaveSettings()
         end
     })
@@ -3220,77 +2522,40 @@ local Settings = Window:Tab({Title = "Settings", Icon = "settings"}) do
     Settings:Section({Title = "Privacy"})
     
     Settings:Toggle({
-        Title = "Hide Username",
-        Desc = "",
-        Value = Globals.HideUsername,
-        Callback = function(v)
-            SetSetting("HideUsername", v)
-            UpdatePrivacyState()
-        end
+        Title = "Hide Username", Value = Globals.HideUsername,
+        Callback = function(v) SetSetting("HideUsername", v) UpdatePrivacyState() end
     })
 
     Settings:Textbox({
-        Title = "Streamer Name",
-        Desc = "",
-        Placeholder = "Spoof Name",
-        Value = Globals.StreamerName or "",
-        ClearTextOnFocus = false,
-        Callback = function(value)
-            SetSetting("StreamerName", value or "")
-            UpdatePrivacyState()
-        end
+        Title = "Streamer Name", Placeholder = "Spoof Name", Value = Globals.StreamerName or "", ClearTextOnFocus = false,
+        Callback = function(value) SetSetting("StreamerName", value or "") UpdatePrivacyState() end
     })
 
     Settings:Toggle({
-        Title = "Streamer Mode",
-        Desc = "",
-        Value = Globals.StreamerMode,
-        Callback = function(v)
-            SetSetting("StreamerMode", v)
-            UpdatePrivacyState()
-        end
+        Title = "Streamer Mode", Value = Globals.StreamerMode,
+        Callback = function(v) SetSetting("StreamerMode", v) UpdatePrivacyState() end
     })
 
     Settings:Section({Title = "Tags"})
     
     local tagOptions = collectTagOptions()
     local tagValue = Globals.tagName or "None"
-    if not table.find(tagOptions, tagValue) then
-        tagValue = "None"
-    end
+    if not table.find(tagOptions, tagValue) then tagValue = "None" end
     
     Settings:Dropdown({
-        Title = "Tag Changer",
-        Desc = "",
-        List = tagOptions,
-        Value = tagValue,
+        Title = "Tag Changer", List = tagOptions, Value = tagValue,
         Callback = function(choice)
             local selected = choice
-            if type(choice) == "table" then
-                selected = choice[1]
-            end
-            if not selected or selected == "" then
-                selected = "None"
-            end
+            if type(choice) == "table" then selected = choice[1] end
+            if not selected or selected == "" then selected = "None" end
             SetSetting("tagName", selected)
-            if selected == "None" then
-                stopTagChanger()
-            else
-                startTagChanger()
-            end
+            if selected == "None" then stopTagChanger() else startTagChanger() end
         end
     })
 
     Settings:Section({Title = "Webhook"})
     
-    Settings:Toggle({
-        Title = "Send Webhook",
-        Desc = "",
-        Value = Globals.SendWebhook,
-        Callback = function(v)
-            SetSetting("SendWebhook", v)
-        end
-    })
+    Settings:Toggle({ Title = "Send Webhook", Value = Globals.SendWebhook, Callback = function(v) SetSetting("SendWebhook", v) end })
 
     Settings:Button({
         Title = "Test Webhook",
@@ -3298,56 +2563,29 @@ local Settings = Window:Tab({Title = "Settings", Icon = "settings"}) do
             if not Globals.WebhookURL or Globals.WebhookURL == "" then
                 return Window:Notify({Title = "Error", Desc = "Webhook URL is empty!", Time = 3, Type = "error"})
             end
-
             local success, response = pcall(function()
                 return SendRequest({
-                    Url = Globals.WebhookURL,
-                    Method = "POST",
+                    Url = Globals.WebhookURL, Method = "POST",
                     Headers = { ["Content-Type"] = "application/json" },
                     Body = game:GetService("HttpService"):JSONEncode({["content"] = "Webhook Test"})
                 })
             end)
-
             if success and response.StatusCode >= 200 and response.StatusCode < 300 then
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Webhook sent successfully and is working!",
-                    Time = 3,
-                    Type = "normal"
-                })
+                Window:Notify({ Title = "ADS", Desc = "Webhook sent successfully and is working!", Time = 3, Type = "normal" })
             else
-                Window:Notify({
-                    Title = "Error",
-                    Desc = "Invalid Webhook, Discord returned an error.",
-                    Time = 5,
-                    Type = "error"
-                })
+                Window:Notify({ Title = "Error", Desc = "Invalid Webhook, Discord returned an error.", Time = 5, Type = "error" })
             end
         end
     })
 
     Settings:Textbox({
-        Title = "Webhook URL:",
-        Desc = "",
-        Placeholder = "https://discord.com/api/webhooks/...",
-        Value = Globals.WebhookURL,
-        ClearTextOnFocus = true,
+        Title = "Webhook URL:", Placeholder = "https://discord.com/api/webhooks/...", Value = Globals.WebhookURL, ClearTextOnFocus = true,
         Callback = function(value)
             if value ~= "" and value:find("https://discord.com/api/webhooks/") then
                 SetSetting("WebhookURL", value)
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Webhook is successfully set!",
-                    Time = 3,
-                    Type = "normal"
-                })
+                Window:Notify({ Title = "ADS", Desc = "Webhook is successfully set!", Time = 3, Type = "normal" })
             else
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Invalid Webhook URL!",
-                    Time = 3,
-                    Type = "normal"
-                })
+                Window:Notify({ Title = "ADS", Desc = "Invalid Webhook URL!", Time = 3, Type = "normal" })
             end
         end
     })
@@ -3401,28 +2639,17 @@ end
 local function CheckResOk(data)
     if data == true then return true end
     if type(data) == "table" and data.Success == true then return true end
-
-    local success, IsModel = pcall(function()
-        return data and data:IsA("Model")
-    end)
-
+    local success, IsModel = pcall(function() return data and data:IsA("Model") end)
     if success and IsModel then return true end
     if type(data) == "userdata" then return true end
-
     return false
 end
 
 -- // Automation Helpers
 local function GetAllRewards()
     local results = {
-        Coins = 0, 
-        Gems = 0, 
-        XP = 0, 
-        Wave = 0,
-        Level = 0,
-        Time = "00:00",
-        Status = "UNKNOWN",
-        Others = {} 
+        Coins = 0, Gems = 0, XP = 0, Wave = 0, Level = 0,
+        Time = "00:00", Status = "UNKNOWN", Others = {} 
     }
 
     local UiRoot = PlayerGui:FindFirstChild("ReactGameNewRewards")
@@ -3451,16 +2678,11 @@ local function GetAllRewards()
     end
 
     local LevelValue = LocalPlayer.Level
-    if LevelValue then
-        results.Level = LevelValue.Value or 0
-    end
+    if LevelValue then results.Level = LevelValue.Value or 0 end
 
     local label = PlayerGui:WaitForChild("ReactGameTopGameDisplay").Frame.wave.container.value
     local WaveNum = label.Text:match("^(%d+)")
-
-    if WaveNum then
-        results.Wave = tonumber(WaveNum) or 0
-    end
+    if WaveNum then results.Wave = tonumber(WaveNum) or 0 end
 
     local SectionRewards = RewardsScreen and RewardsScreen:FindFirstChild("RewardsSection")
     if SectionRewards then
@@ -3506,19 +2728,11 @@ local function RejoinMatch()
         if CurrentMode then
             local ok, result = pcall(function()
                 local payload
-
-                if CurrentMode == "PizzaParty" then
-                    payload = { mode = "halloween", count = 1 }
-                elseif CurrentMode == "Hardcore" then
-                    payload = { mode = "hardcore", count = 1 }
-                elseif CurrentMode == "PollutedWasteland" then
-                    payload = { mode = "polluted", count = 1 }
-                elseif CurrentMode == "Badlands" then
-                    payload = { mode = "badlands", count = 1 }
-                else
-                    payload = { difficulty = CurrentMode, mode = "survival", count = 1 }
-                end
-
+                if CurrentMode == "PizzaParty" then payload = { mode = "halloween", count = 1 }
+                elseif CurrentMode == "Hardcore" then payload = { mode = "hardcore", count = 1 }
+                elseif CurrentMode == "PollutedWasteland" then payload = { mode = "polluted", count = 1 }
+                elseif CurrentMode == "Badlands" then payload = { mode = "badlands", count = 1 }
+                else payload = { difficulty = CurrentMode, mode = "survival", count = 1 } end
                 return remote:InvokeServer("Multiplayer", "v2:start", payload)
             end)
 
@@ -3532,7 +2746,6 @@ local function RejoinMatch()
             task.wait(1)
         end
     until success
-
     return res
 end
 
@@ -3540,7 +2753,6 @@ local function HandlePostMatch()
     local UiRoot
     repeat
         task.wait(1)
-
         local root = PlayerGui:FindFirstChild("ReactGameNewRewards")
         local frame = root and root:FindFirstChild("Frame")
         local gameOver = frame and frame:FindFirstChild("gameOver")
@@ -3557,9 +2769,7 @@ local function HandlePostMatch()
     end
 
     task.wait(1)
-
     local match = GetAllRewards()
-
     CurrentTotalCoins += match.Coins
     CurrentTotalGems += match.Gems
 
@@ -3583,26 +2793,10 @@ local function HandlePostMatch()
                 "> **Time:** `" .. match.Time .. "`\n" ..
                 "> **Current Level:** `" .. match.Level .. "`\n" ..
                 "> **Wave:** `" .. match.Wave .. "`\n",
-
             fields = {
-                {
-                    name = "✨ Rewards",
-                    value = "```ansi\n" ..
-                            " [2;33mCoins: [0m +" .. match.Coins .. "\n" ..
-                            " [2;34mGems:  [0m +" .. match.Gems .. "\n" ..
-                            " [2;32mXP:    [0m +" .. match.XP .. "```",
-                    inline = false
-                },
-                {
-                    name = "🎁 Bonus Items",
-                    value = BonusString,
-                    inline = true
-                },
-                {
-                    name = "📊 Session Totals",
-                    value = "```py\n# Total Amount\nCoins: " .. CurrentTotalCoins .. "\nGems:  " .. CurrentTotalGems .. "```",
-                    inline = true
-                }
+                { name = "✨ Rewards", value = "```ansi\n [2;33mCoins: [0m +" .. match.Coins .. "\n [2;34mGems:  [0m +" .. match.Gems .. "\n [2;32mXP:    [0m +" .. match.XP .. "```", inline = false },
+                { name = "🎁 Bonus Items", value = BonusString, inline = true },
+                { name = "📊 Session Totals", value = "```py\n# Total Amount\nCoins: " .. CurrentTotalCoins .. "\nGems:  " .. CurrentTotalGems .. "```", inline = true }
             },
             footer = { text = "Logged for " .. LocalPlayer.Name .. " • TDS AutoStrat" },
             timestamp = DateTime.now():ToIsoDate()
@@ -3611,8 +2805,7 @@ local function HandlePostMatch()
 
     pcall(function()
         SendRequest({
-            Url = Globals.WebhookURL,
-            Method = "POST",
+            Url = Globals.WebhookURL, Method = "POST",
             Headers = { ["Content-Type"] = "application/json" },
             Body = game:GetService("HttpService"):JSONEncode(PostData)
         })
@@ -3624,9 +2817,7 @@ end
 
 local function RunVoteSkip()
     while true do
-        local success = pcall(function()
-            RemoteFunc:InvokeServer("Voting", "Skip")
-        end)
+        local success = pcall(function() RemoteFunc:InvokeServer("Voting", "Skip") end)
         if success then break end
         task.wait(0.2)
     end
@@ -3636,7 +2827,6 @@ local function MatchReadyUp()
     local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
     local UiOverrides = PlayerGui:WaitForChild("ReactOverridesVote", 30)
     local MainFrame = UiOverrides and UiOverrides:WaitForChild("Frame", 30)
-
     if not MainFrame then return end
 
     local VoteReady = nil
@@ -3646,17 +2836,11 @@ local function MatchReadyUp()
             local container = VoteNode:FindFirstChild("container")
             if container then
                 local ready = container:FindFirstChild("ready")
-                if ready then
-                    VoteReady = ready
-                end
+                if ready then VoteReady = ready end
             end
         end
-
-        if not VoteReady then
-            task.wait(0.5) 
-        end
+        if not VoteReady then task.wait(0.5) end
     end
-
     repeat task.wait(0.1) until VoteReady.Visible == true
     RunVoteSkip()
 end
@@ -3677,9 +2861,7 @@ end
 
 local function SelectMapOverride(MapId, ...)
     local args = {...}
-    if args[#args] == "vip" then
-        RemoteFunc:InvokeServer("LobbyVoting", "Override", MapId)
-    end
+    if args[#args] == "vip" then RemoteFunc:InvokeServer("LobbyVoting", "Override", MapId) end
     task.wait(3)
     CastMapVote(MapId, Vector3.new(12.59, 10.64, 52.01))
     task.wait(1)
@@ -3690,13 +2872,9 @@ end
 local function CastModifierVote(ModsTable)
     local BulkModifiers = ReplicatedStorage:WaitForChild("Network"):WaitForChild("Modifiers"):WaitForChild("RF:BulkVoteModifiers")
     local SelectedMods = {}
-
     if ModsTable and #ModsTable > 0 then
-        for _, modName in ipairs(ModsTable) do
-            SelectedMods[modName] = true
-        end
+        for _, modName in ipairs(ModsTable) do SelectedMods[modName] = true end
     end
-
     pcall(function()
         BulkModifiers:InvokeServer(SelectedMods)
         if Logger then Logger:Log("Successfully casted modifier votes.") end
@@ -3714,13 +2892,8 @@ local function IsMapAvailable(name)
     repeat
         local IntermissionFrame = PlayerGui:WaitForChild("ReactGameIntermission"):WaitForChild("Frame")
         local VetoText = IntermissionFrame:WaitForChild("buttons"):WaitForChild("veto"):WaitForChild("value").Text
-        
-        if IntermissionFrame.Visible and VetoText:match("Veto %(0/") then 
-            RemoteEvent:FireServer("LobbyVoting", "Veto") 
-        end
-        
+        if IntermissionFrame.Visible and VetoText:match("Veto %(0/") then RemoteEvent:FireServer("LobbyVoting", "Veto") end
         wait(1)
-
         local found = false
         for _, g in ipairs(workspace:GetDescendants()) do
             if g:IsA("SurfaceGui") and g.Name == "MapDisplay" then
@@ -3731,7 +2904,6 @@ local function IsMapAvailable(name)
                 end
             end
         end
-
         local TotalPlayer = #PlayersService:GetChildren()
     until found or VetoText == "Veto ("..TotalPlayer.."/"..TotalPlayer..")"
 
@@ -3741,21 +2913,14 @@ local function IsMapAvailable(name)
             if t and t.Text == name then return true end
         end
     end
-
     return false
 end
 
 local function SetGameTimescale(TargetVal)
     if GameState ~= "GAME" then return false end
-
     local SpeedList = {0, 0.5, 1, 1.5, 2}
     local TargetIdx
-    for i, v in ipairs(SpeedList) do
-        if v == TargetVal then
-            TargetIdx = i
-            break
-        end
-    end
+    for i, v in ipairs(SpeedList) do if v == TargetVal then TargetIdx = i break end end
     if not TargetIdx then return end
 
     local SpeedLabel = game.Players.LocalPlayer.PlayerGui.ReactUniversalHotbar.Frame.timescale.Speed
@@ -3763,12 +2928,7 @@ local function SetGameTimescale(TargetVal)
     if not CurrentVal then return end
 
     local CurrentIdx
-    for i, v in ipairs(SpeedList) do
-        if v == CurrentVal then
-            CurrentIdx = i
-            break
-        end
-    end
+    for i, v in ipairs(SpeedList) do if v == CurrentVal then CurrentIdx = i break end end
     if not CurrentIdx then return end
 
     local diff = TargetIdx - CurrentIdx
@@ -3782,7 +2942,6 @@ end
 
 local function UnlockSpeedTickets()
     if GameState ~= "GAME" then return false end
-
     if LocalPlayer.TimescaleTickets.Value >= 1 then
         if game.Players.LocalPlayer.PlayerGui.ReactUniversalHotbar.Frame.timescale.Lock.Visible then
             ReplicatedStorage.RemoteFunction:InvokeServer('TicketsManager', 'UnlockTimeScale')
@@ -3795,10 +2954,8 @@ end
 
 ApplyTimeScaleOnce = function()
     if not Globals.TimeScaleEnabled or GameState ~= "GAME" then return end
-
     local frame = GetTimescaleFrame()
     if not frame or not frame.Visible then return end
-
     local desired = CoerceTimeScaleValue(Globals.TimeScaleValue, 2)
     if not desired then return end
 
@@ -3816,14 +2973,12 @@ ApplyTimeScaleOnce = function()
     else
         TimeScaleNoTicketsWarned = false
     end
-
     SetGameTimescale(desired)
 end
 
 StartTimeScale = function()
     if TimeScaleRunning or not Globals.TimeScaleEnabled then return end
     TimeScaleRunning = true
-
     task.spawn(function()
         while Globals.TimeScaleEnabled do
             ApplyTimeScaleOnce()
@@ -3837,17 +2992,13 @@ end
 local function TriggerRestart()
     local UiRoot = PlayerGui:WaitForChild("ReactGameNewRewards")
     local FoundSection = false
-
     repeat
         task.wait(0.3)
         local f = UiRoot:FindFirstChild("Frame")
         local g = f and f:FindFirstChild("gameOver")
         local s = g and g:FindFirstChild("RewardsScreen")
-        if s and s:FindFirstChild("RewardsSection") then
-            FoundSection = true
-        end
+        if s and s:FindFirstChild("RewardsSection") then FoundSection = true end
     until FoundSection
-
     task.wait(3)
     RunVoteSkip()
 end
@@ -3859,7 +3010,6 @@ local function GetCurrentWave()
         label = PlayerGui:FindFirstChild("ReactGameTopGameDisplay", true) 
             and PlayerGui.ReactGameTopGameDisplay.Frame.wave.container:FindFirstChild("value")
     until label ~= nil
-
     local text = label.Text
     local WaveNum = text:match("(%d+)")
     return tonumber(WaveNum) or 0
@@ -3868,9 +3018,7 @@ end
 local function DoPlaceTower(TName, TPos)
     if Logger then Logger:Log("Placing tower: " .. TName) end
     while true do
-        local ok, res = pcall(function()
-            return RemoteFunc:InvokeServer("Troops", "Pl\208\176ce", {Rotation = CFrame.new(), Position = TPos}, TName)
-        end)
+        local ok, res = pcall(function() return RemoteFunc:InvokeServer("Troops", "Pl\208\176ce", {Rotation = CFrame.new(), Position = TPos}, TName) end)
         if ok and CheckResOk(res) then return true end
         task.wait(0.25)
     end
@@ -3878,9 +3026,7 @@ end
 
 local function DoUpgradeTower(TObj, PathId)
     while true do
-        local ok, res = pcall(function()
-            return RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", {Troop = TObj, Path = PathId})
-        end)
+        local ok, res = pcall(function() return RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", {Troop = TObj, Path = PathId}) end)
         if ok and CheckResOk(res) then return true end
         task.wait(0.25)
     end
@@ -3888,23 +3034,16 @@ end
 
 local function DoSellTower(TObj)
     while true do
-        local ok, res = pcall(function()
-            return RemoteFunc:InvokeServer("Troops", "Sell", { Troop = TObj })
-        end)
+        local ok, res = pcall(function() return RemoteFunc:InvokeServer("Troops", "Sell", { Troop = TObj }) end)
         if ok and CheckResOk(res) then return true end
         task.wait(0.25)
     end
 end
 
 local function DoSetOption(TObj, OptName, OptVal, ReqWave)
-    if ReqWave then
-        repeat task.wait(0.3) until GetCurrentWave() >= ReqWave
-    end
-
+    if ReqWave then repeat task.wait(0.3) until GetCurrentWave() >= ReqWave end
     while true do
-        local ok, res = pcall(function()
-            return RemoteFunc:InvokeServer("Troops", "Option", "Set", {Troop = TObj, Name = OptName, Value = OptVal})
-        end)
+        local ok, res = pcall(function() return RemoteFunc:InvokeServer("Troops", "Option", "Set", {Troop = TObj, Name = OptName, Value = OptVal}) end)
         if ok and CheckResOk(res) then return true end
         task.wait(0.25)
     end
@@ -3915,14 +3054,10 @@ local function DoActivateAbility(TObj, AbName, AbData, IsLooping)
         IsLooping = AbData
         AbData = nil
     end
-
     AbData = type(AbData) == "table" and AbData or nil
 
     local positions
-    if AbData and type(AbData.towerPosition) == "table" then
-        positions = AbData.towerPosition
-    end
-
+    if AbData and type(AbData.towerPosition) == "table" then positions = AbData.towerPosition end
     local CloneIdx = AbData and AbData.towerToClone
     local TargetIdx = AbData and AbData.towerTarget
 
@@ -3932,23 +3067,13 @@ local function DoActivateAbility(TObj, AbName, AbData, IsLooping)
                 local data
                 if AbData then
                     data = table.clone(AbData)
-                    if positions and #positions > 0 then
-                        data.towerPosition = positions[math.random(#positions)]
-                    end
-                    if type(CloneIdx) == "number" then
-                        data.towerToClone = TDS.PlacedTowers[CloneIdx]
-                    end
-                    if type(TargetIdx) == "number" then
-                        data.towerTarget = TDS.PlacedTowers[TargetIdx]
-                    end
+                    if positions and #positions > 0 then data.towerPosition = positions[math.random(#positions)] end
+                    if type(CloneIdx) == "number" then data.towerToClone = TDS.PlacedTowers[CloneIdx] end
+                    if type(TargetIdx) == "number" then data.towerTarget = TDS.PlacedTowers[TargetIdx] end
                 end
-
                 return RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", {Troop = TObj, Name = AbName, Data = data})
             end)
-
-            if ok and CheckResOk(res) then
-                return true
-            end
+            if ok and CheckResOk(res) then return true end
             task.wait(0.25)
         end
     end
@@ -3963,11 +3088,18 @@ local function DoActivateAbility(TObj, AbName, AbData, IsLooping)
         end)
         return function() active = false end
     end
-
     return attempt()
 end
 
 -- // Feature Activators
+local function GetRoot()
+    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+end
+
+local function IsVoidCharm(item)
+    return item and item:GetAttribute("IsVoid") == true
+end
+
 local function StartAutoPickups()
     if AutoPickupsRunning or not Globals.AutoPickups then return end
     AutoPickupsRunning = true
@@ -4020,7 +3152,6 @@ local function StartAutoPickups()
 
                 for _, item in ipairs(folder:GetChildren()) do
                     if not Globals.AutoPickups then break end
-
                     if item:IsA("MeshPart") and (item.Name == "SnowCharm" or item.Name == "Lorebook") then
                         if not IsVoidCharm(item) then
                             if Globals.PickupMethod == "Instant" then
@@ -4046,7 +3177,6 @@ end
 local function StartAutoSkip()
     if AutoSkipRunning or not Globals.AutoSkip then return end
     AutoSkipRunning = true
-
     task.spawn(function()
         while Globals.AutoSkip do
             local SkipVisible =
@@ -4098,7 +3228,6 @@ end
 local function StartBackToLobby()
     if BackToLobbyRunning then return end
     BackToLobbyRunning = true
-
     task.spawn(function()
         while true do
             pcall(function() HandlePostMatch() end)
@@ -4111,10 +3240,8 @@ end
 local function StartAntiLag()
     if AntiLagRunning then return end
     AntiLagRunning = true
-
-    local settings = settings().Rendering
-    local OriginalQuality = settings.QualityLevel
-    settings.QualityLevel = Enum.QualityLevel.Level01
+    local settings_rendering = settings().Rendering
+    settings_rendering.QualityLevel = Enum.QualityLevel.Level01
 
     task.spawn(function()
         while Globals.AntiLag do
@@ -4127,7 +3254,6 @@ local function StartAntiLag()
                     local anims = tower:FindFirstChild("Animations")
                     local weapon = tower:FindFirstChild("Weapon")
                     local projectiles = tower:FindFirstChild("Projectiles")
-
                     if anims then anims:Destroy() end
                     if projectiles then projectiles:Destroy() end
                     if weapon then weapon:Destroy() end
@@ -4148,28 +3274,23 @@ end
 local function StartAutoChain()
     if AutoChainRunning or not Globals.AutoChain then return end
     AutoChainRunning = true
-
     task.spawn(function()
         local idx = 1
-
         while Globals.AutoChain do
             local commander = {}
             local TowersFolder = workspace:FindFirstChild("Towers")
 
             if TowersFolder then
-                for _, towers in ipairs(TowersFolder:GetDescendants()) do
-                    if towers:IsA("Folder") and towers.Name == "TowerReplicator"
-                    and towers:GetAttribute("Name") == "Commander"
-                    and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
-                    and (towers:GetAttribute("Upgrade") or 0) >= 2 then
-                        commander[#commander + 1] = towers.Parent
+                for _, tower in ipairs(TowersFolder:GetChildren()) do
+                    local rep = tower:FindFirstChild("TowerReplicator")
+                    if rep and rep:GetAttribute("Name") == "Commander" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId and (rep:GetAttribute("Upgrade") or 0) >= 2 then
+                        commander[#commander + 1] = tower
                     end
                 end
             end
 
             if #commander >= 3 then
                 if idx > #commander then idx = 1 end
-
                 local CurrentCommander = commander[idx]
                 local replicator = CurrentCommander:FindFirstChild("TowerReplicator")
                 local UpgradeLevel = replicator and replicator:GetAttribute("Upgrade") or 0
@@ -4185,7 +3306,6 @@ local function StartAutoChain()
                     idx += 1
                     local hotbar = PlayerGui:FindFirstChild("ReactUniversalHotbar")
                     local TimescaleFrame = hotbar and hotbar.Frame:FindFirstChild("timescale")
-
                     if TimescaleFrame and TimescaleFrame.Visible then
                         if TimescaleFrame:FindFirstChild("Lock") then
                             task.wait(10.3)
@@ -4209,23 +3329,19 @@ end
 local function StartAutoDjBooth()
     if AutoDjRunning or not Globals.AutoDJ then return end
     AutoDjRunning = true
-
     task.spawn(function()
         while Globals.AutoDJ do
             local TowersFolder = workspace:FindFirstChild("Towers")
             local DJ = nil
-
             if TowersFolder then
-                for _, towers in ipairs(TowersFolder:GetDescendants()) do
-                    if towers:IsA("Folder") and towers.Name == "TowerReplicator"
-                    and towers:GetAttribute("Name") == "DJ Booth"
-                    and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
-                    and (towers:GetAttribute("Upgrade") or 0) >= 3 then
-                        DJ = towers.Parent
+                for _, tower in ipairs(TowersFolder:GetChildren()) do
+                    local rep = tower:FindFirstChild("TowerReplicator")
+                    if rep and rep:GetAttribute("Name") == "DJ Booth" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId and (rep:GetAttribute("Upgrade") or 0) >= 3 then
+                        DJ = tower
+                        break
                     end
                 end
             end
-
             if DJ then
                 RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = DJ, Name = "Drop The Beat", Data = {} })
             end
@@ -4245,11 +3361,10 @@ local function StartAutoNecro()
     local function getNecros(towersFolder)
         local list = {}
         if not towersFolder then return list end
-        for _, rep in ipairs(towersFolder:GetDescendants()) do
-            if rep:IsA("Folder") and rep.Name == "TowerReplicator"
-            and rep:GetAttribute("Name") == "Necromancer"
-            and rep:GetAttribute("OwnerId") == ownerId then
-                list[#list + 1] = rep.Parent
+        for _, tower in ipairs(towersFolder:GetChildren()) do
+            local rep = tower:FindFirstChild("TowerReplicator")
+            if rep and rep:GetAttribute("Name") == "Necromancer" and rep:GetAttribute("OwnerId") == ownerId then
+                list[#list + 1] = tower
             end
         end
         return list
@@ -4259,9 +3374,7 @@ local function StartAutoNecro()
         local maxGraves = rep and rep:GetAttribute("Max_Graves")
         if graveStore then
             local gMax = graveStore:GetAttribute("Max_Graves")
-            if type(gMax) == "number" and gMax > 0 then
-                maxGraves = gMax
-            end
+            if type(gMax) == "number" and gMax > 0 then maxGraves = gMax end
         end
         if not maxGraves or maxGraves < 2 then
             if up >= 4 then maxGraves = 9
@@ -4279,10 +3392,7 @@ local function StartAutoNecro()
                 local isDestroy = false
                 if type(v) == "table" then
                     for _, elem in pairs(v) do
-                        if tostring(elem) == "Destroy" then
-                            isDestroy = true
-                            break
-                        end
+                        if tostring(elem) == "Destroy" then isDestroy = true break end
                     end
                 elseif tostring(v):find("Destroy") then
                     isDestroy = true
@@ -4345,7 +3455,7 @@ local function StartAutoNecro()
 end
 
 local function StartAutoMercenary()
-    if not Globals.AutoMercenary and not Globals.AutoMilitary then return end
+    if not Globals.AutoMercenary then return end
     if AutoMercenaryBaseRunning then return end
     AutoMercenaryBaseRunning = true
 
@@ -4353,16 +3463,10 @@ local function StartAutoMercenary()
         while Globals.AutoMercenary do
             local TowersFolder = workspace:FindFirstChild("Towers")
             if TowersFolder then
-                for _, towers in ipairs(TowersFolder:GetDescendants()) do
-                    if towers:IsA("Folder") and towers.Name == "TowerReplicator"
-                    and towers:GetAttribute("Name") == "Mercenary Base"
-                    and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
-                    and (towers:GetAttribute("Upgrade") or 0) >= 5 then
-                        RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { 
-                            Troop = towers.Parent, 
-                            Name = "Air-Drop", 
-                            Data = {pathName = 1, directionCFrame = CFrame.new(), dist = Globals.MercenaryPath or 195} 
-                        })
+                for _, tower in ipairs(TowersFolder:GetChildren()) do
+                    local rep = tower:FindFirstChild("TowerReplicator")
+                    if rep and rep:GetAttribute("Name") == "Mercenary Base" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId and (rep:GetAttribute("Upgrade") or 0) >= 5 then
+                        RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = tower, Name = "Air-Drop", Data = {pathName = 1, directionCFrame = CFrame.new(), dist = Globals.MercenaryPath or 195} })
                         task.wait(0.5)
                         if not Globals.AutoMercenary then break end
                     end
@@ -4383,16 +3487,10 @@ local function StartAutoMilitary()
         while Globals.AutoMilitary do
             local TowersFolder = workspace:FindFirstChild("Towers")
             if TowersFolder then
-                for _, towers in ipairs(TowersFolder:GetDescendants()) do
-                    if towers:IsA("Folder") and towers.Name == "TowerReplicator"
-                    and towers:GetAttribute("Name") == "Military Base"
-                    and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
-                    and (towers:GetAttribute("Upgrade") or 0) >= 4 then
-                        RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { 
-                            Troop = towers.Parent, 
-                            Name = "Airstrike", 
-                            Data = {pathName = 1, pointToEnd = CFrame.new(), dist = Globals.MilitaryPath or 195} 
-                        })
+                for _, tower in ipairs(TowersFolder:GetChildren()) do
+                    local rep = tower:FindFirstChild("TowerReplicator")
+                    if rep and rep:GetAttribute("Name") == "Military Base" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId and (rep:GetAttribute("Upgrade") or 0) >= 4 then
+                        RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = tower, Name = "Airstrike", Data = {pathName = 1, pointToEnd = CFrame.new(), dist = Globals.MilitaryPath or 195} })
                         task.wait(0.5)
                         if not Globals.AutoMilitary then break end
                     end
@@ -4420,14 +3518,14 @@ local function StartSellFarm()
 
             local TowersFolder = workspace:FindFirstChild("Towers")
             if TowersFolder then
-                for _, replicator in ipairs(TowersFolder:GetDescendants()) do
-                    if replicator:IsA("Folder") and replicator.Name == "TowerReplicator" then
-                        local IsFarm = replicator:GetAttribute("Name") == "Farm"
-                        local IsMine = replicator:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
+                for _, tower in ipairs(TowersFolder:GetChildren()) do
+                    local rep = tower:FindFirstChild("TowerReplicator")
+                    if rep then
+                        local IsFarm = rep:GetAttribute("Name") == "Farm"
+                        local IsMine = rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
 
                         if IsFarm and IsMine then
-                            local TowerModel = replicator.Parent
-                            RemoteFunc:InvokeServer("Troops", "Sell", { Troop = TowerModel })
+                            RemoteFunc:InvokeServer("Troops", "Sell", { Troop = tower })
                             task.wait(0.2)
                         end
                     end
