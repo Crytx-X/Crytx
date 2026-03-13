@@ -241,9 +241,8 @@ end
 local StartTimeScale, ApplyTimeScaleOnce
 
 -- ==========================================
--- // STRATEGY ENGINE (TDS TABLE)
+-- // STRATEGY ENGINE (TDS TABLE API)
 -- ==========================================
--- Menambahkan semua fungsi yang dibutuhkan script strategi eksternal agar tidak error.
 TDS = {
     PlacedTowers = {},
     Tasks = {},
@@ -259,7 +258,7 @@ TDS["matchmaking_map"] = TDS.MatchmakingMap
 shared.TDSTable = TDS
 shared["TDS_Table"] = TDS
 
--- Strategy API Methods
+-- Methods for External Scripts
 function TDS:Loadout(towers)
     if type(towers) == "table" then
         for _, tower in ipairs(towers) do
@@ -268,8 +267,21 @@ function TDS:Loadout(towers)
         end
     end
 end
-function TDS:Mode(mode, difficulty) self.SelectedMode = mode; self.SelectedDifficulty = difficulty end
-function TDS:Map(map, solo) self.SelectedMap = map; self.SoloMap = solo end
+
+function TDS:GameInfo(info, mode, difficulty)
+    if type(info) == "table" then
+        self.Map = info.Map or info.map
+        self.Mode = info.Mode or info.mode
+        self.Difficulty = info.Difficulty or info.difficulty
+    else
+        self.Map = info
+        self.Mode = mode
+        self.Difficulty = difficulty
+    end
+end
+
+function TDS:Mode(mode, difficulty) self.Mode = mode; self.Difficulty = difficulty end
+function TDS:Map(map, solo) self.Map = map; self.SoloMap = solo end
 function TDS:Place(tower, x, y, z, wave) table.insert(self.Tasks, {Action = "Place", Tower = tower, Pos = Vector3.new(x,y,z), Wave = wave or 0}) end
 function TDS:Upgrade(id, wave) table.insert(self.Tasks, {Action = "Upgrade", Id = id, Wave = wave or 0}) end
 function TDS:Sell(id, wave) table.insert(self.Tasks, {Action = "Sell", Id = id, Wave = wave or 0}) end
@@ -278,7 +290,8 @@ function TDS:Ability(id, ability, wave) table.insert(self.Tasks, {Action = "Abil
 function TDS:Target(id, target, wave) table.insert(self.Tasks, {Action = "Target", Id = id, Target = target, Wave = wave or 0}) end
 function TDS:Option(id, option, value, wave) table.insert(self.Tasks, {Action = "Option", Id = id, Option = option, Value = value, Wave = wave or 0}) end
 
--- System Save & Load Settings
+-- ==========================================
+
 local function SaveSettings()
     local DataToSave = {}
     for key, _ in pairs(DefaultSettings) do DataToSave[key] = Globals[key] end
