@@ -1376,67 +1376,68 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local modeObj = state:FindFirstChild("Mode")
         local diffObj = state:FindFirstChild("Difficulty")
 
-        -- Jika tidak terbaca, kita beri nilai default "Unknown"
-        local modeName = (modeObj and modeObj.Value ~= "") and modeObj.Value or "Unknown"
-        local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or "Unknown"
+        local modeName = (modeObj and modeObj.Value ~= "") and modeObj.Value or nil
+        local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or nil
 
-        if modeName == "Unknown" and diffName == "Unknown" then return nil, "None" end
-        CachedModeName = diffName ~= "Unknown" and diffName or modeName
+        -- FIX HARDCORE: Jika Difficulty kosong (seperti di Hardcore/Event), gunakan Mode sebagai patokan
+        if not diffName and modeName then diffName = modeName end
+        if not modeName and not diffName then return nil, "None" end
+        
+        CachedModeName = diffName
 
         local content = ReplicatedStorage:FindFirstChild("Content")
         local gamemodes = content and content:FindFirstChild("Gamemodes")
         if not gamemodes then return nil, "Missing Gamemodes Folder" end
 
-        -- Fungsi untuk membersihkan spasi dan huruf besar
-        local function cleanStr(str) return str:lower():gsub("[%s%p]", "") end
-        local safeMode = cleanStr(modeName)
-        local safeDiff = cleanStr(diffName)
+        local function cleanString(str) return str:lower():gsub("[%s%p]", "") end
+        local safeMode = cleanString(modeName)
+        local safeDiff = cleanString(diffName)
 
-        -- Mapping internal TDS (karena Pizza Party aslinya bernama Halloween, dll)
-        local InternalMap = {
-            ["hardcore"] = "hardcore",
+        -- Translasi internal TDS untuk mode spesial
+        local internalMap = {
             ["pizzaparty"] = "halloween",
             ["badlands"] = "badlands",
-            ["polluted"] = "polluted",
             ["pollutedwasteland"] = "polluted"
         }
-        
-        local mappedDiff = InternalMap[safeDiff] or safeDiff
-        local mappedMode = InternalMap[safeMode] or safeMode
+        local mappedDiff = internalMap[safeDiff] or safeDiff
+        local mappedMode = internalMap[safeMode] or safeMode
 
-        local bestModule = nil
-        local highestScore = -1
+        local Candidates = {}
 
-        -- BRUTE FORCE: Pindai SEMUA file di dalam folder Gamemodes
+        -- Pindai SEMUA file gelombang (Wave) di dalam memori game
         for _, desc in ipairs(gamemodes:GetDescendants()) do
-            -- TDS biasanya menamai modul datanya "Waves" atau "WaveData"
-            if desc:IsA("ModuleScript") and (desc.Name == "Waves" or desc.Name == "WaveData") then
-                local score = 0
-                local pathStr = cleanStr(desc:GetFullName())
-                local parentName = cleanStr(desc.Parent.Name)
+            if desc:IsA("ModuleScript") then
+                local dName = cleanString(desc.Name)
+                -- Cari module yang bernama "Waves", "WaveData", atau mengandung kata "wave"
+                if dName == "waves" or dName == "wavedata" or dName:find("wave") then
+                    local pathStr = cleanString(desc:GetFullName())
+                    local score = 0
+                    
+                    if pathStr:find(mappedDiff) then score = score + 10 end
+                    if pathStr:find(mappedMode) then score = score + 5 end
+                    if cleanString(desc.Parent.Name) == mappedDiff then score = score + 20 end
 
-                -- 1. Evaluasi Parent Langsung (Akurasi Paling Tinggi)
-                if parentName == mappedDiff or parentName == safeDiff then score = score + 50 end
-                if parentName == mappedMode or parentName == safeMode then score = score + 40 end
+                    -- Booster Khusus Hardcore (Memaksa script mengunci file hardcore)
+                    if (safeMode == "hardcore" or safeDiff == "hardcore") and pathStr:find("hardcore") then
+                        score = score + 50
+                    end
 
-                -- 2. Evaluasi Full Path (Berjaga-jaga jika dibungkus folder lain)
-                if pathStr:find(mappedDiff) or pathStr:find(safeDiff) then score = score + 20 end
-                if pathStr:find(mappedMode) or pathStr:find(safeMode) then score = score + 10 end
-
-                -- Jika modul ini mendapat skor tertinggi, jadikan kandidat utama
-                if score > highestScore and score > 0 then
-                    highestScore = score
-                    bestModule = desc
+                    -- Jika cocok, masukkan ke daftar kandidat
+                    if score > 0 then
+                        table.insert(Candidates, {Module = desc, Score = score})
+                    end
                 end
             end
         end
 
-        if bestModule then
-            CachedModeModule = bestModule
+        -- Pilih file Wave dengan kecocokan (skor) tertinggi
+        if #Candidates > 0 then
+            table.sort(Candidates, function(a, b) return a.Score > b.Score end)
+            CachedModeModule = Candidates[1].Module
             return CachedModeModule, CachedModeName
         end
 
-        return nil, "Waves Not Found (" .. diffName .. ")"
+        return nil, "Waves Not Found"
     end
 
     local function GetFastWave()
