@@ -258,7 +258,7 @@ TDS["matchmaking_map"] = TDS.MatchmakingMap
 shared.TDSTable = TDS
 shared["TDS_Table"] = TDS
 
--- Methods for External Scripts
+-- Methods for External Scripts (Anti-Error)
 function TDS:Loadout(towers)
     if type(towers) == "table" then
         for _, tower in ipairs(towers) do
@@ -286,10 +286,19 @@ function TDS:Place(tower, x, y, z, wave) table.insert(self.Tasks, {Action = "Pla
 function TDS:Upgrade(id, wave) table.insert(self.Tasks, {Action = "Upgrade", Id = id, Wave = wave or 0}) end
 function TDS:Sell(id, wave) table.insert(self.Tasks, {Action = "Sell", Id = id, Wave = wave or 0}) end
 function TDS:Skip(wave) table.insert(self.Tasks, {Action = "Skip", Wave = wave or 0}) end
+
+-- Perbaikan untuk mengatasi missing method 'VoteSkip'
+function TDS:VoteSkip(state) 
+    if state == nil then state = true end
+    Globals.AutoSkip = state
+    if type(SetSetting) == "function" then
+        SetSetting("AutoSkip", state)
+    end
+end
+
 function TDS:Ability(id, ability, wave) table.insert(self.Tasks, {Action = "Ability", Id = id, Ability = ability, Wave = wave or 0}) end
 function TDS:Target(id, target, wave) table.insert(self.Tasks, {Action = "Target", Id = id, Target = target, Wave = wave or 0}) end
 function TDS:Option(id, option, value, wave) table.insert(self.Tasks, {Action = "Option", Id = id, Option = option, Value = value, Wave = wave or 0}) end
-
 -- ==========================================
 
 local function SaveSettings()
