@@ -21,7 +21,7 @@ local mouse = LocalPlayer:GetMouse()
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local FileName = "ADS_Config.json"
 
--- // Data Tables (Skins Simplified - No RBXAssetIDs)
+-- // Data Tables (Skins Simplified)
 local TowerSkins = {
     ["Accelerator"] = {"Champion", "Cupid", "Dank", "Default", "Disco", "Ducky", "Eclipse", "Elite", "Fallen", "Ghost Buster", "Ice Witch", "Legend", "Mage", "Magician", "Navy", "Nuclear", "Octopus", "Patient Zero", "Plushie", "Red", "Senator", "Speaker Titan", "Vigilante"},
     ["Ace Pilot"] = {"Aerial Ace", "Default", "Easter", "Green", "Navy", "Pumpkin", "Purple", "Red", "Toy Plane", "Yellow"},
@@ -240,8 +240,13 @@ end
 
 local StartTimeScale, ApplyTimeScaleOnce
 
+-- ==========================================
+-- // STRATEGY ENGINE (TDS TABLE)
+-- ==========================================
+-- Menambahkan semua fungsi yang dibutuhkan script strategi eksternal agar tidak error.
 TDS = {
     PlacedTowers = {},
+    Tasks = {},
     ActiveStrat = true,
     MatchmakingMap = {
         ["Hardcore"] = "hardcore", ["Pizza Party"] = "halloween",
@@ -251,10 +256,29 @@ TDS = {
 TDS["placed_towers"] = TDS.PlacedTowers
 TDS["active_strat"] = TDS.ActiveStrat
 TDS["matchmaking_map"] = TDS.MatchmakingMap
-local UpgradeHistory = {}
 shared.TDSTable = TDS
 shared["TDS_Table"] = TDS
 
+-- Strategy API Methods
+function TDS:Loadout(towers)
+    if type(towers) == "table" then
+        for _, tower in ipairs(towers) do
+            pcall(function() ReplicatedStorage:WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "tower", tower) end)
+            task.wait(0.1)
+        end
+    end
+end
+function TDS:Mode(mode, difficulty) self.SelectedMode = mode; self.SelectedDifficulty = difficulty end
+function TDS:Map(map, solo) self.SelectedMap = map; self.SoloMap = solo end
+function TDS:Place(tower, x, y, z, wave) table.insert(self.Tasks, {Action = "Place", Tower = tower, Pos = Vector3.new(x,y,z), Wave = wave or 0}) end
+function TDS:Upgrade(id, wave) table.insert(self.Tasks, {Action = "Upgrade", Id = id, Wave = wave or 0}) end
+function TDS:Sell(id, wave) table.insert(self.Tasks, {Action = "Sell", Id = id, Wave = wave or 0}) end
+function TDS:Skip(wave) table.insert(self.Tasks, {Action = "Skip", Wave = wave or 0}) end
+function TDS:Ability(id, ability, wave) table.insert(self.Tasks, {Action = "Ability", Id = id, Ability = ability, Wave = wave or 0}) end
+function TDS:Target(id, target, wave) table.insert(self.Tasks, {Action = "Target", Id = id, Target = target, Wave = wave or 0}) end
+function TDS:Option(id, option, value, wave) table.insert(self.Tasks, {Action = "Option", Id = id, Option = option, Value = value, Wave = wave or 0}) end
+
+-- System Save & Load Settings
 local function SaveSettings()
     local DataToSave = {}
     for key, _ in pairs(DefaultSettings) do DataToSave[key] = Globals[key] end
@@ -766,18 +790,6 @@ function TDS:Unequip(tower_name)
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
     local success, err = pcall(function() return remote:InvokeServer("Inventory", "Unequip", "tower", tower_name) end)
     return success
-end
-
--- === LOADOUT FIX (MENCEGAH ERROR LINE 2) ===
-function TDS:Loadout(towers)
-    if type(towers) == "table" then
-        for _, tower in ipairs(towers) do
-            pcall(function()
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "tower", tower)
-            end)
-            task.wait(0.1)
-        end
-    end
 end
 
 local function GetEquippedTowers()
