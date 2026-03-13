@@ -2485,6 +2485,29 @@ local function StartAutoDjBooth()
     end)
 end
 
+local GatlingAnimatorsCache = {}
+local LastGatlingScan = 0
+
+local function RefreshGatlingAnimators()
+    if tick() - LastGatlingScan < 2 then return end
+    LastGatlingScan = tick()
+    
+    local animators = {}
+    -- Mencari object Animator Gatling Gun di memory menggunakan getgc
+    for _, obj in ipairs(getgc(true)) do
+        if type(obj) == "table" and rawget(obj, "_fireGun") and rawget(obj, "Replicator") and rawget(obj, "Model") then
+            local rep = rawget(obj, "Replicator")
+            if rep and type(rep.Get) == "function" and rep:Get("OwnerId") == game.Players.LocalPlayer.UserId then
+                -- Pastikan tower belum dihapus / dijual
+                if obj.Model.Parent then
+                    table.insert(animators, obj)
+                end
+            end
+        end
+    end
+    GatlingAnimatorsCache = animators
+end
+
 local function StartAutoGatling()
     if AutoGatlingRunning or not Globals.AutoGatling then return end
     AutoGatlingRunning = true
@@ -2492,9 +2515,7 @@ local function StartAutoGatling()
     task.spawn(function()
         local RS = game:GetService("ReplicatedStorage")
         local NewNetwork = nil
-        pcall(function()
-            NewNetwork = require(RS.Shared.Modules.NewNetwork)
-        end)
+        pcall(function() NewNetwork = require(RS.Shared.Modules.NewNetwork) end)
 
         while Globals.AutoGatling do
             if GameState == "GAME" and NewNetwork then
@@ -2502,60 +2523,80 @@ local function StartAutoGatling()
                 pcall(function() GatlingChannel = NewNetwork.Channel("GatlingGun") end)
 
                 if GatlingChannel then
-                    local TowersFolder = workspace:FindFirstChild("Towers")
-                    local EnemiesFolder = workspace:FindFirstChild("NPCs")
+                    -- Perbarui list Gatling Gun milik kita tiap 2 detik untuk menghindari lag
+                    pcall(RefreshGatlingAnimators)
 
-                    if TowersFolder and EnemiesFolder then
-                        for _, tower in ipairs(TowersFolder:GetChildren()) do
-                            local rep = tower:FindFirstChild("TowerReplicator")
-                            -- Cek apakah tower ini adalah Gatling Gun milik player
-                            if rep and rep:GetAttribute("Name") == "Default" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId then
-                                
-                                local ammo = rep:GetAttribute("Ammo") or 0
-                                local reloading = rep:GetAttribute("Reloading")
+                    for _, gatling in ipairs(GatlingAnimatorsCache) do
+                        local rep = gatling.Replicator
+                        
+                        -- Memberitahu Server bahwa kita masuk FPS Mode (Mendapatkan buff Pierce & Damage)
+                        -- Tanpa perlu mengunci kamera (Silent FPS Mode)
+                        if not rep:Get("FPS") then
+                            pcall(function() GatlingChannel:fireServer("FpsEnabled", true) end)
+                        end
 
-                                -- Auto Reload jika peluru habis
-                                if ammo <= 0 and not reloading then
-                                    pcall(function() GatlingChannel:fireServer("Reload") end)
-                                    task.wait(0.2)
-                                    continue
-                                end
+                        local ammo = rep:Get("Ammo") or 0
+                        local reloading = rep:Get("Reloading")
 
-                                local targetPos = nil
-                                -- Cari musuh pertama yang valid
-                                for _, npc in ipairs(EnemiesFolder:GetChildren()) do
-                                    local root = npc:FindFirstChild("HumanoidRootPart")
-                                    if root then
-                                        targetPos = root.Position
-                                        break
-                                    end
-                                end
+                        -- Logika Reload Bawaan
+                        if ammo <= 0 and not reloading then
+                            pcall(function() GatlingChannel:fireServer("Reload") end)
+                            continue
+                        end
 
-                                if targetPos and not reloading then
-                                    pcall(function()
-                                        -- Paksa masuk FPS Mode agar mendapat buff Piercing
-                                        if not rep:GetAttribute("FPS") then
-                                            GatlingChannel:fireServer("FpsEnabled", true)
-                                        end
-                                        
-                                        local sync = workspace:GetAttribute("Sync") or 0
-                                        local serverTime = workspace:GetServerTimeNow()
-                                        
-                                        -- Replikasi bidikan dan tembak
-                                        GatlingChannel:fireUnreliableServer("ReplicateAimPosition", targetPos)
-                                        GatlingChannel:fireServer("Fire", targetPos, sync, serverTime)
-                                    end)
-                                else
-                                    -- Jika tidak ada musuh atau sedang reload, berhenti menembak
-                                    pcall(function() GatlingChannel:fireServer("StopFiring") end)
-                                end
+                        if reloading then continue end
+
+                        local target = nil
+                        -- Menggunakan fungsi seleksi target asli dari gamenya
+                        -- (Otomatis menghitung Range, Camo, Terbang, Target Priority, dll)
+                        pcall(function() target = gatling:FindTarget() end)
+
+                        if target and target.PrimaryPart then
+                            local targetPos = target.PrimaryPart.Position
+                            
+                            -- Mengambil Fire Rate / Cooldown asli dari gamenya
+                            local cooldown = 0.1
+                            pcall(function() cooldown = gatling:GetCooldown() end)
+                            
+                            -- Sistem timing yang presisi agar tembakan tidak ditolak Server
+                            if not gatling._lastAutoFireTick or (tick() - gatling._lastAutoFireTick >= cooldown) then
+                                gatling._lastAutoFireTick = tick()
+
+                                pcall(function()
+                                    local sync = workspace:GetAttribute("Sync") or 0
+                                    local serverTime = workspace:GetServerTimeNow()
+                                    
+                                    -- Sinkronisasi bidikan ke server
+                                    GatlingChannel:fireUnreliableServer("ReplicateAimPosition", targetPos)
+                                    
+                                    -- Menembak dengan data target & waktu yang 100% akurat
+                                    GatlingChannel:fireServer("Fire", targetPos, sync, serverTime)
+                                    
+                                    -- Menampilkan animasi peluru di sisi client (Opsional tapi keren)
+                                    gatling:_aim(targetPos)
+                                    gatling:_fire(targetPos)
+                                end)
+                            end
+                        else
+                            -- Jika tidak ada target (musuh habis / di luar jangkauan), berhenti menembak (Spin down barrel)
+                            if rep:Get("WindDirection") == "up" then
+                                pcall(function() GatlingChannel:fireServer("StopFiring") end)
                             end
                         end
                     end
                 end
             end
-            task.wait(0.1) -- Kecepatan tembak otomatis (0.1 detik cukup aman untuk server)
+            task.wait() -- Loop cepat karena eksekusi dibatasi oleh "cooldown" bawaan game di atas
         end
+        
+        -- Ketika fitur dimatikan, kembalikan ke mode normal (Keluar dari FPS mode server)
+        if NewNetwork then
+            pcall(function()
+                local GatlingChannel = NewNetwork.Channel("GatlingGun")
+                GatlingChannel:fireServer("FpsEnabled", false)
+            end)
+        end
+        
         AutoGatlingRunning = false
     end)
 end
