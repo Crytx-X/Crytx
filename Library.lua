@@ -21,7 +21,7 @@ local mouse = LocalPlayer:GetMouse()
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local FileName = "ADS_Config.json"
 
--- // Data Tables (Skins Simplified)
+-- // Data Tables (Skins Simplified - No RBXAssetIDs)
 local TowerSkins = {
     ["Accelerator"] = {"Champion", "Cupid", "Dank", "Default", "Disco", "Ducky", "Eclipse", "Elite", "Fallen", "Ghost Buster", "Ice Witch", "Legend", "Mage", "Magician", "Navy", "Nuclear", "Octopus", "Patient Zero", "Plushie", "Red", "Senator", "Speaker Titan", "Vigilante"},
     ["Ace Pilot"] = {"Aerial Ace", "Default", "Easter", "Green", "Navy", "Pumpkin", "Purple", "Red", "Toy Plane", "Yellow"},
@@ -215,7 +215,7 @@ local DefaultSettings = {
     AutoNecro = false, AutoRejoin = true, TimeScaleEnabled = false, TimeScaleValue = 2,
     SellFarms = false, AutoMercenary = false, AutoMilitary = false, Frost = false,
     Fallen = false, Easy = false, AntiLag = false, Disable3DRendering = false,
-    SendWebhook = false, SellFarmsWave = 1, WebhookURL = "", 
+    SendWebhook = false, NoRecoil = false, SellFarmsWave = 1, WebhookURL = "", 
     StreamerMode = false, HideUsername = false, StreamerName = "", tagName = "None", 
     Modifiers = {}, EnemyTracker = false
 }
@@ -240,12 +240,21 @@ end
 
 local StartTimeScale, ApplyTimeScaleOnce
 
--- ==========================================
--- // FULL STRATEGY ENGINE (API UNTUK CEGAH ERROR MISSING METHOD)
--- ==========================================
+local ItemNames = {
+    ["17447507910"] = "Timescale Ticket(s)", ["17438486690"] = "Range Flag(s)",
+    ["17438486138"] = "Damage Flag(s)", ["17438487774"] = "Cooldown Flag(s)",
+    ["17429537022"] = "Blizzard(s)", ["17448596749"] = "Napalm Strike(s)",
+    ["18493073533"] = "Spin Ticket(s)", ["17429548305"] = "Supply Drop(s)",
+    ["18443277308"] = "Low Grade Consumable Crate(s)", ["136180382135048"] = "Santa Radio(s)",
+    ["18443277106"] = "Mid Grade Consumable Crate(s)", ["18443277591"] = "High Grade Consumable Crate(s)",
+    ["132155797622156"] = "Christmas Tree(s)", ["124065875200929"] = "Fruit Cake(s)",
+    ["17429541513"] = "Barricade(s)", ["110415073436604"] = "Holy Hand Grenade(s)",
+    ["17429533728"] = "Frag Grenade(s)", ["17437703262"] = "Molotov(s)",
+    ["139414922355803"] = "Present Clusters(s)"
+}
+
 TDS = {
     PlacedTowers = {},
-    Tasks = {},
     ActiveStrat = true,
     MatchmakingMap = {
         ["Hardcore"] = "hardcore", ["Pizza Party"] = "halloween",
@@ -255,52 +264,9 @@ TDS = {
 TDS["placed_towers"] = TDS.PlacedTowers
 TDS["active_strat"] = TDS.ActiveStrat
 TDS["matchmaking_map"] = TDS.MatchmakingMap
+local UpgradeHistory = {}
 shared.TDSTable = TDS
 shared["TDS_Table"] = TDS
-
-function TDS:Loadout(towers)
-    if type(towers) == "table" then
-        for _, tower in ipairs(towers) do
-            pcall(function() ReplicatedStorage:WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "tower", tower) end)
-            task.wait(0.1)
-        end
-    end
-end
-function TDS:GameInfo(info, mode, difficulty)
-    if type(info) == "table" then
-        self.Map = info.Map or info.map
-        self.Mode = info.Mode or info.mode
-        self.Difficulty = info.Difficulty or info.difficulty
-    else
-        self.Map = info
-        self.Mode = mode
-        self.Difficulty = difficulty
-    end
-end
-function TDS:Mode(mode, difficulty) self.Mode = mode; self.Difficulty = difficulty end
-function TDS:Map(map, solo) self.Map = map; self.SoloMap = solo end
-function TDS:Place(tower, x, y, z, wave) table.insert(self.Tasks, {Action = "Place", Tower = tower, Pos = Vector3.new(x,y,z), Wave = wave or 0}) end
-function TDS:Upgrade(id, wave) table.insert(self.Tasks, {Action = "Upgrade", Id = id, Wave = wave or 0}) end
-function TDS:Sell(id, wave) table.insert(self.Tasks, {Action = "Sell", Id = id, Wave = wave or 0}) end
-function TDS:SellAll(wave) table.insert(self.Tasks, {Action = "SellAll", Wave = wave or 0}) end
-function TDS:Skip(wave) table.insert(self.Tasks, {Action = "Skip", Wave = wave or 0}) end
-function TDS:VoteSkip(state) 
-    if state == nil then state = true end
-    Globals.AutoSkip = state
-    if type(SetSetting) == "function" then SetSetting("AutoSkip", state) end
-end
-function TDS:Target(id, target, wave) table.insert(self.Tasks, {Action = "Target", Id = id, Target = target, Wave = wave or 0}) end
-function TDS:SetTarget(id, target, wave) table.insert(self.Tasks, {Action = "Target", Id = id, Target = target, Wave = wave or 0}) end
-function TDS:Option(id, option, value, wave) table.insert(self.Tasks, {Action = "Option", Id = id, Option = option, Value = value, Wave = wave or 0}) end
-function TDS:SetOption(id, option, value, wave) table.insert(self.Tasks, {Action = "Option", Id = id, Option = option, Value = value, Wave = wave or 0}) end
-function TDS:Ability(id, ability, wave) table.insert(self.Tasks, {Action = "Ability", Id = id, Ability = ability, Wave = wave or 0}) end
-function TDS:AutoChain(...) end
-function TDS:RestartGame() end
-function TDS:Ready() end
-function TDS:StartGame() end
-function TDS:TimeScale(val) end
-function TDS:UnlockTimeScale() end
--- ==========================================
 
 local function SaveSettings()
     local DataToSave = {}
@@ -1504,6 +1470,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     local function CreateTrackerUI()
+        -- Prevent overlapping UIs upon script re-execution
         local existingUI = game:GetService("CoreGui"):FindFirstChild("ADS_PremiumTracker")
         if existingUI then existingUI:Destroy() end
 
@@ -1611,12 +1578,10 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             Globals.EnemyTracker = v
             SetSetting("EnemyTracker", v)
 
-            if TrackerConnection then TrackerConnection:Disconnect() end
-            local existingUI = game:GetService("CoreGui"):FindFirstChild("ADS_PremiumTracker")
-            if existingUI then existingUI:Destroy() end
-
             if v then
                 local UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
+                
+                if TrackerConnection then TrackerConnection:Disconnect() end
                 
                 TrackerConnection = RunService.Heartbeat:Connect(function()
                     if not Globals.EnemyTracker or not TrackerUI or not TrackerUI.Parent then 
@@ -1702,6 +1667,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
                 end)
+            else
+                if TrackerConnection then TrackerConnection:Disconnect() end
+                if TrackerUI then TrackerUI:Destroy() end
             end
         end
     })
@@ -2742,6 +2710,289 @@ local function StartSellFarm()
         end
         SellFarmsRunning = false
     end)
+end
+
+-- ==========================================
+-- // PUBLIC API (For Strategy Scripts)
+-- ==========================================
+
+-- // Lobby
+function TDS:Mode(difficulty)
+    if GameState ~= "LOBBY" then return false end
+    local LobbyHud = PlayerGui:WaitForChild("ReactLobbyHud", 30)
+    local frame = LobbyHud and LobbyHud:WaitForChild("Frame", 30)
+    local MatchMaking = frame and frame:WaitForChild("matchmaking", 30)
+
+    if MatchMaking then
+        local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+        local success = false
+        local res
+        repeat
+            local ok, result = pcall(function()
+                local mode = TDS.MatchmakingMap[difficulty]
+                local payload
+                if mode then
+                    payload = { mode = mode, count = 1 }
+                else
+                    payload = { difficulty = difficulty, mode = "survival", count = 1 }
+                end
+                return remote:InvokeServer("Multiplayer", "v2:start", payload)
+            end)
+
+            if ok and CheckResOk(result) then
+                success = true
+                res = result
+            else
+                task.wait(0.5) 
+            end
+        until success
+    end
+    return true
+end
+
+function TDS:Loadout(...)
+    if GameState ~= "LOBBY" and GameState ~= "GAME" then return end
+    local towers = {...}
+    local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+    local StateReplicators = ReplicatedStorage:FindFirstChild("StateReplicators")
+
+    local CurrentlyEquipped = {}
+    if StateReplicators then
+        for _, folder in ipairs(StateReplicators:GetChildren()) do
+            if folder.Name == "PlayerReplicator" and folder:GetAttribute("UserId") == LocalPlayer.UserId then
+                local EquippedAttr = folder:GetAttribute("EquippedTowers")
+                if type(EquippedAttr) == "string" then
+                    local CleanedJson = EquippedAttr:match("%[.*%]") 
+                    local DecodeSuccess, decoded = pcall(function() return HttpService:JSONDecode(CleanedJson) end)
+                    if DecodeSuccess and type(decoded) == "table" then
+                        CurrentlyEquipped = decoded
+                    end
+                end
+            end
+        end
+    end
+
+    for _, CurrentTower in ipairs(CurrentlyEquipped) do
+        if CurrentTower ~= "None" then
+            local UnequipDone = false
+            repeat
+                local ok = pcall(function()
+                    remote:InvokeServer("Inventory", "Unequip", "tower", CurrentTower)
+                    task.wait(0.3)
+                end)
+                if ok then UnequipDone = true else task.wait(0.2) end
+            until UnequipDone
+        end
+    end
+
+    task.wait(0.5)
+
+    for _, TowerName in ipairs(towers) do
+        if TowerName and TowerName ~= "" then
+            local EquipSuccess = false
+            repeat
+                local ok = pcall(function()
+                    remote:InvokeServer("Inventory", "Equip", "tower", TowerName)
+                    if Logger then Logger:Log("Equipped tower: " .. TowerName) end
+                    task.wait(0.3)
+                end)
+                if ok then EquipSuccess = true else task.wait(0.2) end
+            until EquipSuccess
+        end
+    end
+
+    task.wait(0.5)
+    return true
+end
+
+-- // Ingame
+function TDS:VoteSkip(StartWave, EndWave)
+    task.spawn(function()
+        local CurrentWave = GetCurrentWave()
+        StartWave = StartWave or (CurrentWave > 0 and CurrentWave or 1)
+        EndWave = EndWave or StartWave
+
+        for wave = StartWave, EndWave do
+            while GetCurrentWave() < wave do task.wait(1) end
+
+            local SkipDone = false
+            while not SkipDone do
+                local VoteUi = PlayerGui:FindFirstChild("ReactOverridesVote")
+                local VoteButton = VoteUi and VoteUi:FindFirstChild("Frame") and VoteUi.Frame:FindFirstChild("votes") and VoteUi.Frame.votes:FindFirstChild("vote", true)
+
+                if VoteButton and VoteButton.Position == UDim2.new(0.5, 0, 0.5, 0) then
+                    RunVoteSkip()
+                    SkipDone = true
+                    if Logger then Logger:Log("Voted to skip wave " .. wave) end
+                else
+                    if GetCurrentWave() > wave then break end
+                    task.wait(0.5)
+                end
+            end
+        end
+    end)
+end
+
+function TDS:GameInfo(name, list)
+    if GameState ~= "GAME" then return false end
+    local VoteGui = PlayerGui:WaitForChild("ReactGameIntermission", 30)
+    if not (VoteGui and VoteGui.Enabled and VoteGui:WaitForChild("Frame", 5)) then return end
+
+    local modifiers = (list and #list > 0) and list or Globals.Modifiers
+    CastModifierVote(modifiers)
+
+    if MarketplaceService:UserOwnsGamePassAsync(LocalPlayer.UserId, 10518590) then
+        SelectMapOverride(name, "vip")
+        if Logger then Logger:Log("Selected map: " .. name) end
+        repeat task.wait(1) until PlayerGui:FindFirstChild("ReactUniversalHotbar")
+        return true 
+    elseif IsMapAvailable(name) then
+        SelectMapOverride(name)
+        repeat task.wait(1) until PlayerGui:FindFirstChild("ReactUniversalHotbar")
+        return true
+    else
+        if Logger then Logger:Log("Map '" .. name .. "' not available, rejoining...") end
+        TeleportService:Teleport(3260590327, LocalPlayer)
+        repeat task.wait(9999) until false
+    end
+end
+
+function TDS:UnlockTimeScale() UnlockSpeedTickets() end
+function TDS:TimeScale(val) SetGameTimescale(val) end
+function TDS:StartGame() LobbyReadyUp() end
+
+function TDS:Ready()
+    if GameState ~= "GAME" then return false end
+    MatchReadyUp()
+end
+
+function TDS:GetWave() return GetCurrentWave() end
+function TDS:RestartGame() TriggerRestart() end
+
+function TDS:Place(TName, px, py, pz, ...)
+    local args = {...}
+    if args[#args] == "stack" or args[#args] == true then py = py + 20 end
+    if GameState ~= "GAME" then return false end
+
+    local existing = {}
+    for _, child in ipairs(workspace.Towers:GetChildren()) do
+        for _, SubChild in ipairs(child:GetChildren()) do
+            if SubChild.Name == "Owner" and SubChild.Value == LocalPlayer.UserId then
+                existing[child] = true
+                break
+            end
+        end
+    end
+
+    DoPlaceTower(TName, Vector3.new(px, py, pz))
+
+    local NewT
+    repeat
+        for _, child in ipairs(workspace.Towers:GetChildren()) do
+            if not existing[child] then
+                for _, SubChild in ipairs(child:GetChildren()) do
+                    if SubChild.Name == "Owner" and SubChild.Value == LocalPlayer.UserId then
+                        NewT = child
+                        break
+                    end
+                end
+            end
+            if NewT then break end
+        end
+        task.wait(0.05)
+    until NewT
+
+    table.insert(self.PlacedTowers, NewT)
+    return #self.PlacedTowers
+end
+
+function TDS:Upgrade(idx, PId)
+    local t = self.PlacedTowers[idx]
+    if t then
+        DoUpgradeTower(t, PId or 1)
+        if Logger then Logger:Log("Upgrading tower index: " .. idx) end
+        UpgradeHistory[idx] = (UpgradeHistory[idx] or 0) + 1
+    end
+end
+
+function TDS:SetTarget(idx, TargetType, ReqWave)
+    if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end
+    local t = self.PlacedTowers[idx]
+    if not t then return end
+
+    pcall(function()
+        RemoteFunc:InvokeServer("Troops", "Target", "Set", { Troop = t, Target = TargetType })
+        if Logger then Logger:Log("Set target for tower index " .. idx .. " to " .. TargetType) end
+    end)
+end
+
+function TDS:Sell(idx, ReqWave)
+    if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end
+    local t = self.PlacedTowers[idx]
+    if t and DoSellTower(t) then return true end
+    return false
+end
+
+function TDS:SellAll(ReqWave)
+    task.spawn(function()
+        if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end
+        local TowersCopy = {unpack(self.PlacedTowers)}
+        for idx, t in ipairs(TowersCopy) do
+            if DoSellTower(t) then
+                for i, OrigT in ipairs(self.PlacedTowers) do
+                    if OrigT == t then
+                        table.remove(self.PlacedTowers, i)
+                        break
+                    end
+                end
+            end
+        end
+        return true
+    end)
+end
+
+function TDS:Ability(idx, name, data, loop)
+    local t = self.PlacedTowers[idx]
+    if not t then return false end
+    if Logger then Logger:Log("Activating ability '" .. name .. "' for tower index: " .. idx) end
+    return DoActivateAbility(t, name, data, loop)
+end
+
+function TDS:AutoChain(...)
+    local TowerIndices = {...}
+    if #TowerIndices == 0 then return end
+    local running = true
+
+    task.spawn(function()
+        local i = 1
+        while running do
+            local idx = TowerIndices[i]
+            local tower = TDS.PlacedTowers[idx]
+            if tower then DoActivateAbility(tower, "Call Of Arms") end
+
+            local hotbar = PlayerGui:FindFirstChild("ReactUniversalHotbar")
+            local timescale = hotbar and hotbar:FindFirstChild("Frame") and hotbar.Frame:FindFirstChild("timescale")
+
+            if timescale then
+                if timescale:FindFirstChild("Lock") then task.wait(10.5) else task.wait(5.5) end
+            else
+                task.wait(10.5)
+            end
+
+            i += 1
+            if i > #TowerIndices then i = 1 end
+        end
+    end)
+    return function() running = false end
+end
+
+function TDS:SetOption(idx, name, val, ReqWave)
+    local t = self.PlacedTowers[idx]
+    if t then
+        if Logger then Logger:Log("Setting option '" .. name .. "' for tower index: " .. idx) end
+        return DoSetOption(t, name, val, ReqWave)
+    end
+    return false
 end
 
 task.spawn(function()
