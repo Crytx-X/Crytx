@@ -215,7 +215,7 @@ local DefaultSettings = {
     AutoNecro = false, AutoRejoin = true, TimeScaleEnabled = false, TimeScaleValue = 2,
     SellFarms = false, AutoMercenary = false, AutoMilitary = false, Frost = false,
     Fallen = false, Easy = false, AntiLag = false, Disable3DRendering = false,
-    SendWebhook = false, NoRecoil = false, SellFarmsWave = 1, WebhookURL = "", 
+    SendWebhook = false, SellFarmsWave = 1, WebhookURL = "", 
     StreamerMode = false, HideUsername = false, StreamerName = "", tagName = "None", 
     Modifiers = {}, EnemyTracker = false
 }
@@ -239,19 +239,6 @@ local function GetTimescaleFrame()
 end
 
 local StartTimeScale, ApplyTimeScaleOnce
-
-local ItemNames = {
-    ["17447507910"] = "Timescale Ticket(s)", ["17438486690"] = "Range Flag(s)",
-    ["17438486138"] = "Damage Flag(s)", ["17438487774"] = "Cooldown Flag(s)",
-    ["17429537022"] = "Blizzard(s)", ["17448596749"] = "Napalm Strike(s)",
-    ["18493073533"] = "Spin Ticket(s)", ["17429548305"] = "Supply Drop(s)",
-    ["18443277308"] = "Low Grade Consumable Crate(s)", ["136180382135048"] = "Santa Radio(s)",
-    ["18443277106"] = "Mid Grade Consumable Crate(s)", ["18443277591"] = "High Grade Consumable Crate(s)",
-    ["132155797622156"] = "Christmas Tree(s)", ["124065875200929"] = "Fruit Cake(s)",
-    ["17429541513"] = "Barricade(s)", ["110415073436604"] = "Holy Hand Grenade(s)",
-    ["17429533728"] = "Frag Grenade(s)", ["17437703262"] = "Molotov(s)",
-    ["139414922355803"] = "Present Clusters(s)"
-}
 
 TDS = {
     PlacedTowers = {},
@@ -779,6 +766,18 @@ function TDS:Unequip(tower_name)
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
     local success, err = pcall(function() return remote:InvokeServer("Inventory", "Unequip", "tower", tower_name) end)
     return success
+end
+
+-- === LOADOUT FIX (MENCEGAH ERROR LINE 2) ===
+function TDS:Loadout(towers)
+    if type(towers) == "table" then
+        for _, tower in ipairs(towers) do
+            pcall(function()
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "tower", tower)
+            end)
+            task.wait(0.1)
+        end
+    end
 end
 
 local function GetEquippedTowers()
@@ -1470,7 +1469,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     local function CreateTrackerUI()
-        -- Prevent overlapping UIs upon script re-execution
         local existingUI = game:GetService("CoreGui"):FindFirstChild("ADS_PremiumTracker")
         if existingUI then existingUI:Destroy() end
 
@@ -1578,10 +1576,12 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             Globals.EnemyTracker = v
             SetSetting("EnemyTracker", v)
 
+            if TrackerConnection then TrackerConnection:Disconnect() end
+            local existingUI = game:GetService("CoreGui"):FindFirstChild("ADS_PremiumTracker")
+            if existingUI then existingUI:Destroy() end
+
             if v then
                 local UpcomingScroll, UpcomingTitle, WaveInfoLabel = CreateTrackerUI()
-                
-                if TrackerConnection then TrackerConnection:Disconnect() end
                 
                 TrackerConnection = RunService.Heartbeat:Connect(function()
                     if not Globals.EnemyTracker or not TrackerUI or not TrackerUI.Parent then 
@@ -1667,9 +1667,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                     end
                 end)
-            else
-                if TrackerConnection then TrackerConnection:Disconnect() end
-                if TrackerUI then TrackerUI:Destroy() end
             end
         end
     })
