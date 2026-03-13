@@ -2771,9 +2771,15 @@ end
 
 function TDS:SellAll(ReqWave)
     task.spawn(function()
-        if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end end
+
+        if ReqWave then
+            repeat
+                task.wait(0.5)
+            until GetCurrentWave() >= ReqWave
+        end
 
         local TowersCopy = {unpack(self.PlacedTowers)}
+
         for idx, t in ipairs(TowersCopy) do
             if DoSellTower(t) then
                 for i, OrigT in ipairs(self.PlacedTowers) do
@@ -2784,6 +2790,7 @@ function TDS:SellAll(ReqWave)
                 end
             end
         end
+
         return true
     end)
 end
