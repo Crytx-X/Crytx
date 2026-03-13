@@ -184,9 +184,7 @@ if not SendRequest then warn("failure: no http function") return end
 
 -- // Variables & Toggles
 local BackToLobbyRunning = false
-local AutoPickupsRunning = false
 local AutoSkipRunning = false
-local AutoClaimRewards = false
 local AntiLagRunning = false
 local AutoChainRunning = false
 local AutoDjRunning = false
@@ -217,13 +215,9 @@ local DefaultSettings = {
     AutoNecro = false, AutoRejoin = true, TimeScaleEnabled = false, TimeScaleValue = 2,
     SellFarms = false, AutoMercenary = false, AutoMilitary = false, Frost = false,
     Fallen = false, Easy = false, AntiLag = false, Disable3DRendering = false,
-    AutoPickups = false, ClaimRewards = false, SendWebhook = false, NoRecoil = false,
-    SellFarmsWave = 1, WebhookURL = "", Cooldown = 0.01, Multiply = 1, AutoCooldown = 0.01,
-    AutoMultiply = 1, AutoGatling = false, TargetChamsEnabled = false,
-    TargetChamsType = "Highlight", PickupMethod = "Pathfinding", StreamerMode = false,
-    HideUsername = false, StreamerName = "", tagName = "None", Modifiers = {},
-    SilentAimEnabled = false, TargetPriority = "First", AutoGatlingPriority = "First",
-    EnemyTracker = false
+    SendWebhook = false, NoRecoil = false, SellFarmsWave = 1, WebhookURL = "", 
+    StreamerMode = false, HideUsername = false, StreamerName = "", tagName = "None", 
+    Modifiers = {}, EnemyTracker = false
 }
 
 local TimeScaleValues = {0.5, 1, 1.5, 2}
@@ -300,191 +294,6 @@ local function SetSetting(name, value)
         Globals[name] = value
         SaveSettings()
     end
-end
-
--- ==========================================
--- // REAL-TIME RADAR, ESP & TRACER LOGIC
--- ==========================================
-Globals.CurrentTargetModel = nil
-Globals.CurrentHighlight = nil
-Globals.LockedTargetPosition = nil
-local MyCachedGatlingPos = nil
-
-local function ClearESP()
-    if Globals.CurrentHighlight then
-        Globals.CurrentHighlight.Adornee = nil
-    end
-    Globals.CurrentTargetModel = nil
-end
-
-local function ApplyTargetChams(enemyModel)
-    if not enemyModel then 
-        ClearESP()
-        return 
-    end
-    if Globals.CurrentTargetModel ~= enemyModel then
-        if not Globals.CurrentHighlight then
-            Globals.CurrentHighlight = Instance.new("Highlight")
-            Globals.CurrentHighlight.FillColor = Color3.fromRGB(255, 0, 0)
-            Globals.CurrentHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-            Globals.CurrentHighlight.FillTransparency = 0.5
-            Globals.CurrentHighlight.OutlineTransparency = 0
-            Globals.CurrentHighlight.Parent = game:GetService("CoreGui")
-        end
-        Globals.CurrentHighlight.Adornee = enemyModel
-        Globals.CurrentTargetModel = enemyModel
-    end
-end
-
-RunService.Heartbeat:Connect(function()
-    if not Globals.AutoGatling and not Globals.SilentAimEnabled then
-        ClearESP()
-        Globals.LockedTargetPosition = nil
-        return
-    end
-
-    local towerPos = MyCachedGatlingPos or workspace.CurrentCamera.CFrame.Position
-    local BestTargetEnemy = nil
-    local TargetHitbox = nil
-    local MaxDistance = -1
-    local MaxHealth = -1
-    local MinDist = math.huge
-    local MinDistancePath = math.huge
-    
-    local activePriority = Globals.AutoGatling and Globals.AutoGatlingPriority or Globals.TargetPriority
-    local npcs = workspace:FindFirstChild("NPCs")
-    
-    if npcs then
-        for _, enemy in pairs(npcs:GetChildren()) do
-            local hitbox = enemy:FindFirstChild("HumanoidRootPart")
-            local pointer = enemy:FindFirstChild("RootPointer") 
-            
-            if hitbox and pointer and pointer.Value then
-                local repFolder = pointer.Value
-                local health = repFolder:GetAttribute("Health") or 0
-                local pathDist = repFolder:GetAttribute("PathDistance") or 0
-                
-                if health > 0 then
-                    if activePriority == "First" and pathDist > MaxDistance then
-                        MaxDistance = pathDist
-                        BestTargetEnemy = enemy
-                        TargetHitbox = hitbox
-                    elseif activePriority == "Last" and pathDist < MinDistancePath then
-                        MinDistancePath = pathDist
-                        BestTargetEnemy = enemy
-                        TargetHitbox = hitbox
-                    elseif activePriority == "Strongest" and health > MaxHealth then
-                        MaxHealth = health
-                        BestTargetEnemy = enemy
-                        TargetHitbox = hitbox
-                    elseif activePriority == "Close" then
-                        local dist = (hitbox.Position - towerPos).Magnitude
-                        if dist < MinDist then
-                            MinDist = dist
-                            BestTargetEnemy = enemy
-                            TargetHitbox = hitbox
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    if TargetHitbox then
-        Globals.LockedTargetPosition = TargetHitbox.Position
-    else
-        Globals.LockedTargetPosition = nil
-    end
-
-    if BestTargetEnemy and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Highlight" or Globals.TargetChamsType == "Both") then
-        ApplyTargetChams(BestTargetEnemy)
-    else
-        ClearESP()
-    end
-end)
-
-local function CreateTracer(targetPos)
-    local startPos = MyCachedGatlingPos
-    if not startPos then
-        local towersFolder = workspace:FindFirstChild("Towers")
-        if towersFolder then
-            for _, tower in pairs(towersFolder:GetChildren()) do
-                local rep = tower:FindFirstChild("TowerReplicator")
-                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
-                    local weapon = tower:FindFirstChild("Weapon")
-                    if weapon then
-                        local main = weapon:FindFirstChild("Main")
-                        local barrel = main and main:FindFirstChild("Barrel")
-                        if barrel then startPos = barrel.Position
-                        elseif weapon.PrimaryPart then startPos = weapon.PrimaryPart.Position end
-                    end
-                    if not startPos and tower.PrimaryPart then startPos = tower.PrimaryPart.Position end
-                    MyCachedGatlingPos = startPos
-                    if startPos then break end
-                end
-            end
-        end
-    end
-
-    if not startPos then return end
-
-    local tracer = Instance.new("Part")
-    tracer.Name = "GatlingTracer"
-    tracer.Anchored = true
-    tracer.CanCollide = false
-    tracer.CastShadow = false
-    tracer.Material = Enum.Material.Neon
-    tracer.Color = Color3.fromRGB(255, 200, 50) 
-    
-    local distance = (targetPos - startPos).Magnitude
-    tracer.Size = Vector3.new(0.15, 0.15, distance) 
-    tracer.CFrame = CFrame.lookAt(startPos, targetPos) * CFrame.new(0, 0, -(distance / 2))
-    tracer.Parent = workspace.Terrain
-
-    TweenService:Create(tracer, TweenInfo.new(0.15), {Transparency = 1}):Play()
-    game:GetService("Debris"):AddItem(tracer, 0.15)
-end
-
-if hookmetamethod then
-    local lastTracerTime = 0
-    local oldNamecall
-    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-        local method = getnamecallmethod()
-        
-        if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
-            local p = self.Parent
-            if p and p.Name == "GatlingGun" then
-                if (Globals.AutoGatling or Globals.SilentAimEnabled) and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
-                    local args = {...}
-                    local targetPos = args[1]
-                    if typeof(targetPos) == "Vector3" then
-                        local now = os.clock()
-                        if now - lastTracerTime >= 0.05 then 
-                            lastTracerTime = now
-                            task.spawn(CreateTracer, targetPos)
-                        end
-                    end
-                end
-            end
-        end
-
-        if method == "InvokeServer" and typeof(self) == "Instance" and self.Name == "RemoteFunction" then
-            local args = {...}
-            if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
-                local payload = args[4]
-                if type(payload) == "table" and payload.Name == "FPS" then
-                    if payload.Data and payload.Data.enabled == false then
-                        if Globals.AutoGatling then
-                            args[4] = { Troop = payload.Troop, Name = payload.Name, Data = { enabled = true } }
-                            return oldNamecall(self, unpack(args))
-                        end
-                    end
-                end
-            end
-        end
-
-        return oldNamecall(self, ...)
-    end)
 end
 
 local function Apply3dRendering()
@@ -958,9 +767,6 @@ local function UpdatePathVisuals()
         MercMarker.Transparency = 0.7
     end
 end
-
--- === DUMMY ADDONS FUNCTION ===
-function TDS:Addons() return true end
 
 -- === NATIVE EQUIP AND UNEQUIP ===
 function TDS:Equip(tower_name)
@@ -1664,7 +1470,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     local function CreateTrackerUI()
-        -- Hapus UI lama jika script di execute ulang agar tidak numpuk
+        -- Prevent overlapping UIs upon script re-execution
         local existingUI = game:GetService("CoreGui"):FindFirstChild("ADS_PremiumTracker")
         if existingUI then existingUI:Destroy() end
 
@@ -1865,268 +1671,6 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                 if TrackerConnection then TrackerConnection:Disconnect() end
                 if TrackerUI then TrackerUI:Destroy() end
             end
-        end
-    })
-
-    Misc:Toggle({
-        Title = "Auto Collect Pickups",
-        Desc = "Collects Logbooks + Snowballs",
-        Value = Globals.AutoPickups,
-        Callback = function(v) SetSetting("AutoPickups", v) end
-    })
-
-    Misc:Dropdown({
-        Title = "Pickup Method",
-        List = {"Pathfinding", "Instant"},
-        Value = Globals.PickupMethod or "Pathfinding",
-        Callback = function(choice)
-            local selected = type(choice) == "table" and choice[1] or choice
-            if not selected or selected == "" then selected = "Pathfinding" end
-            SetSetting("PickupMethod", selected)
-        end
-    })
-
-    Misc:Toggle({
-        Title = "Claim Rewards",
-        Desc = "Claims your playtime and uses spin tickets in Lobby",
-        Value = Globals.ClaimRewards,
-        Callback = function(v) SetSetting("ClaimRewards", v) end
-    })
-
-    Misc:Section({Title = "Target Visual"})
-    
-    Misc:Dropdown({
-        Title = "Target Visual Type",
-        Desc = "Applies to both Auto Gatling & Silent Aim",
-        List = {"Highlight", "Tracer", "Both"},
-        Value = Globals.TargetChamsType or "Highlight",
-        Callback = function(choice)
-            local selected = type(choice) == "table" and choice[1] or choice
-            if not selected or selected == "" then selected = "Highlight" end
-            Globals.TargetChamsType = selected
-            SetSetting("TargetChamsType", selected)
-        end
-    })
-
-    Misc:Toggle({
-        Title = "Enable Target Visual",
-        Value = Globals.TargetChamsEnabled, 
-        Callback = function(state)
-            Globals.TargetChamsEnabled = state
-            SetSetting("TargetChamsEnabled", state) 
-            if not state then ClearESP() end
-        end
-    })
-
-    Misc:Section({Title = "Auto Gatling Gun"})
-    
-    Misc:Dropdown({
-        Title = "Auto Gatling Priority",
-        Desc = "Choose target priority for Auto Gatling",
-        List = {"First", "Last", "Strongest", "Close"},
-        Value = Globals.AutoGatlingPriority or "First",
-        Callback = function(choice)
-            local selected = type(choice) == "table" and choice[1] or choice
-            SetSetting("AutoGatlingPriority", selected)
-        end
-    })
-
-    Misc:Textbox({
-        Title = "Auto Cooldown:", Placeholder = "0.01", Value = tostring(Globals.AutoCooldown), ClearTextOnFocus = true,
-        Callback = function(value)
-            if tonumber(value) then
-                Globals.AutoCooldown = tonumber(value)
-                SetSetting("AutoCooldown", tonumber(value)) 
-            end
-        end
-    })
-
-    Misc:Textbox({
-        Title = "Auto Multiply:", Placeholder = "1", Value = tostring(Globals.AutoMultiply), ClearTextOnFocus = true,
-        Callback = function(value)
-            if tonumber(value) then
-                Globals.AutoMultiply = tonumber(value)
-                SetSetting("AutoMultiply", tonumber(value)) 
-            end
-        end
-    })
-
-    Misc:Toggle({
-        Title = "Enable Auto Gatling",
-        Value = Globals.AutoGatling, 
-        Callback = function(state)
-            Globals.AutoGatling = state
-            SetSetting("AutoGatling", state) 
-
-            local function FireFPSAbility(isEnabled)
-                pcall(function()
-                    local towersFolder = workspace:FindFirstChild("Towers")
-                    local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
-                    if defaultTroop then
-                        local args = { "Troops", "Abilities", "Activate", { Troop = defaultTroop, Name = "FPS", Data = { enabled = isEnabled } } }
-                        game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
-                    end
-                end)
-            end
-
-            if state then
-                Window:Notify({ Title = "ADS", Desc = "Auto Gatling Enabled", Time = 3 })
-                FireFPSAbility(true)
-
-                task.spawn(function()
-                    local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
-                    local gatlingNetwork = network:WaitForChild("GatlingGun")
-                    local fireRemote = gatlingNetwork:WaitForChild("RE:Fire")
-                    local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
-
-                    while Globals.AutoGatling do
-                        local myGatlingRep = nil
-                        local towersFolder = workspace:FindFirstChild("Towers")
-                        if towersFolder then
-                            for _, tower in pairs(towersFolder:GetChildren()) do
-                                local rep = tower:FindFirstChild("TowerReplicator")
-                                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
-                                    myGatlingRep = rep
-                                    break
-                                end
-                            end
-                        end
-
-                        if myGatlingRep then
-                            local currentAmmo = myGatlingRep:GetAttribute("Ammo")
-                            local isReloading = myGatlingRep:GetAttribute("Reloading")
-
-                            if (currentAmmo ~= nil and currentAmmo <= 0) or isReloading then
-                                if not isReloading then pcall(function() reloadRemote:FireServer() end) end
-                                task.wait(0.01)
-                                continue 
-                            end
-                        end
-
-                        if Globals.LockedTargetPosition then
-                            for i = 1, Globals.AutoMultiply do
-                                pcall(function() fireRemote:FireServer(Globals.LockedTargetPosition, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow()) end)
-                            end
-                        end
-                        task.wait(Globals.AutoCooldown or 0.05)
-                    end
-                end)
-            else
-                FireFPSAbility(false)
-            end
-        end
-    })
-
-    Misc:Section({Title = "Gatling Gun (Silent Aim)"})
-    
-    Globals.CustomGatlingApplied = false 
-
-    local function EnsureGatlingHook()
-        local success, gganim = pcall(function()
-            return require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
-        end)
-        if not success or not gganim then return false end
-
-        if not Globals.OriginalFireGun then Globals.OriginalFireGun = gganim._fireGun end
-
-        gganim._fireGun = function(self)
-            local TargetPosition = nil
-
-            if Globals.SilentAimEnabled and Globals.LockedTargetPosition then TargetPosition = Globals.LockedTargetPosition end
-
-            if not TargetPosition then
-                local CameraController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
-                TargetPosition = CameraController.result and CameraController.result.Position or CameraController.position
-            end
-
-            if not TargetPosition then return end
-
-            local isMinigun = self.Replicator:Get("Minigun")
-            local canFire = self.Replicator:Get("CanFire")
-            if not isMinigun and true or canFire then
-                pcall(function() self:_fire(TargetPosition) end)
-            end
-
-            local GatlingChannel = require(game.ReplicatedStorage.Shared.Modules.NewNetwork).Channel("GatlingGun")
-            local sync = workspace:GetAttribute("Sync")
-            local serverTime = workspace:GetServerTimeNow()
-
-            if Globals.CustomGatlingApplied then
-                for i = 1, (Globals.Multiply or 1) do
-                    GatlingChannel:fireServer("Fire", TargetPosition, sync, serverTime)
-                end
-                self:Wait(Globals.Cooldown or 0.01)
-            else
-                GatlingChannel:fireServer("Fire", TargetPosition, sync, serverTime)
-                self:Wait(self:GetCooldown())
-            end
-        end
-        return true
-    end
-
-    Misc:Dropdown({
-        Title = "Silent Aim Priority",
-        Desc = "Choose target priority for Silent Aim",
-        List = {"First", "Last", "Strongest", "Close"},
-        Value = Globals.TargetPriority, 
-        Callback = function(choice)
-            local selected = type(choice) == "table" and choice[1] or choice
-            SetSetting("TargetPriority", selected)
-        end
-    })
-
-    Misc:Toggle({
-        Title = "Enable Silent Aim",
-        Desc = "Magic bullets auto-hit enemies.",
-        Value = Globals.SilentAimEnabled, 
-        Callback = function(state)
-            Globals.SilentAimEnabled = state
-            SetSetting("SilentAimEnabled", state)
-            
-            if not state then ClearESP() end
-            
-            local hooked = EnsureGatlingHook()
-            if not hooked and state then
-                Window:Notify({Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error"})
-                SetSetting("SilentAimEnabled", false)
-                Globals.SilentAimEnabled = false
-            elseif state then
-                Window:Notify({Title = "Silent Aim", Desc = "Activated!", Time = 3, Type = "normal"})
-            end
-        end
-    })
-
-    Misc:Textbox({
-        Title = "Cooldown:", Placeholder = "0.01", Value = tostring(Globals.Cooldown), ClearTextOnFocus = true,
-        Callback = function(value)
-            local num = tonumber(value)
-            if num then SetSetting("Cooldown", num) end
-        end
-    })
-
-    Misc:Textbox({
-        Title = "Multiply:", Placeholder = "1", Value = tostring(Globals.Multiply), ClearTextOnFocus = true,
-        Callback = function(value)
-            local num = tonumber(value)
-            if num then SetSetting("Multiply", num) end
-        end
-    })
-
-    Misc:Button({
-        Title = "Apply Gatling",
-        Callback = function()
-            Globals.CustomGatlingApplied = true
-            local hooked = EnsureGatlingHook()
-            if hooked then Window:Notify({ Title = "ADS", Desc = "Successfully applied Custom Cooldown & Multiply!", Time = 3, Type = "normal" })
-            else Window:Notify({ Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error" }) end
-        end
-    })
-
-    Misc:Button({
-        Title = "Reset Gatling",
-        Callback = function()
-            Globals.CustomGatlingApplied = false
-            Window:Notify({ Title = "ADS", Desc = "Gatling speed & multiply reset to normal!", Time = 3, Type = "normal" })
         end
     })
 
@@ -2836,88 +2380,6 @@ local function DoActivateAbility(TObj, AbName, AbData, IsLooping)
 end
 
 -- // Feature Activators
-local function GetRoot()
-    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-end
-
-local function IsVoidCharm(item)
-    return item and item:GetAttribute("IsVoid") == true
-end
-
-local function StartAutoPickups()
-    if AutoPickupsRunning or not Globals.AutoPickups then return end
-    AutoPickupsRunning = true
-
-    task.spawn(function()
-        while Globals.AutoPickups do
-            local folder = workspace:FindFirstChild("Pickups")
-            local hrp = GetRoot()
-
-            if folder and hrp then
-                local char = hrp.Parent
-                local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-                local function MoveToPos(TargetPos)
-                    if not humanoid then return false end
-                    local function MoveDirect(pos)
-                        humanoid:MoveTo(pos)
-                        local StartT = os.clock()
-                        while os.clock() - StartT < 2 do
-                            if not Globals.AutoPickups then return false end
-                            if (hrp.Position - pos).Magnitude < 4 then return true end
-                            task.wait(0.1)
-                        end
-                        return (hrp.Position - pos).Magnitude < 4
-                    end
-                    local path = PathfindingService:CreatePath({AgentRadius = 2, AgentHeight = 6, AgentCanJump = true, AgentJumpHeight = 7, AgentMaxSlope = 45})
-                    local ok = pcall(function() path:ComputeAsync(hrp.Position, TargetPos) end)
-                    if ok and path.Status == Enum.PathStatus.Success then
-                        local waypoints = path:GetWaypoints()
-                        local BlockedConn = nil
-                        BlockedConn = path.Blocked:Connect(function()
-                            if BlockedConn then BlockedConn:Disconnect() end
-                            if Globals.AutoPickups then task.spawn(function() MoveToPos(TargetPos) end) end
-                        end)
-                        for _, wp in ipairs(waypoints) do
-                            if not Globals.AutoPickups then
-                                if BlockedConn then BlockedConn:Disconnect() end
-                                return false
-                            end
-                            if wp.Action == Enum.PathWaypointAction.Jump then humanoid.Jump = true end
-                            if not MoveDirect(wp.Position) then
-                                if BlockedConn then BlockedConn:Disconnect() end
-                                return false
-                            end
-                        end
-                        if BlockedConn then BlockedConn:Disconnect() end
-                        return true
-                    end
-                    return MoveDirect(TargetPos)
-                end
-
-                for _, item in ipairs(folder:GetChildren()) do
-                    if not Globals.AutoPickups then break end
-                    if item:IsA("MeshPart") and (item.Name == "SnowCharm" or item.Name == "Lorebook") then
-                        if not IsVoidCharm(item) then
-                            if Globals.PickupMethod == "Instant" then
-                                hrp.CFrame = item.CFrame * CFrame.new(0, 3, 0)
-                                task.wait(0.2)
-                                task.wait(0.3)
-                            else
-                                local TargetPos = item.Position + Vector3.new(0, 3, 0)
-                                MoveToPos(TargetPos)
-                                task.wait(0.2)
-                                task.wait(0.3)
-                            end
-                        end
-                    end
-                end
-            end
-            task.wait(1)
-        end
-        AutoPickupsRunning = false
-    end)
-end
-
 local function StartAutoSkip()
     if AutoSkipRunning or not Globals.AutoSkip then return end
     AutoSkipRunning = true
@@ -2936,37 +2398,6 @@ local function StartAutoSkip()
         end
         AutoSkipRunning = false
     end)
-end
-
-local function StartClaimRewards()
-    if AutoClaimRewards or not Globals.ClaimRewards or GameState ~= "LOBBY" then return end
-    AutoClaimRewards = true
-
-    local player = game:GetService("Players").LocalPlayer
-    local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
-    local SpinTickets = player:WaitForChild("SpinTickets", 15)
-
-    if SpinTickets and SpinTickets.Value > 0 then
-        local TicketCount = SpinTickets.Value
-        local DailySpin = network:WaitForChild("DailySpin", 5)
-        local RedeemRemote = DailySpin and DailySpin:WaitForChild("RF:RedeemSpin", 5)
-
-        if RedeemRemote then
-            for i = 1, TicketCount do
-                RedeemRemote:InvokeServer()
-                task.wait(0.5)
-            end
-        end
-    end
-
-    for i = 1, 6 do
-        local args = { i }
-        network:WaitForChild("PlaytimeRewards"):WaitForChild("RF:ClaimReward"):InvokeServer(unpack(args))
-        task.wait(0.5)
-    end
-
-    game:GetService("ReplicatedStorage").Network.DailySpin["RF:RedeemReward"]:InvokeServer()
-    AutoClaimRewards = false
 end
 
 local function StartBackToLobby()
@@ -3283,7 +2714,6 @@ end
 
 task.spawn(function()
     while true do
-        if Globals.AutoPickups and not AutoPickupsRunning then StartAutoPickups() end
         if Globals.AutoSkip and not AutoSkipRunning then StartAutoSkip() end
         if Globals.TimeScaleEnabled and not TimeScaleRunning then StartTimeScale() end
         if Globals.AutoChain and not AutoChainRunning then StartAutoChain() end
@@ -3297,9 +2727,5 @@ task.spawn(function()
         task.wait(1)
     end
 end)
-
-if Globals.ClaimRewards and not AutoClaimRewards then
-    StartClaimRewards()
-end
 
 return TDS
