@@ -2698,7 +2698,7 @@ local function StartAutoGatling()
                         local rep = tower:FindFirstChild("TowerReplicator")
                         
                         -- Cek apakah tower ini Gatling Gun dan milik kita
-                        if rep and rep:GetAttribute("Name") == "Gatling Gun" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId then
+                        if rep and rep:GetAttribute("Name") == "Default" and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId then
 
                             local ammo = rep:GetAttribute("Ammo") or 0
                             local reloading = rep:GetAttribute("Reloading")
