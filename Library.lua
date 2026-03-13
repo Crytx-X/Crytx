@@ -1166,7 +1166,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
                 end
             end)
         end
-    end)
+    end})
 
     Main:Section({Title = "Skins"})
     
