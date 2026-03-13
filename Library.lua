@@ -1376,73 +1376,67 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         local modeObj = state:FindFirstChild("Mode")
         local diffObj = state:FindFirstChild("Difficulty")
 
-        local modeName = (modeObj and modeObj.Value ~= "") and modeObj.Value or nil
-        local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or nil
+        -- Jika tidak terbaca, kita beri nilai default "Unknown"
+        local modeName = (modeObj and modeObj.Value ~= "") and modeObj.Value or "Unknown"
+        local diffName = (diffObj and diffObj.Value ~= "") and diffObj.Value or "Unknown"
 
-        if not modeName or not diffName then return nil, "None" end
-        CachedModeName = diffName
+        if modeName == "Unknown" and diffName == "Unknown" then return nil, "None" end
+        CachedModeName = diffName ~= "Unknown" and diffName or modeName
 
         local content = ReplicatedStorage:FindFirstChild("Content")
         local gamemodes = content and content:FindFirstChild("Gamemodes")
         if not gamemodes then return nil, "Missing Gamemodes Folder" end
 
-        local function cleanString(str) return str:lower():gsub("[%s%p]", "") end
-        local safeMode, safeDiff = cleanString(modeName), cleanString(diffName)
+        -- Fungsi untuk membersihkan spasi dan huruf besar
+        local function cleanStr(str) return str:lower():gsub("[%s%p]", "") end
+        local safeMode = cleanStr(modeName)
+        local safeDiff = cleanStr(diffName)
 
-        -- 1. Cek Struktur Standar (Survival -> Difficulties -> Normal/Fallen)
-        local mFolder = gamemodes:FindFirstChild(modeName)
-        if mFolder then
-            local diffsFolder = mFolder:FindFirstChild("Difficulties")
-            if diffsFolder then
-                local targetDiff = diffsFolder:FindFirstChild(diffName)
-                if targetDiff and targetDiff:FindFirstChild("Waves") then
-                    CachedModeModule = targetDiff.Waves
-                    return CachedModeModule, CachedModeName
+        -- Mapping internal TDS (karena Pizza Party aslinya bernama Halloween, dll)
+        local InternalMap = {
+            ["hardcore"] = "hardcore",
+            ["pizzaparty"] = "halloween",
+            ["badlands"] = "badlands",
+            ["polluted"] = "polluted",
+            ["pollutedwasteland"] = "polluted"
+        }
+        
+        local mappedDiff = InternalMap[safeDiff] or safeDiff
+        local mappedMode = InternalMap[safeMode] or safeMode
+
+        local bestModule = nil
+        local highestScore = -1
+
+        -- BRUTE FORCE: Pindai SEMUA file di dalam folder Gamemodes
+        for _, desc in ipairs(gamemodes:GetDescendants()) do
+            -- TDS biasanya menamai modul datanya "Waves" atau "WaveData"
+            if desc:IsA("ModuleScript") and (desc.Name == "Waves" or desc.Name == "WaveData") then
+                local score = 0
+                local pathStr = cleanStr(desc:GetFullName())
+                local parentName = cleanStr(desc.Parent.Name)
+
+                -- 1. Evaluasi Parent Langsung (Akurasi Paling Tinggi)
+                if parentName == mappedDiff or parentName == safeDiff then score = score + 50 end
+                if parentName == mappedMode or parentName == safeMode then score = score + 40 end
+
+                -- 2. Evaluasi Full Path (Berjaga-jaga jika dibungkus folder lain)
+                if pathStr:find(mappedDiff) or pathStr:find(safeDiff) then score = score + 20 end
+                if pathStr:find(mappedMode) or pathStr:find(safeMode) then score = score + 10 end
+
+                -- Jika modul ini mendapat skor tertinggi, jadikan kandidat utama
+                if score > highestScore and score > 0 then
+                    highestScore = score
+                    bestModule = desc
                 end
-            end
-            
-            -- 2. Cek Struktur Spesial (Misal: Hardcore/Badlands langsung memiliki modul 'Waves')
-            if mFolder:FindFirstChild("Waves") then
-                CachedModeModule = mFolder.Waves
-                return CachedModeModule, CachedModeName
             end
         end
 
-        -- 3. Cek Jika nama folder sama dengan nama Difficulty (Fallback 1)
-        local diffFolderAsMode = gamemodes:FindFirstChild(diffName)
-        if diffFolderAsMode and diffFolderAsMode:FindFirstChild("Waves") then
-            CachedModeModule = diffFolderAsMode.Waves
+        if bestModule then
+            CachedModeModule = bestModule
             return CachedModeModule, CachedModeName
         end
 
-        -- 4. Fuzzy Scan (Pencarian nama yang mirip)
-        for _, mDir in ipairs(gamemodes:GetChildren()) do
-            if cleanString(mDir.Name) == safeMode or string.find(cleanString(mDir.Name), safeMode) then
-                local diffsDir = mDir:FindFirstChild("Difficulties")
-                if diffsDir then
-                    for _, dDir in ipairs(diffsDir:GetChildren()) do
-                        if cleanString(dDir.Name) == safeDiff or string.find(cleanString(dDir.Name), safeDiff) then
-                            if dDir:FindFirstChild("Waves") then
-                                CachedModeModule = dDir.Waves
-                                return CachedModeModule, CachedModeName .. " (Fuzzy)"
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        -- 5. Deep Scan Terakhir (Mencari ke seluruh pelosok folder Gamemodes)
-        for _, folder in ipairs(gamemodes:GetDescendants()) do
-            if folder:IsA("Folder") and (cleanString(folder.Name) == safeDiff or cleanString(folder.Name) == safeMode) then
-                if folder:FindFirstChild("Waves") then
-                    CachedModeModule = folder.Waves
-                    return CachedModeModule, CachedModeName .. " (Deep Scan)"
-                end
-            end
-        end
-        
-        return nil, "Waves Not Found"
+        return nil, "Waves Not Found (" .. diffName .. ")"
     end
 
     local function GetFastWave()
@@ -1588,7 +1582,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     end
 
     Misc:Toggle({
-        Title = "Advanced Enemy Radars",
+        Title = "Advanced Enemy Radar",
         Desc = "Displays Upcoming Waves only",
         Value = Globals.EnemyTracker or false,
         Callback = function(v)
