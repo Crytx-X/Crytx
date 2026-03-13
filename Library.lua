@@ -967,32 +967,6 @@ end
 
 Window:Line()
 
-local FPSMods = Window:Tab({Title = "FPS Mods", Icon = "crosshair"}) do
-    FPSMods:Section({Title = "Gatling Gun / FPS Towers"})
-
-    FPSMods:Toggle({
-        Title = "FPS Silent Aim (Magnet Bullets)",
-        Desc = "Tahan Klik Kiri ke arah mana saja, peluru akan otomatis mengenai musuh terdepan.",
-        Value = false,
-        Callback = function(v)
-            Globals.FPSAimbot = v
-            SetSetting("FPSAimbot", v)
-        end
-    })
-
-    FPSMods:Toggle({
-        Title = "Auto Reload FPS",
-        Desc = "Instan reload saat peluru habis.",
-        Value = false,
-        Callback = function(v)
-            Globals.FPSAutoReload = v
-            SetSetting("FPSAutoReload", v)
-        end
-    })
-end
-
-Window:Line()
-
 local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Section({Title = "Tower Options"})
     
@@ -3020,102 +2994,6 @@ function TDS:SetOption(idx, name, val, ReqWave)
     end
     return false
 end
-
--- // ==========================================
--- // FPS TOWER AUTOMATION (HOOKING METHOD)
--- // ==========================================
-
--- Fungsi untuk mencari musuh terdepan (Progress tertinggi)
-local function GetBestFPSEnemyTarget()
-    local bestPos = nil
-    local maxProg = -1
-    local npcs = workspace:FindFirstChild("NPCs")
-    
-    if not npcs then return nil end
-
-    for _, enemy in ipairs(npcs:GetChildren()) do
-        local root = enemy:FindFirstChild("HumanoidRootPart")
-        local state = enemy:FindFirstChild("State")
-        
-        if root and state then
-            -- TDS menyimpan Health dan Progress di Attribute atau Value object
-            local hp = state:GetAttribute("Health") or (state:FindFirstChild("Health") and state.Health.Value) or 0
-            local prog = state:GetAttribute("Progress") or (state:FindFirstChild("Progress") and state.Progress.Value) or -1
-            
-            -- Jika musuh masih hidup dan posisinya paling depan
-            if hp > 0 and prog > maxProg then
-                maxProg = prog
-                -- Arahkan ke sedikit di atas kaki (RootPart) agar hit konsisten
-                bestPos = root.Position
-            end
-        end
-    end
-    
-    return bestPos
-end
-
--- // HOOKING METAMETHOD (SILENT AIM)
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-
-    -- Cek jika game mencoba mengirim sinyal "FireServer" (Menembak ke server)
-    if not checkcaller() and method == "FireServer" then
-        
-        -- Mencegat RemoteEvent khusus FPS (Gatling Gun / dll)
-        if self.Name == "RE:Fire" or self.Name == "URE:ReplicateAimPosition" or self.Name == "FireVisual" then
-            if Globals.FPSAimbot then
-                local targetPos = GetBestFPSEnemyTarget()
-                if targetPos then
-                    -- args[1] biasanya adalah Vector3 Position (titik tembak)
-                    -- Kita ganti posisinya paksa ke posisi musuh terdepan
-                    if typeof(args[1]) == "Vector3" then
-                        args[1] = targetPos
-                        return oldNamecall(self, unpack(args))
-                    end
-                end
-            end
-        end
-        
-    end
-
-    return oldNamecall(self, ...)
-end)
-
--- // AUTO RELOAD LOOP
-task.spawn(function()
-    while task.wait(0.1) do
-        if Globals.FPSAutoReload and GameState == "GAME" then
-            pcall(function()
-                local towers = workspace:FindFirstChild("Towers")
-                if towers then
-                    for _, tower in ipairs(towers:GetChildren()) do
-                        local rep = tower:FindFirstChild("TowerReplicator")
-                        if rep and rep:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId then
-                            -- Jika kita sedang di mode FPS dan peluru 0
-                            if rep:GetAttribute("FPS") == true then
-                                local ammo = rep:GetAttribute("Ammo") or 0
-                                local isReloading = rep:GetAttribute("Reloading") or false
-                                
-                                if ammo == 0 and not isReloading then
-                                    -- Bypass fungsi manual, langsung tembak remote Reload ke server
-                                    local network = game:GetService("ReplicatedStorage"):FindFirstChild("Network")
-                                    if network then
-                                        local gatlingFolder = network:FindFirstChild("GatlingGun")
-                                        if gatlingFolder and gatlingFolder:FindFirstChild("RE:Reload") then
-                                            gatlingFolder["RE:Reload"]:FireServer()
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
 
 task.spawn(function()
     while true do
