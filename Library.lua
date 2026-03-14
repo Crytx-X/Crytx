@@ -1005,7 +1005,7 @@ local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
     Autostrat:Section({Title = "Main"})
 
     Autostrat:Toggle({
-        Title = "Auto Rejoin",
+        Title = "Auto Rejoins",
         Desc = "Rejoins the gamemode after you've won and does the strategy again.",
         Value = Globals.AutoRejoin,
         Callback = function(v) SetSetting("AutoRejoin", v) end
