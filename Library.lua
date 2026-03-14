@@ -19,6 +19,109 @@ local mouse = LocalPlayer:GetMouse()
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local FileName = "ADS_Config.json"
 
+local TowerSkins = {
+    ["Accelerator"] = {"Champion", "Cupid", "Dank", "Default", "Disco", "Ducky", "Eclipse", "Elite", "Fallen", "Ghost Buster", "Ice Witch", "Legend", "Mage", "Magician", "Navy", "Nuclear", "Octopus", "Patient Zero", "Plushie", "Red", "Senator", "Speaker Titan", "Vigilante"},
+    ["Ace Pilot"] = {"Aerial Ace", "Default", "Easter", "Green", "Navy", "Pumpkin", "Purple", "Red", "Toy Plane", "Yellow"},
+    ["Archer"] = {"Default", "Elf", "Huntsman", "Ice Soul", "Spooky", "Valentines"},
+    ["Assassin"] = {"Actor", "Default", "Saber Tooth Tiger"},
+    ["Biologist"] = {"Default", "Grim"},
+    ["Brawler"] = {"Banned", "Blazing", "Default", "Fallen", "Horse", "Jordan", "Loader", "Lobster", "Lovestriker", "Rudolph", "Werewolf"},
+    ["Combatant"] = {"Default"},
+    ["Commander"] = {"Aqua", "Bloxy", "Brisk", "Bunny", "Candy Cane", "Default", "Director", "Ducky", "Eclipse", "Eggrypted", "Fallen", "Frost", "Galactic", "Gargoyle", "General", "Ghost", "Green", "Holiday", "Lifeguard", "Maid", "Neko", "Patriotic", "Pattern", "Phantom", "Pirate", "Plushie", "Red", "Santa", "Spring Time", "Umbra", "Valentines", "Victorian", "Vigilante", "War Lord", "Wasteland", "Werewolf", "Wonderland"},
+    ["Commando"] = {"Default", "Pirate", "Trooper"},
+    ["Cowboy"] = {"Agent", "Badlands", "Bandit", "Bounty Hunter", "Cop", "Cyberpunk", "Dark Frost", "Default", "Ducky", "Fallen", "Golden", "Holiday", "Kasodus", "Masquerade", "Mecha Bunny", "Megalodon", "Noir", "Plushie", "Pumpkin", "Redemption", "Retired", "Spring Time", "Valentines", "Vampire Hunter"},
+    ["Crook Boss"] = {"Alien Focus", "Assassin", "Blue", "Checker", "Corso", "Cupid", "Cybernetic", "DRKSHDW", "Dark Frost", "Default", "Demon", "Easter", "Game Master", "Golden", "Holiday", "Intern", "Narrator", "Necromancer", "Null", "Pirate", "Rat King", "Red", "Soviet", "Spooky", "SteamPunk", "Victorian", "Xmas"},
+    ["Cryomancer"] = {"Default", "Krampus Slayer"},
+    ["DJ Booth"] = {"Default", "Ducky", "Garage Band", "Ghost", "Gingerbread", "Mako", "Masquerade", "Neko", "Neon Rave", "Plushie", "Seal"},
+    ["Demoman"] = {"Blue", "Default", "Ducky", "Fortress", "Ghost", "Green", "Military", "Pirate", "Pumpkin", "Red", "Yellow"},
+    ["Electroshocker"] = {"Banned", "Bunny", "Classic", "Dark Frost", "Default", "Ducky", "Frankenstein", "Ghost", "Hazmat", "Jellyfish", "Korblox", "Lovestriker", "TeeVee", "Valentines", "Vigilante"},
+    ["Elementalist"] = {"Default"},
+    ["Elf Camp"] = {"Chocolatier", "Classic", "Default"},
+    ["Engineer"] = {"Beach", "Dark Frost", "Default", "DraxRex", "Ducky", "Fallen", "Ghost", "Grave Digger", "Heartbreak", "Holiday", "Mechanic", "Phantom", "Plushie", "Wikia"},
+    ["Executioner"] = {"Default", "Eclipse", "Heartbreak", "Vanquisher"},
+    ["Farm"] = {"Arcade", "Booth", "Cinema", "Cozy Camp", "Crab", "Crypto", "Cube", "Default", "Ducky", "Graveyard", "Lemonade Stand", "Null Soul", "PNG", "Pirate", "Present", "Tycoon", "Vendor", "Wasteland", "Xmas"},
+    ["Firework Technician"] = {"2026", "Default", "Inventor"},
+    ["Freezer"] = {"Cryptid", "Deep Freeze", "Default", "Foam", "Frost Legion", "IcyTea", "Mint Choco", "Polar Bear", "Vendor"},
+    ["Frost Blaster"] = {"Default"},
+    ["Gatling Gun"] = {"Default", "Easter"},
+    ["Gladiator"] = {"Beach", "Cameraman", "Default", "Demon", "Galactic", "Phantom", "Pirate", "Pumpkin", "Slugger", "Umbrella", "Vigilante"},
+    ["Hacker"] = {"Camera Operator", "Default", "Fallen", "Reindeer Mech", "Triumphant"},
+    ["Hallow Punk"] = {"Default", "Lunar"},
+    ["Harvester"] = {"Default", "Lunar", "Wasteland"},
+    ["Hunter"] = {"Blue", "Default", "Ducky", "Halloween", "Pirate", "Vampire Slayer"},
+    ["Jester"] = {"Clown", "Default", "Heartbreak", "The Beast", "The Flea"},
+    ["Juggernaut"] = {"Default"},
+    ["Kingpin"] = {"Default"},
+    ["Mecha Base"] = {"Default"},
+    ["Medic"] = {"Bartender", "Bunny", "Cyber", "Default", "Fallen", "Masquerade", "Mermaid", "Plague", "Second Chance", "Stranded", "Toy Ballerina", "Valentines", "Witch"},
+    ["Mercenary Base"] = {"Default", "Frost Legion", "Graveyard", "Liberator"},
+    ["Militant"] = {"Ace Pilot", "Acheron", "Arsenal", "Beach", "Chocolatier", "Davinchi", "Default", "Ducky", "Easter", "Fallen", "Ghost", "Hazmat", "John", "Lumberjack", "Pumpkin", "Star Spartan", "Undead", "Wasteland"},
+    ["Military Base"] = {"Base 1776", "Classic", "Cyber", "Default", "Wasteland"},
+    ["Minigunner"] = {"Beach", "Black Ops", "Blue", "Bunny", "Chad", "Chocolatier", "Community", "Crusader", "Cursed", "Default", "Ducky", "Fallen", "Frost", "Gardener", "Ghost", "Golden", "Golden Plushie", "Green", "Hazmat", "Heavy", "Holiday", "Nutcracker", "Ox", "Party", "Phantom", "Plushie", "Pumpkin", "Road Rage", "Space Elite", "Sweaking", "Toy", "Trucker", "Twitter", "Warlord", "Wraith", "Xmas"},
+    ["Mortar"] = {"Baseball", "Bunny", "Dark Frost", "Default", "DefaultOld", "Defender", "Ducky", "Eclipse", "Fallen", "Festive", "Frost", "Krampus", "Mecha Ducky", "Pirate", "Valentines", "Vigilante"},
+    ["Necromancer"] = {"Creepy Santa", "Default", "Duck", "Fallen", "Mage"},
+    ["Operator"] = {"Default"},
+    ["Paintballer"] = {"Bunny", "Default", "Green", "Red"},
+    ["Pursuit"] = {"Default", "Dragon", "Eggy"},
+    ["Pyromancer"] = {"Acidic", "Barbecue", "Blue", "Bunny", "Default", "Dwarf", "Fire Breather", "Frost", "Ghost", "Golden", "Hallow Punk", "Hazmat", "Mage", "Plushie", "Pool Party", "Reindeer", "Scarecrow", "Valentines", "Vigilante"},
+    ["Ranger"] = {"5ouls", "Badlands", "Beast Slayer", "Black Ops", "Blue", "Bunny", "Classic", "Dark Matter", "Default", "Eclipse", "Eskimo", "Frankenstein", "Frost", "Green", "Gun Gale", "Mecha Ducky", "Partisan", "Phantom", "Propellars", "Pumpkin", "Railgunner", "Shark", "SteamPunk", "Valentines", "Wraith"},
+    ["Rocketeer"] = {"Bosanka", "Dark Matter", "Default", "Duck", "Fortress", "Ghost", "Lovestriker", "Lunar", "Pumpkin", "Steampunk", "Toy", "Trombone", "Xmas"},
+    ["Scout"] = {"Banned", "Beach", "Black Ops", "Blue", "Bunny", "Cookie", "Default", "Ducky", "Eclipse", "Fallen", "Frost Hunter", "Golden", "Green", "Guest", "Haz3mn", "Holiday", "Intern", "King of Rock", "Masquerade", "Party", "Penguin", "Phantom", "Plushie", "Prime Raven", "Red", "Shark", "Skull Trooper", "Survivor", "Toilet", "Valentines", "Valhalla"},
+    ["Shotgunner"] = {"Classic", "Dance Fever", "Default", "Ducky", "Gardener", "Hallow Punk", "Holiday", "Null", "Phantom", "Slayer", "Spooky", "Trumpeter", "Vigilante"},
+    ["Slasher"] = {"Default", "Jason", "Spooky", "Spring Time"},
+    ["Sledger"] = {"Brave Soul", "Chocolatier", "Default", "Fallen", "Phantom"},
+    ["Sniper"] = {"Blue", "Bunny", "Davinchi", "Default", "Ducky", "Frost Legion", "Ghillie", "Red", "Redemption", "Shrimp", "Silent", "Valentines"},
+    ["Snowballer"] = {"Default"},
+    ["Soldier"] = {"Aerobics", "Beast Slayer", "Blue", "Bunny", "Classic", "Cold Soldier", "Dark Frost", "Default", "Doughboy", "Ducky", "Golden", "Grand Theft", "Holiday", "Korblox", "Liberator", "Null", "Party", "Red", "Stealth Ops", "Toilet", "Toy", "Valentines"},
+    ["Spotlight Tech"] = {"Default"},
+    ["Swarmer"] = {"Default"},
+    ["Tesla"] = {"Default"},
+    ["Toxic Gunner"] = {"Default", "Phantom"},
+    ["Trapper"] = {"Banned", "Chocolatier", "Dark Frost", "Default", "Hermit", "Holiday", "Jolly Tree", "Mallard Duck", "Plushie"},
+    ["Turret"] = {"Crossbow", "Default", "Grinch", "Jetski", "XR300", "XR500"},
+    ["War Machine"] = {"Default"},
+    ["Warden"] = {"Baseball", "Dark Frost", "Default", "Ducky", "Fallen", "Freddy", "Galactic", "Isaac", "Korblox", "Masquerade", "Pirate", "Shark", "Slaughter"},
+    ["Warlock"] = {"Default", "Rockstar", "Tiger"}
+}
+
+-- // Tower Resolver Logic
+local ValidTowersList = {
+    "Scout", "Sniper", "Paintballer", "Demoman", "Hunter", "Soldier", "Militant",
+    "Freezer", "Assassin", "Shotgunner", "Pyromancer", "Ace Pilot", "Medic", "Farm",
+    "Rocketeer", "Trapper", "Military Base", "Crook Boss",
+    "Electroshocker", "Commander", "Warden", "Cowboy", "DJ Booth", "Minigunner",
+    "Ranger", "Pursuit", "Gatling Gun", "Turret", "Mortar", "Mercenary Base",
+    "Brawler", "Necromancer", "Accelerator", "Engineer", "Hacker",
+    "Gladiator", "Commando", "Slasher", "Frost Blaster", "Archer", "Swarmer",
+    "Toxic Gunner", "Sledger", "Executioner", "Elf Camp", "Jester", "Cryomancer",
+    "Hallow Punk", "Harvester", "Snowballer", "Elementalist",
+    "Firework Technician", "Biologist", "Warlock", "Spotlight Tech", "Mecha Base"
+}
+
+local function NormalizeString(s) return s:lower():gsub("[^a-z0-9]", "") end
+
+local NormalizedTowers = {}
+for _, name in ipairs(ValidTowersList) do
+    table.insert(NormalizedTowers, {
+        raw = name,
+        norm = NormalizeString(name),
+        words = name:lower():split(" ")
+    })
+end
+
+local function ResolveTowerName(input)
+    if input == "" then return end
+    local n = NormalizeString(input)
+    for _, t in ipairs(NormalizedTowers) do if t.norm == n then return t.raw end end
+    for _, t in ipairs(NormalizedTowers) do if t.norm:sub(1, #n) == n then return t.raw end end
+    for _, t in ipairs(NormalizedTowers) do
+        for _, w in ipairs(t.words) do
+            if w:sub(1, #n) == n then return t.raw end
+        end
+    end
+    return nil
+end
+
 task.spawn(function()
     local function DisableIdled()
         local success, connections = pcall(getconnections, LocalPlayer.Idled)
@@ -139,10 +242,6 @@ local DefaultSettings = {
     SellFarms = false,
     AutoMercenary = false,
     AutoMilitary = false,
-    GatlingEnabled = false,
-    GatlingMultiply = 10,
-    GatlingCooldown = 0.05,
-    GatlingCriticalRange = 100,
     Frost = false,
     Fallen = false,
     Easy = false,
@@ -154,13 +253,21 @@ local DefaultSettings = {
     NoRecoil = false,
     SellFarmsWave = 1,
     WebhookURL = "",
-    Cooldown = 0.01,
-    Multiply = 60,
     PickupMethod = "Pathfinding",
     StreamerMode = false,
     HideUsername = false,
     StreamerName = "",
     tagName = "None",
+    Cooldown = 0.01,
+    Multiply = 1,
+    AutoCooldown = 0.01,
+    AutoMultiply = 1,
+    AutoGatling = false,
+    TargetChamsEnabled = false,
+    TargetChamsType = "Highlight",
+    SilentAimEnabled = false,
+    TargetPriority = "First",
+    AutoGatlingPriority = "First",
     Modifiers = {}
 }
 
@@ -279,6 +386,189 @@ local function SetSetting(name, value)
         Globals[name] = value
         SaveSettings()
     end
+end
+
+-- ==========================================
+-- // REAL-TIME RADAR, ESP & TRACER LOGIC
+-- ==========================================
+Globals.CurrentTargetModel = nil
+Globals.CurrentHighlight = nil
+Globals.LockedTargetPosition = nil
+local MyCachedGatlingPos = nil
+
+local function ClearESP()
+    if Globals.CurrentHighlight then
+        Globals.CurrentHighlight.Adornee = nil
+    end
+    Globals.CurrentTargetModel = nil
+end
+
+local function ApplyTargetChams(enemyModel)
+    if not enemyModel then 
+        ClearESP()
+        return 
+    end
+    if Globals.CurrentTargetModel ~= enemyModel then
+        if not Globals.CurrentHighlight then
+            Globals.CurrentHighlight = Instance.new("Highlight")
+            Globals.CurrentHighlight.FillColor = Color3.fromRGB(255, 0, 0)
+            Globals.CurrentHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+            Globals.CurrentHighlight.FillTransparency = 0.5
+            Globals.CurrentHighlight.OutlineTransparency = 0
+            Globals.CurrentHighlight.Parent = game:GetService("CoreGui")
+        end
+        Globals.CurrentHighlight.Adornee = enemyModel
+        Globals.CurrentTargetModel = enemyModel
+    end
+end
+
+RunService.Heartbeat:Connect(function()
+    if not Globals.AutoGatling and not Globals.SilentAimEnabled then
+        ClearESP()
+        Globals.LockedTargetPosition = nil
+        return
+    end
+
+    local towerPos = MyCachedGatlingPos or workspace.CurrentCamera.CFrame.Position
+    local BestTargetEnemy = nil
+    local TargetHitbox = nil
+    local MaxDistance = -1
+    local MaxHealth = -1
+    local MinDist = math.huge
+    local MinDistancePath = math.huge
+    
+    local activePriority = Globals.AutoGatling and Globals.AutoGatlingPriority or Globals.TargetPriority
+    local npcs = workspace:FindFirstChild("NPCs")
+    
+    if npcs then
+        for _, enemy in pairs(npcs:GetChildren()) do
+            local hitbox = enemy:FindFirstChild("HumanoidRootPart")
+            local pointer = enemy:FindFirstChild("RootPointer") 
+            
+            if hitbox and pointer and pointer.Value then
+                local repFolder = pointer.Value
+                local health = repFolder:GetAttribute("Health") or 0
+                local pathDist = repFolder:GetAttribute("PathDistance") or 0
+                
+                if health > 0 then
+                    if activePriority == "First" and pathDist > MaxDistance then
+                        MaxDistance = pathDist
+                        BestTargetEnemy = enemy
+                        TargetHitbox = hitbox
+                    elseif activePriority == "Last" and pathDist < MinDistancePath then
+                        MinDistancePath = pathDist
+                        BestTargetEnemy = enemy
+                        TargetHitbox = hitbox
+                    elseif activePriority == "Strongest" and health > MaxHealth then
+                        MaxHealth = health
+                        BestTargetEnemy = enemy
+                        TargetHitbox = hitbox
+                    elseif activePriority == "Close" then
+                        local dist = (hitbox.Position - towerPos).Magnitude
+                        if dist < MinDist then
+                            MinDist = dist
+                            BestTargetEnemy = enemy
+                            TargetHitbox = hitbox
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    if TargetHitbox then
+        Globals.LockedTargetPosition = TargetHitbox.Position
+    else
+        Globals.LockedTargetPosition = nil
+    end
+
+    if BestTargetEnemy and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Highlight" or Globals.TargetChamsType == "Both") then
+        ApplyTargetChams(BestTargetEnemy)
+    else
+        ClearESP()
+    end
+end)
+
+local function CreateTracer(targetPos)
+    local startPos = MyCachedGatlingPos
+    if not startPos then
+        local towersFolder = workspace:FindFirstChild("Towers")
+        if towersFolder then
+            for _, tower in pairs(towersFolder:GetChildren()) do
+                local rep = tower:FindFirstChild("TowerReplicator")
+                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                    local weapon = tower:FindFirstChild("Weapon")
+                    local main = weapon and weapon:FindFirstChild("Main")
+                    local barrel = main and main:FindFirstChild("Barrel")
+                    if barrel then startPos = barrel.Position
+                    elseif weapon.PrimaryPart then startPos = weapon.PrimaryPart.Position end
+                end
+                if not startPos and tower.PrimaryPart then startPos = tower.PrimaryPart.Position end
+                MyCachedGatlingPos = startPos
+                if startPos then break end
+            end
+        end
+    end
+
+    if not startPos then return end
+
+    local tracer = Instance.new("Part")
+    tracer.Name = "GatlingTracer"
+    tracer.Anchored = true
+    tracer.CanCollide = false
+    tracer.CastShadow = false
+    tracer.Material = Enum.Material.Neon
+    tracer.Color = Color3.fromRGB(255, 200, 50) 
+    
+    local distance = (targetPos - startPos).Magnitude
+    tracer.Size = Vector3.new(0.15, 0.15, distance) 
+    tracer.CFrame = CFrame.lookAt(startPos, targetPos) * CFrame.new(0, 0, -(distance / 2))
+    tracer.Parent = workspace.Terrain
+
+    TweenService:Create(tracer, TweenInfo.new(0.15), {Transparency = 1}):Play()
+    game:GetService("Debris"):AddItem(tracer, 0.15)
+end
+
+if hookmetamethod then
+    local lastTracerTime = 0
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        
+        if method == "FireServer" and typeof(self) == "Instance" and self.Name == "RE:Fire" then
+            local p = self.Parent
+            if p and p.Name == "GatlingGun" then
+                if (Globals.AutoGatling or Globals.SilentAimEnabled) and Globals.TargetChamsEnabled and (Globals.TargetChamsType == "Tracer" or Globals.TargetChamsType == "Both") then
+                    local args = {...}
+                    local targetPos = args[1]
+                    if typeof(targetPos) == "Vector3" then
+                        local now = os.clock()
+                        if now - lastTracerTime >= 0.05 then 
+                            lastTracerTime = now
+                            task.spawn(CreateTracer, targetPos)
+                        end
+                    end
+                end
+            end
+        end
+
+        if method == "InvokeServer" and typeof(self) == "Instance" and self.Name == "RemoteFunction" then
+            local args = {...}
+            if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
+                local payload = args[4]
+                if type(payload) == "table" and payload.Name == "FPS" then
+                    if payload.Data and payload.Data.enabled == false then
+                        if Globals.AutoGatling then
+                            args[4] = { Troop = payload.Troop, Name = payload.Name, Data = { enabled = true } }
+                            return oldNamecall(self, unpack(args))
+                        end
+                    end
+                end
+            end
+        end
+
+        return oldNamecall(self, ...)
+    end)
 end
 
 local function Apply3dRendering()
@@ -862,29 +1152,15 @@ local function UpdatePathVisuals()
     end
 end
 
-function TDS:Addons()
-    local url = "https://api.jnkie.com/api/v1/luascripts/public/57fe397f76043ce06afad24f07528c9f93e97730930242f57134d0b60a2d250b/download"
+-- === NATIVE EQUIP AND UNEQUIP ===
+function TDS_Equip(tower_name)
+    local success, err = pcall(function() return RemoteFunc:InvokeServer("Inventory", "Equip", "tower", tower_name) end)
+    return success
+end
 
-    local success, code = pcall(game.HttpGet, game, url)
-
-    if not success then
-        return false
-    end
-
-    loadstring(code)()
-
-    while not (TDS.MultiMode and TDS.Multiplayer) do
-        task.wait(0.1)
-    end
-
-    local OriginalEquip = TDS.Equip
-    TDS.Equip = function(...)
-        if GameState == "GAME" then
-            return OriginalEquip(...)
-        end
-    end
-
-    return true
+function TDS_Unequip(tower_name)
+    local success, err = pcall(function() return RemoteFunc:InvokeServer("Inventory", "Unequip", "tower", tower_name) end)
+    return success
 end
 
 local function GetEquippedTowers()
@@ -1257,122 +1533,110 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Main:Section({Title = "Premium"})
-    local UnlockBtn = Main:Button({
-        Title = "Unlock Premium Features",
-        Desc = "Required Key System to access Gatling and Equipper",
-        Callback = function()
-            task.spawn(function()
-                Window:Notify({Title = "ADS", Desc = "Loading Key System...", Time = 3})
-
-                local success = TDS:Addons()
-
-                if success then
-                    TDS.GatlingConfig.Enabled = true
-                    TDS:AutoGatling()
-
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Premium Unlocked! Gatling Gun is now ACTIVE.",
-                        Time = 5,
-                        Type = "normal"
-                    })
-                end
-            end)
-        end
-    })
-
     Main:Section({Title = "Equipper"})
+    
     Main:Textbox({
-        Title = "Equip:",
-        Desc = "",
-        Placeholder = "",
-        Value = "",
-        ClearTextOnFocus = false,
+        Title = "Equip:", Placeholder = "E.g. Gatling Gun", Value = "", ClearTextOnFocus = false,
         Callback = function(text)
-            if text == "" or text == nil then return end
+            if not text or text == "" then return end
+            
+            -- *** FIX APPLIED HERE: Trim whitespace and check if empty ***
+            local trimmed_text = text:match("^%s*(.-)%s*$") or ""
+            if trimmed_text == "" then return end
+            
             task.spawn(function()
-                if not TDS.Equip then
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Waiting for Key System to finish...",
-                        Time = 3,
-                        Type = "normal"
-                    })
-                    repeat 
-                        task.wait(0.5) 
-                    until TDS.Equip
+                local real_tower_name = ResolveTowerName(trimmed_text)
+                if not real_tower_name then
+                    Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(trimmed_text), Time = 3, Type = "error" })
+                    return
                 end
-
-                local success, err = pcall(function()
-                    TDS:Equip(tostring(text))
-                end)
-
+                local success = TDS_Equip(real_tower_name)
                 if success then
-                    Window:Notify({
-                        Title = "ADS",
-                        Desc = "Successfully equipped: " .. tostring(text),
-                        Time = 3,
-                        Type = "normal"
-                    })
+                    Window:Notify({ Title = "ADS", Desc = "Successfully equipped: " .. real_tower_name, Time = 3, Type = "normal" })
+                else
+                    Window:Notify({ Title = "ADS", Desc = "Failed to equip: " .. real_tower_name, Time = 3, Type = "error" })
                 end
             end)
         end
     })
 
-    Main:Section({Title = "Gatling Gun"})
-    Main:Toggle({
-        Title = "Auto Gatling Enabled",
-        Value = Globals.GatlingEnabled,
-        Callback = function(state)
-            if not TDS.Equip then
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Waiting for Key System to finish...",
-                    Time = 3,
-                    Type = "normal"
-                })
-                repeat 
-                    task.wait(0.5) 
-                until TDS.Equip
+    Main:Textbox({
+        Title = "Unequip:", Placeholder = "E.g. Farm", Value = "", ClearTextOnFocus = false,
+        Callback = function(text)
+            if not text or text == "" then return end
+            
+            -- *** FIX APPLIED HERE: Trim whitespace and check if empty ***
+            local trimmed_text = text:match("^%s*(.-)%s*$") or ""
+            if trimmed_text == "" then return end
+            
+            task.spawn(function()
+                local real_tower_name = ResolveTowerName(trimmed_text)
+                if not real_tower_name then
+                    Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(trimmed_text), Time = 3, Type = "error" })
+                    return
+                end
+                local success = TDS_Unequip(real_tower_name)
+                if success then
+                    Window:Notify({ Title = "ADS", Desc = "Successfully unequipped: " .. real_tower_name, Time = 3, Type = "normal" })
+                else
+                    Window:Notify({ Title = "ADS", Desc = "Failed to unequip: " .. real_tower_name, Time = 3, Type = "error" })
+                end
+            end)
+        end
+    })
+
+    Main:Section({Title = "Skins"})
+    
+    local tower_skin_list = {}
+    for t_name, _ in pairs(TowerSkins) do table.insert(tower_skin_list, t_name) end
+    table.sort(tower_skin_list)
+
+    local selected_skin_tower = tower_skin_list[1]
+    local selected_skin_name = "Default"
+
+    local function get_skins(tower)
+        local list = {}
+        if TowerSkins[tower] then
+            for _, s_name in ipairs(TowerSkins[tower]) do table.insert(list, s_name) end
+            table.sort(list)
+        end
+        return list
+    end
+
+    local SkinDropdown
+
+    Main:Dropdown({
+        Title = "Select Tower:", List = tower_skin_list, Value = selected_skin_tower,
+        Callback = function(choice)
+            selected_skin_tower = choice
+            local new_skins = get_skins(choice)
+            selected_skin_name = new_skins[1] or "Default"
+            if SkinDropdown then
+                SkinDropdown:Clear()
+                for _, s in ipairs(new_skins) do SkinDropdown:Add(s) end
+                SkinDropdown:SetValue(selected_skin_name)
             end
-
-            SetSetting("GatlingEnabled", state)
-            TDS.GatlingConfig.Enabled = state
         end
     })
 
-    Main:Slider({
-        Title = "Gatling Multiply",
-        Min = 1,
-        Max = 50,
-        Value = Globals.GatlingMultiply,
-        Callback = function(val)
-            SetSetting("GatlingMultiply", val)
-            TDS.GatlingConfig.Multiply = val
-        end
+    SkinDropdown = Main:Dropdown({
+        Title = "Select Skin:", List = get_skins(selected_skin_tower), Value = selected_skin_name,
+        Callback = function(choice) selected_skin_name = choice end
     })
 
-    Main:Slider({
-        Title = "Gatling Cooldown",
-        Min = 0.01,
-        Max = 1,
-        Value = Globals.GatlingCooldown,
-        Callback = function(val)
-            SetSetting("GatlingCooldown", val)
-            TDS.GatlingConfig.Cooldown = val
-        end
-    })
-
-    Main:Slider({
-        Title = "Critical Range",
-        Desc = "Target enemies this close to the exit first",
-        Min = 10,
-        Max = 200,
-        Value = Globals.GatlingCriticalRange,
-        Callback = function(val)
-            SetSetting("GatlingCriticalRange", val)
-            TDS.GatlingConfig.CriticalRange = val
+    Main:Button({
+        Title = "Apply Skin",
+        Callback = function()
+            if selected_skin_tower and selected_skin_name then
+                local success = pcall(function()
+                    return game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "Skin", selected_skin_tower, selected_skin_name)
+                end)
+                if success then
+                    Window:Notify({ Title = "ADS", Desc = "Successfully equipped " .. selected_skin_name .. " skin for " .. selected_skin_tower .. "!", Time = 3, Type = "normal" })
+                else
+                    Window:Notify({ Title = "ADS", Desc = "Failed to equip skin.", Time = 3, Type = "error" })
+                end
+            end
         end
     })
 
@@ -1817,65 +2081,239 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-    Misc:Section({Title = "Gatling Gun"})
+    Misc:Section({Title = "Target Visual"})
+    Misc:Dropdown({
+        Title = "Target Visual Type",
+        Desc = "Applies to both Auto Gatling & Silent Aim",
+        List = {"Highlight", "Tracer", "Both"},
+        Value = Globals.TargetChamsType or "Highlight",
+        Callback = function(choice)
+            local selected = type(choice) == "table" and choice[1] or choice
+            if not selected or selected == "" then selected = "Highlight" end
+            Globals.TargetChamsType = selected
+            SetSetting("TargetChamsType", selected)
+        end
+    })
+
+    Misc:Toggle({
+        Title = "Enable Target Visual",
+        Value = Globals.TargetChamsEnabled, 
+        Callback = function(state)
+            Globals.TargetChamsEnabled = state
+            SetSetting("TargetChamsEnabled", state) 
+            if not state then ClearESP() end
+        end
+    })
+
+    Misc:Section({Title = "Auto Gatling Gun"})
+    
+    Misc:Dropdown({
+        Title = "Auto Gatling Priority",
+        Desc = "Choose target priority for Auto Gatling",
+        List = {"First", "Last", "Strongest", "Close"},
+        Value = Globals.AutoGatlingPriority or "First",
+        Callback = function(choice)
+            local selected = type(choice) == "table" and choice[1] or choice
+            SetSetting("AutoGatlingPriority", selected)
+        end
+    })
+
     Misc:Textbox({
-        Title = "Cooldown:",
-        Desc = "",
-        Placeholder = "0.01",
-        Value = Globals.Cooldown,
-        ClearTextOnFocus = true,
+        Title = "Auto Cooldown:", Placeholder = "0.01", Value = tostring(Globals.AutoCooldown), ClearTextOnFocus = true,
         Callback = function(value)
-            if value ~= 0 then
-                SetSetting("Cooldown", value)
+            if tonumber(value) then
+                Globals.AutoCooldown = tonumber(value)
+                SetSetting("AutoCooldown", tonumber(value)) 
             end
         end
     })
 
     Misc:Textbox({
-        Title = "Multiply:",
-        Desc = "",
-        Placeholder = "60",
-        Value = Globals.Multiply,
-        ClearTextOnFocus = true,
+        Title = "Auto Multiply:", Placeholder = "1", Value = tostring(Globals.AutoMultiply), ClearTextOnFocus = true,
         Callback = function(value)
-            if value ~= 0 then
-                SetSetting("Multiply", value)
+            if tonumber(value) then
+                Globals.AutoMultiply = tonumber(value)
+                SetSetting("AutoMultiply", tonumber(value)) 
             end
+        end
+    })
+
+    Misc:Toggle({
+        Title = "Enable Auto Gatling",
+        Value = Globals.AutoGatling, 
+        Callback = function(state)
+            Globals.AutoGatling = state
+            SetSetting("AutoGatling", state) 
+
+            local function FireFPSAbility(isEnabled)
+                pcall(function()
+                    local towersFolder = workspace:FindFirstChild("Towers")
+                    local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
+                    if defaultTroop then
+                        local args = { "Troops", "Abilities", "Activate", { Troop = defaultTroop, Name = "FPS", Data = { enabled = isEnabled } } }
+                        game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
+                    end
+                end)
+            end
+
+            if state then
+                Window:Notify({ Title = "ADS", Desc = "Auto Gatling Enabled", Time = 3 })
+                FireFPSAbility(true)
+
+                task.spawn(function()
+                    local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
+                    local gatlingNetwork = network:WaitForChild("GatlingGun")
+                    local fireRemote = gatlingNetwork:WaitForChild("RE:Fire")
+                    local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
+
+                    while Globals.AutoGatling do
+                        local myGatlingRep = nil
+                        local towersFolder = workspace:FindFirstChild("Towers")
+                        if towersFolder then
+                            for _, tower in pairs(towersFolder:GetChildren()) do
+                                local rep = tower:FindFirstChild("TowerReplicator")
+                                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                                    myGatlingRep = rep
+                                    break
+                                end
+                            end
+                        end
+
+                        if myGatlingRep then
+                            local currentAmmo = myGatlingRep:GetAttribute("Ammo")
+                            local isReloading = myGatlingRep:GetAttribute("Reloading")
+
+                            if (currentAmmo ~= nil and currentAmmo <= 0) or isReloading then
+                                if not isReloading then pcall(function() reloadRemote:FireServer() end) end
+                                task.wait(0.01)
+                                continue 
+                            end
+                        end
+
+                        if Globals.LockedTargetPosition then
+                            for i = 1, Globals.AutoMultiply do
+                                pcall(function() fireRemote:FireServer(Globals.LockedTargetPosition, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow()) end)
+                            end
+                        end
+                        task.wait(Globals.AutoCooldown or 0.01)
+                    end
+                end)
+            else
+                FireFPSAbility(false)
+            end
+        end
+    })
+
+    Misc:Section({Title = "Gatling Gun (Silent Aim)"})
+    
+    Globals.CustomGatlingApplied = false 
+
+    local function EnsureGatlingHook()
+        local success, gganim = pcall(function()
+            return require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+        end)
+        if not success or not gganim then return false end
+
+        if not Globals.OriginalFireGun then Globals.OriginalFireGun = gganim._fireGun end
+
+        gganim._fireGun = function(self)
+            local TargetPosition = nil
+
+            if Globals.SilentAimEnabled and Globals.LockedTargetPosition then TargetPosition = Globals.LockedTargetPosition end
+
+            if not TargetPosition then
+                local CameraController = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
+                TargetPosition = CameraController.result and CameraController.result.Position or CameraController.position
+            end
+
+            if not TargetPosition then return end
+
+            local isMinigun = self.Replicator:Get("Minigun")
+            local canFire = self.Replicator:Get("CanFire")
+            if not isMinigun and true or canFire then
+                pcall(function() self:_fire(TargetPosition) end)
+            end
+
+            local GatlingChannel = require(game.ReplicatedStorage.Shared.Modules.NewNetwork).Channel("GatlingGun")
+            local sync = workspace:GetAttribute("Sync")
+            local serverTime = workspace:GetServerTimeNow()
+
+            if Globals.CustomGatlingApplied then
+                for i = 1, (Globals.Multiply or 1) do
+                    GatlingChannel:fireServer("Fire", TargetPosition, sync, serverTime)
+                end
+                self:Wait(Globals.Cooldown or 0.01)
+            else
+                GatlingChannel:fireServer("Fire", TargetPosition, sync, serverTime)
+                self:Wait(self:GetCooldown())
+            end
+        end
+        return true
+    end
+
+    Misc:Dropdown({
+        Title = "Silent Aim Priority",
+        Desc = "Choose target priority for Silent Aim",
+        List = {"First", "Last", "Strongest", "Close"},
+        Value = Globals.TargetPriority, 
+        Callback = function(choice)
+            local selected = type(choice) == "table" and choice[1] or choice
+            SetSetting("TargetPriority", selected)
+        end
+    })
+
+    Misc:Toggle({
+        Title = "Enable Silent Aim",
+        Desc = "Magic bullets auto-hit enemies.",
+        Value = Globals.SilentAimEnabled, 
+        Callback = function(state)
+            Globals.SilentAimEnabled = state
+            SetSetting("SilentAimEnabled", state)
+            
+            if not state then ClearESP() end
+            
+            local hooked = EnsureGatlingHook()
+            if not hooked and state then
+                Window:Notify({Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error"})
+                SetSetting("SilentAimEnabled", false)
+                Globals.SilentAimEnabled = false
+            elseif state then
+                Window:Notify({Title = "Silent Aim", Desc = "Activated!", Time = 3, Type = "normal"})
+            end
+        end
+    })
+
+    Misc:Textbox({
+        Title = "Cooldown:", Placeholder = "0.01", Value = tostring(Globals.Cooldown), ClearTextOnFocus = true,
+        Callback = function(value)
+            local num = tonumber(value)
+            if num then SetSetting("Cooldown", num) end
+        end
+    })
+
+    Misc:Textbox({
+        Title = "Multiply:", Placeholder = "1", Value = tostring(Globals.Multiply), ClearTextOnFocus = true,
+        Callback = function(value)
+            local num = tonumber(value)
+            if num then SetSetting("Multiply", num) end
         end
     })
 
     Misc:Button({
         Title = "Apply Gatling",
         Callback = function()
-            if hookmetamethod then
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Successfully applied Gatling Gun Settings",
-                    Time = 3,
-                    Type = "normal"
-                })
+            Globals.CustomGatlingApplied = true
+            local hooked = EnsureGatlingHook()
+            if hooked then Window:Notify({ Title = "ADS", Desc = "Successfully applied Custom Cooldown & Multiply!", Time = 3, Type = "normal" })
+            else Window:Notify({ Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error" }) end
+        end
+    })
 
-                local ggchannel = require(game.ReplicatedStorage.Resources.Universal.NewNetwork).Channel("GatlingGun")
-                local gganim = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
-
-                gganim._fireGun = function(self)
-                    local cam = require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator.CameraController)
-                    local pos = cam.result and cam.result.Position or cam.position
-
-                    for i = 1, Globals.Multiply do
-                        ggchannel:fireServer("Fire", pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow())
-                    end
-
-                    self:Wait(Globals.Cooldown)
-                end
-            else
-                Window:Notify({
-                    Title = "ADS",
-                    Desc = "Your executor is not supported, please use a different one!",
-                    Time = 3,
-                    Type = "normal"
-                })
-            end
+    Misc:Button({
+        Title = "Reset Gatling",
+        Callback = function()
+            Globals.CustomGatlingApplied = false
+            Window:Notify({ Title = "ADS", Desc = "Gatling speed & multiply reset to normal!", Time = 3, Type = "normal" })
         end
     })
 
@@ -1899,6 +2337,64 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         task.wait()
                     end
                 end)
+            end
+        end
+    })
+
+    Misc:Toggle({
+        Title = "Party Invite Spam (Lobby)",
+        Desc = "Spam invites to everyone in the lobby (Warning: annoying!)",
+        Value = false,
+        Callback = function(state)
+            Globals.PartySpamEnabled = state
+            if state then
+                if GameState ~= "LOBBY" then
+                    Window:Notify({ Title = "Error", Desc = "You can only use this feature in the Lobby!", Time = 3, Type = "error" })
+                    Globals.PartySpamEnabled = false
+                    return
+                end
+                Window:Notify({Title = "ADS", Desc = "Party Spam Enabled!", Time = 3, Type = "normal"})
+                task.spawn(function()
+                    local plrs = game:GetService("Players")
+                    local rfunc = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
+                    while Globals.PartySpamEnabled do
+                        pcall(function()
+                            rfunc:InvokeServer("Party", "CreateParty")
+                            for _, plr in ipairs(plrs:GetPlayers()) do
+                                if plr ~= plrs.LocalPlayer then rfunc:InvokeServer("Party", "InvitePlayer", plr) end
+                            end
+                            rfunc:InvokeServer("Party", "LeaveParty")
+                        end)
+                        task.wait(0.2)
+                    end
+                end)
+            end
+        end
+    })
+
+    Misc:Button({
+        Title = "Open Inventory",
+        Desc = "Open Inventory",
+        Callback = function()
+            local RS = game:GetService("ReplicatedStorage")
+            pcall(function()
+                local NewNetwork = require(RS.Shared.Modules.NewNetwork)
+                NewNetwork.Channel("Inventory"):fireUnreliableServer("OpenInventory")
+            end)
+
+            local foundStore = false
+            for _, module in ipairs(getloadedmodules()) do
+                if module.Name == "View" and module.Parent and module.Parent.Name == "Stores" then
+                    local Store = require(module)
+                    Store:commit("setView", "Inventory")
+                    foundStore = true
+                    print("Berhasil membuka UI Inventory secara paksa!")
+                    break
+                end
+            end
+
+            if not foundStore then
+                warn("Gagal menemukan Module Store UI. Pastikan game sudah loading sepenuhnya.")
             end
         end
     })
