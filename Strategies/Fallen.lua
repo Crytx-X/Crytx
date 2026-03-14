@@ -1,3 +1,5 @@
+TDS:Addons()
+
 TDS:Loadout("Farm", "Shotgunner", "DJ Booth", "Commander", "Electroshocker")
 TDS:Mode("Fallen")
 TDS:GameInfo("Simplicity", {})

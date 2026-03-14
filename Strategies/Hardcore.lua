@@ -1,3 +1,5 @@
+TDS:Addons()
+
 TDS:Loadout("Farm", "Scout", "DJ Booth", "Electroshocker", "Commander")
 TDS:Mode("Hardcore")
 TDS:GameInfo("Crossroads", {})

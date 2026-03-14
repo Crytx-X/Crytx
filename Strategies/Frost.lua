@@ -1,3 +1,5 @@
+TDS:Addons()
+
 TDS:Loadout("Mercenary Base", "DJ Booth", "Hacker", "Scout", "Necromancer")
 TDS:Mode("Frost")
 TDS:GameInfo("Honey Valley", {})
