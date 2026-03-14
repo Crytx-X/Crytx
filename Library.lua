@@ -1540,7 +1540,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         Callback = function(text)
             if not text or text == "" then return end
             
-            -- *** FIX APPLIED HERE: Trim whitespace and check if empty ***
             local trimmed_text = text:match("^%s*(.-)%s*$") or ""
             if trimmed_text == "" then return end
             
@@ -1565,7 +1564,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         Callback = function(text)
             if not text or text == "" then return end
             
-            -- *** FIX APPLIED HERE: Trim whitespace and check if empty ***
             local trimmed_text = text:match("^%s*(.-)%s*$") or ""
             if trimmed_text == "" then return end
             
@@ -2121,7 +2119,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Textbox({
         Title = "Auto Cooldown:", Placeholder = "0.01", Value = tostring(Globals.AutoCooldown), ClearTextOnFocus = true,
         Callback = function(value)
-            if tonumber(value) then
+            local num = tonumber(value)
+            if num then
                 Globals.AutoCooldown = tonumber(value)
                 SetSetting("AutoCooldown", tonumber(value)) 
             end
@@ -2131,7 +2130,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Textbox({
         Title = "Auto Multiply:", Placeholder = "1", Value = tostring(Globals.AutoMultiply), ClearTextOnFocus = true,
         Callback = function(value)
-            if tonumber(value) then
+            local num = tonumber(value)
+            if num then
                 Globals.AutoMultiply = tonumber(value)
                 SetSetting("AutoMultiply", tonumber(value)) 
             end
@@ -2867,9 +2867,9 @@ local function HandlePostMatch()
                 {
                     name = "✨ Rewards",
                     value = "```ansi\n" ..
-                            "[2;33mCoins:[0m +" .. match.Coins .. "\n" ..
-                            "[2;34mGems: [0m +" .. match.Gems .. "\n" ..
-                            "[2;32mXP:   [0m +" .. match.XP .. "```",
+                            " [2;33mCoins: [0m +" .. match.Coins .. "\n" ..
+                            " [2;34mGems:  [0m +" .. match.Gems .. "\n" ..
+                            " [2;32mXP:    [0m +" .. match.XP .. "```",
                     inline = false
                 },
                 {
