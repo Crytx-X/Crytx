@@ -21,7 +21,7 @@ local mouse = LocalPlayer:GetMouse()
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 local FileName = "ADS_Config.json"
 
--- // Data Tables (Skins Simplified - For Reference Only, Not Used in Core Logic)
+-- // Data Tables (Skins Simplified - No RBXAssetIDs)
 local TowerSkins = {
     ["Accelerator"] = {"Champion", "Cupid", "Dank", "Default", "Disco", "Ducky", "Eclipse", "Elite", "Fallen", "Ghost Buster", "Ice Witch", "Legend", "Mage", "Magician", "Navy", "Nuclear", "Octopus", "Patient Zero", "Plushie", "Red", "Senator", "Speaker Titan", "Vigilante"},
     ["Ace Pilot"] = {"Aerial Ace", "Default", "Easter", "Green", "Navy", "Pumpkin", "Purple", "Red", "Toy Plane", "Yellow"},
@@ -112,7 +112,7 @@ for _, name in ipairs(ValidTowersList) do
 end
 
 local function ResolveTowerName(input)
-    if not input or input == "" then return end
+    if input == "" then return end
     local n = NormalizeString(input)
     for _, t in ipairs(NormalizedTowers) do if t.norm == n then return t.raw end end
     for _, t in ipairs(NormalizedTowers) do if t.norm:sub(1, #n) == n then return t.raw end end
@@ -124,7 +124,7 @@ local function ResolveTowerName(input)
     return nil
 end
 
--- // Anti-Idle & Auto Reconnect (Optimized)
+-- // Anti-Idle & Auto Reconnect
 task.spawn(function()
     local success, connections = pcall(getconnections, LocalPlayer.Idled)
     if success then
@@ -179,7 +179,7 @@ StartAntiAfk()
 
 -- // Network Functions
 local SendRequest = request or http_request or httprequest or (GetDevice and GetDevice().request)
-if not SendRequest then warn("failure: no http function, **bhenchod**!") return end
+if not SendRequest then warn("failure: no http function") return end
 
 -- // Variables & Toggles
 local BackToLobbyRunning = false
@@ -258,18 +258,14 @@ local ItemNames = {
     ["139414922355803"] = "Present Clusters(s)"
 }
 
-local TDS = {
-    PlacedTowers = {},
-    ActiveStrat = true,
-    MatchmakingMap = {
-        ["Hardcore"] = "hardcore", ["Pizza Party"] = "halloween",
-        ["Badlands"] = "badlands", ["Polluted"] = "polluted"
-    }
-}
-TDS["placed_towers"] = TDS.PlacedTowers
-TDS["active_strat"] = TDS.ActiveStrat
-TDS["matchmaking_map"] = TDS.MatchmakingMap
 local UpgradeHistory = {}
+TDS = {}
+TDS["placed_towers"] = {}
+TDS["active_strat"] = true
+TDS["matchmaking_map"] = {
+    ["Hardcore"] = "hardcore", ["Pizza Party"] = "halloween",
+    ["Badlands"] = "badlands", ["Polluted"] = "polluted"
+}
 shared.TDSTable = TDS
 shared["TDS_Table"] = TDS
 
@@ -301,19 +297,26 @@ local function SetSetting(name, value)
     end
 end
 
--- // Real-Time Radar, ESP & Tracer Logic (Optimized)
+-- ==========================================
+-- // REAL-TIME RADAR, ESP & TRACER LOGIC
+-- ==========================================
 Globals.CurrentTargetModel = nil
 Globals.CurrentHighlight = nil
 Globals.LockedTargetPosition = nil
 local MyCachedGatlingPos = nil
 
 local function ClearESP()
-    if Globals.CurrentHighlight then Globals.CurrentHighlight.Adornee = nil end
+    if Globals.CurrentHighlight then
+        Globals.CurrentHighlight.Adornee = nil
+    end
     Globals.CurrentTargetModel = nil
 end
 
 local function ApplyTargetChams(enemyModel)
-    if not enemyModel then ClearESP() return end
+    if not enemyModel then 
+        ClearESP()
+        return 
+    end
     if Globals.CurrentTargetModel ~= enemyModel then
         if not Globals.CurrentHighlight then
             Globals.CurrentHighlight = Instance.new("Highlight")
@@ -404,16 +407,14 @@ local function CreateTracer(targetPos)
                 local rep = tower:FindFirstChild("TowerReplicator")
                 if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
                     local weapon = tower:FindFirstChild("Weapon")
-                    if weapon then
-                        local main = weapon:FindFirstChild("Main")
-                        local barrel = main and main:FindFirstChild("Barrel")
-                        if barrel then startPos = barrel.Position
-                        elseif weapon.PrimaryPart then startPos = weapon.PrimaryPart.Position end
-                    end
-                    if not startPos and tower.PrimaryPart then startPos = tower.PrimaryPart.Position end
-                    MyCachedGatlingPos = startPos
-                    if startPos then break end
+                    local main = weapon and weapon:FindFirstChild("Main")
+                    local barrel = main and main:FindFirstChild("Barrel")
+                    if barrel then startPos = barrel.Position
+                    elseif weapon.PrimaryPart then startPos = weapon.PrimaryPart.Position end
                 end
+                if not startPos and tower.PrimaryPart then startPos = tower.PrimaryPart.Position end
+                MyCachedGatlingPos = startPos
+                if startPos then break end
             end
         end
     end
@@ -517,7 +518,9 @@ LoadSettings()
 Globals.TimeScaleValue = CoerceTimeScaleValue(Globals.TimeScaleValue, 2)
 Apply3dRendering()
 
--- // Tag Changer / Spoofing Logic (Simplified)
+-- ==========================================
+-- // Tag Changer / Spoofing Logic
+-- ==========================================
 local isTagChangerRunning = false
 local tagChangerConn = nil
 local tagChangerTag = nil
@@ -550,7 +553,10 @@ local function collectTagOptions()
 end
 
 local function stopTagChanger()
-    if tagChangerConn then tagChangerConn:Disconnect(); tagChangerConn = nil end
+    if tagChangerConn then
+        tagChangerConn:Disconnect()
+        tagChangerConn = nil
+    end
     if tagChangerTag and tagChangerTag.Parent and tagChangerOrig ~= nil then
         pcall(function() tagChangerTag.Value = tagChangerOrig end)
     end
@@ -566,7 +572,10 @@ local function startTagChanger()
             local tag = LocalPlayer:FindFirstChild("Tag")
             if tag then
                 if tagChangerTag ~= tag then
-                    if tagChangerConn then tagChangerConn:Disconnect(); tagChangerConn = nil end
+                    if tagChangerConn then
+                        tagChangerConn:Disconnect()
+                        tagChangerConn = nil
+                    end
                     tagChangerTag = tag
                     if tagChangerOrig == nil then tagChangerOrig = tag.Value end
                 end
@@ -831,7 +840,9 @@ local function UpdatePrivacyState()
 end
 UpdatePrivacyState()
 
--- // Pathing & Visuals (Optimized)
+-- ==========================================
+-- // Pathing & Visuals
+-- ==========================================
 local function FindPath()
     local MapFolder = workspace:FindFirstChild("Map")
     if not MapFolder then return nil end
@@ -942,15 +953,13 @@ local function UpdatePathVisuals()
 end
 
 -- === NATIVE EQUIP AND UNEQUIP ===
-function TDS:Equip(tower_name)
-    local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-    local success, err = pcall(function() return remote:InvokeServer("Inventory", "Equip", "tower", tower_name) end)
+function TDS_Equip(tower_name)
+    local success, err = pcall(function() return RemoteFunc:InvokeServer("Inventory", "Equip", "tower", tower_name) end)
     return success
 end
 
-function TDS:Unequip(tower_name)
-    local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-    local success, err = pcall(function() return remote:InvokeServer("Inventory", "Unequip", "tower", tower_name) end)
+function TDS_Unequip(tower_name)
+    local success, err = pcall(function() return RemoteFunc:InvokeServer("Inventory", "Unequip", "tower", tower_name) end)
     return success
 end
 
@@ -978,7 +987,9 @@ end
 
 CurrentEquippedTowers = GetEquippedTowers()
 
--- // UI Creation (Kept minimal structure for functionality)
+-- ==========================================
+-- // UI CREATION
+-- ==========================================
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Sources/UI.lua"))()
 
 local Window = Library:Window({
@@ -993,43 +1004,143 @@ local Window = Library:Window({
 local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
     Autostrat:Section({Title = "Main"})
 
-    Autostrat:Toggle({Title = "Auto Rejoin", Desc = "Rejoins the gamemode after you've won and does the strategy again.", Value = Globals.AutoRejoin, Callback = function(v) SetSetting("AutoRejoin", v) end})
-    Autostrat:Toggle({Title = "Auto Skip Waves", Desc = "Skips all Waves", Value = Globals.AutoSkip, Callback = function(v) SetSetting("AutoSkip", v) end})
-    Autostrat:Toggle({Title = "Auto Chain", Desc = "Chains Commander Ability", Value = Globals.AutoChain, Callback = function(v) SetSetting("AutoChain", v) end})
-    Autostrat:Toggle({Title = "Support Caravan", Desc = "Uses Commander Support Caravan", Value = Globals.SupportCaravan, Callback = function(v) SetSetting("SupportCaravan", v) end})
-    Autostrat:Toggle({Title = "Auto DJ Booth", Desc = "Uses DJ Booth Ability", Value = Globals.AutoDJ, Callback = function(v) SetSetting("AutoDJ", v) end})
-    Autostrat:Toggle({Title = "Auto Necro", Desc = "Uses Necromancer Ability", Value = Globals.AutoNecro, Callback = function(v) SetSetting("AutoNecro", v) end})
+    Autostrat:Toggle({
+        Title = "Auto Rejoin",
+        Desc = "Rejoins the gamemode after you've won and does the strategy again.",
+        Value = Globals.AutoRejoin,
+        Callback = function(v) SetSetting("AutoRejoin", v) end
+    })
+
+    Autostrat:Toggle({
+        Title = "Auto Skip Waves",
+        Desc = "Skips all Waves",
+        Value = Globals.AutoSkip,
+        Callback = function(v) SetSetting("AutoSkip", v) end
+    })
+
+    Autostrat:Toggle({
+        Title = "Auto Chain",
+        Desc = "Chains Commander Ability",
+        Value = Globals.AutoChain,
+        Callback = function(v) SetSetting("AutoChain", v) end
+    })
+
+    Autostrat:Toggle({
+        Title = "Support Caravan",
+        Desc = "Uses Commander Support Caravan",
+        Value = Globals.SupportCaravan,
+        Callback = function(v) SetSetting("SupportCaravan", v) end
+    })
+
+    Autostrat:Toggle({
+        Title = "Auto DJ Booth",
+        Desc = "Uses DJ Booth Ability",
+        Value = Globals.AutoDJ,
+        Callback = function(v) SetSetting("AutoDJ", v) end
+    })
+
+    Autostrat:Toggle({
+        Title = "Auto Necro",
+        Desc = "Uses Necromancer Ability",
+        Value = Globals.AutoNecro,
+        Callback = function(v) SetSetting("AutoNecro", v) end
+    })
 
     Autostrat:Section({Title = "TimeScale"})
-    Autostrat:Toggle({Title = "Enable TimeScale", Desc = "Unlocks and sets game speed using tickets", Value = Globals.TimeScaleEnabled, Callback = function(v) SetSetting("TimeScaleEnabled", v) if v then StartTimeScale() end end})
-    Autostrat:Dropdown({Title = "TimeScale Speed", Desc = "Choose: 0.5, 1, 1.5, 2", List = {"0.5", "1", "1.5", "2"}, Value = tostring(Globals.TimeScaleValue or 2), Callback = function(choice)
-        local value = CoerceTimeScaleValue(choice, Globals.TimeScaleValue or 2)
-        SetSetting("TimeScaleValue", value)
-        if Globals.TimeScaleEnabled then ApplyTimeScaleOnce() end
-    end})
+    Autostrat:Toggle({
+        Title = "Enable TimeScale",
+        Desc = "Unlocks and sets game speed using tickets",
+        Value = Globals.TimeScaleEnabled,
+        Callback = function(v)
+            SetSetting("TimeScaleEnabled", v)
+            if v then StartTimeScale() end
+        end
+    })
 
-    Autostrat:Dropdown({Title = "Modifiers:", List = AllModifiers, Value = Globals.Modifiers, Multi = true, Callback = function(choice) SetSetting("Modifiers", choice) end})
+    Autostrat:Dropdown({
+        Title = "TimeScale Speed",
+        Desc = "Choose: 0.5, 1, 1.5, 2",
+        List = {"0.5", "1", "1.5", "2"},
+        Value = tostring(Globals.TimeScaleValue or 2),
+        Callback = function(choice)
+            local selected = type(choice) == "table" and choice[1] or choice
+            local value = CoerceTimeScaleValue(selected, Globals.TimeScaleValue or 2)
+            SetSetting("TimeScaleValue", value)
+            if Globals.TimeScaleEnabled then ApplyTimeScaleOnce() end
+        end
+    })
+
+    Autostrat:Dropdown({
+        Title = "Modifiers:",
+        List = AllModifiers,
+        Value = Globals.Modifiers,
+        Multi = true,
+        Callback = function(choice) SetSetting("Modifiers", choice) end
+    })
 
     Autostrat:Section({Title = "Farm"})
-    Autostrat:Toggle({Title = "Sell Farms", Desc = "Sells all your farms on the specified wave", Value = Globals.SellFarms, Callback = function(v) SetSetting("SellFarms", v) end})
-    Autostrat:Textbox({Title = "Wave:", Desc = "Wave to sell farms", Placeholder = "40", Value = tostring(Globals.SellFarmsWave), ClearTextOnFocus = false, Callback = function(text)
-        local number = tonumber(text)
-        if number then SetSetting("SellFarmsWave", number)
-        else Window:Notify({ Title = "ADS", Desc = "Invalid number entered!", Time = 3, Type = "error" }) end
-    end})
+    Autostrat:Toggle({
+        Title = "Sell Farms",
+        Desc = "Sells all your farms on the specified wave",
+        Value = Globals.SellFarms,
+        Callback = function(v) SetSetting("SellFarms", v) end
+    })
+
+    Autostrat:Textbox({
+        Title = "Wave:",
+        Desc = "Wave to sell farms",
+        Placeholder = "40",
+        Value = tostring(Globals.SellFarmsWave),
+        ClearTextOnFocus = false,
+        Callback = function(text)
+            local number = tonumber(text)
+            if number then
+                SetSetting("SellFarmsWave", number)
+            else
+                Window:Notify({ Title = "ADS", Desc = "Invalid number entered!", Time = 3, Type = "error" })
+            end
+        end
+    })
 
     Autostrat:Section({Title = "Abilities"})
-    Autostrat:Toggle({Title = "Enable Path Distance Marker", Desc = "Red = Mercenary Base, Green = Military Base", Value = Globals.PathVisuals, Callback = function(v) SetSetting("PathVisuals", v) end})
-    Autostrat:Toggle({Title = "Auto Mercenary Base", Desc = "Uses Air-Drop Ability", Value = Globals.AutoMercenary, Callback = function(v) SetSetting("AutoMercenary", v) end})
-    MercenarySlider = Autostrat:Slider({Title = "Path Distance", Min = 0, Max = 300, Rounding = 0, Value = Globals.MercenaryPath, Callback = function(val) SetSetting("MercenaryPath", val) end})
-    Autostrat:Toggle({Title = "Auto Military Base", Desc = "Uses Airstrike Ability", Value = Globals.AutoMilitary, Callback = function(v) SetSetting("AutoMilitary", v) end})
-    MilitarySlider = Autostrat:Slider({Title = "Path Distance", Min = 0, Max = 300, Rounding = 0, Value = Globals.MilitaryPath, Callback = function(val) SetSetting("MilitaryPath", val) end})
+    Autostrat:Toggle({
+        Title = "Enable Path Distance Marker",
+        Desc = "Red = Mercenary Base, Green = Military Base",
+        Value = Globals.PathVisuals,
+        Callback = function(v) SetSetting("PathVisuals", v) end
+    })
+
+    Autostrat:Toggle({
+        Title = "Auto Mercenary Base",
+        Desc = "Uses Air-Drop Ability",
+        Value = Globals.AutoMercenary,
+        Callback = function(v) SetSetting("AutoMercenary", v) end
+    })
+
+    MercenarySlider = Autostrat:Slider({
+        Title = "Path Distance",
+        Min = 0, Max = 300, Rounding = 0,
+        Value = Globals.MercenaryPath,
+        Callback = function(val) SetSetting("MercenaryPath", val) end
+    })
+
+    Autostrat:Toggle({
+        Title = "Auto Military Base",
+        Desc = "Uses Airstrike Ability",
+        Value = Globals.AutoMilitary,
+        Callback = function(v) SetSetting("AutoMilitary", v) end
+    })
+
+    MilitarySlider = Autostrat:Slider({
+        Title = "Path Distance",
+        Min = 0, Max = 300, Rounding = 0,
+        Value = Globals.MilitaryPath,
+        Callback = function(val) SetSetting("MilitaryPath", val) end
+    })
 
     task.spawn(function()
-        while true do
-            local success = CalcLength()
-            if success then break end 
-            task.wait(3)
+        while task.wait(3) do
+            CalcLength()
         end
     end)
 end
@@ -1040,7 +1151,9 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Section({Title = "Tower Options"})
     
     local TowerDropdown = Main:Dropdown({
-        Title = "Tower:", List = CurrentEquippedTowers, Value = CurrentEquippedTowers[1],
+        Title = "Tower:",
+        List = CurrentEquippedTowers,
+        Value = CurrentEquippedTowers[1],
         Callback = function(choice) SelectedTower = choice end
     })
 
@@ -1048,90 +1161,123 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         local NewTowers = GetEquippedTowers()
         if table.concat(NewTowers, ",") ~= table.concat(CurrentEquippedTowers, ",") then
             TowerDropdown:Clear() 
-            for _, TowerName in ipairs(NewTowers) do TowerDropdown:Add(TowerName) end
+            for _, TowerName in ipairs(NewTowers) do
+                TowerDropdown:Add(TowerName)
+            end
             CurrentEquippedTowers = NewTowers
         end
     end
-    task.spawn(function() while task.wait(2) do RefreshDropdown() end end)
 
-    Main:Toggle({Title = "Stack Tower", Desc = "Enables Stacking placement", Value = false, Callback = function(v) StackEnabled = v end})
+    task.spawn(function()
+        while task.wait(2) do RefreshDropdown() end
+    end)
 
-    Main:Button({Title = "Upgrade Selected", Callback = function()
-        if SelectedTower then
+    Main:Toggle({
+        Title = "Stack Tower",
+        Desc = "Enables Stacking placement",
+        Value = false,
+        Callback = function(v)
+            StackEnabled = v
+            if StackEnabled then
+                Window:Notify({ Title = "ADS", Desc = "Make sure not to equip the tower, only select it and then place where you want to!", Time = 5, Type = "normal" })
+            end
+        end
+    })
+
+    Main:Button({
+        Title = "Upgrade Selected",
+        Callback = function()
+            if SelectedTower then
+                local TowersFolder = workspace:FindFirstChild("Towers")
+                if TowersFolder then
+                    for _, v in ipairs(TowersFolder:GetChildren()) do
+                        local rep = v:FindFirstChild("TowerReplicator")
+                        if rep and rep:GetAttribute("Name") == SelectedTower and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
+                            RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", {Troop = v})
+                        end
+                    end
+                end
+                Window:Notify({ Title = "ADS", Desc = "Attempted to upgrade all the selected towers!", Time = 3, Type = "normal" })
+            end
+        end
+    })
+
+    Main:Button({
+        Title = "Sell Selected",
+        Callback = function()
+            if SelectedTower then
+                local TowersFolder = workspace:FindFirstChild("Towers")
+                if TowersFolder then
+                    for _, v in ipairs(TowersFolder:GetChildren()) do
+                        local rep = v:FindFirstChild("TowerReplicator")
+                        if rep and rep:GetAttribute("Name") == SelectedTower and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
+                            RemoteFunc:InvokeServer("Troops", "Sell", {Troop = v})
+                        end
+                    end
+                end
+                Window:Notify({ Title = "ADS", Desc = "Attempted to sell all the selected towers!", Time = 3, Type = "normal" })
+            end
+        end
+    })
+
+    Main:Button({
+        Title = "Upgrade All",
+        Callback = function()
             local TowersFolder = workspace:FindFirstChild("Towers")
             if TowersFolder then
                 for _, v in ipairs(TowersFolder:GetChildren()) do
-                    local rep = v:FindFirstChild("TowerReplicator")
-                    if rep and rep:GetAttribute("Name") == SelectedTower and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
+                    local owner = v:FindFirstChild("Owner")
+                    if owner and owner.Value == LocalPlayer.UserId then
                         RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", {Troop = v})
                     end
                 end
             end
-            Window:Notify({ Title = "ADS", Desc = "Attempted to upgrade all the selected towers!", Time = 3, Type = "normal" })
+            Window:Notify({ Title = "ADS", Desc = "Attempted to upgrade all the towers!", Time = 3, Type = "normal" })
         end
-    end})
+    })
 
-    Main:Button({Title = "Sell Selected", Callback = function()
-        if SelectedTower then
-            local TowersFolder = workspace:FindFirstChild("Towers")
-            if TowersFolder then
-                for _, v in ipairs(TowersFolder:GetChildren()) do
-                    local rep = v:FindFirstChild("TowerReplicator")
-                    if rep and rep:GetAttribute("Name") == SelectedTower and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
-                        RemoteFunc:InvokeServer("Troops", "Sell", {Troop = v})
-                    end
-                end
-            end
-            Window:Notify({ Title = "ADS", Desc = "Attempted to sell all the selected towers!", Time = 3, Type = "normal" })
-        end
-    end})
-
-    Main:Button({Title = "Upgrade All", Callback = function()
-        local TowersFolder = workspace:FindFirstChild("Towers")
-        if TowersFolder then
-            for _, v in ipairs(TowersFolder:GetChildren()) do
-                local owner = v:FindFirstChild("Owner")
-                if owner and owner.Value == LocalPlayer.UserId then
-                    RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", {Troop = v})
-                end
-            end
-        end
-        Window:Notify({ Title = "ADS", Desc = "Attempted to upgrade all the towers!", Time = 3, Type = "normal" })
-    end})
-
-    Main:Button({Title = "Sell All", Callback = function()
-        Window:Dialog({
-            Title = "Do you want to sell all the towers?",
-            Button1 = { Title = "Confirm", Color = Color3.fromRGB(226, 39, 6),
-                Callback = function()
-                    local TowersFolder = workspace:FindFirstChild("Towers")
-                    if TowersFolder then
-                        for _, v in ipairs(TowersFolder:GetChildren()) do
-                            local owner = v:FindFirstChild("Owner")
-                            if owner and owner.Value == LocalPlayer.UserId then
-                                RemoteFunc:InvokeServer("Troops", "Sell", {Troop = v})
+    Main:Button({
+        Title = "Sell All",
+        Callback = function()
+            Window:Dialog({
+                Title = "Do you want to sell all the towers?",
+                Button1 = {
+                    Title = "Confirm", Color = Color3.fromRGB(226, 39, 6),
+                    Callback = function()
+                        local TowersFolder = workspace:FindFirstChild("Towers")
+                        if TowersFolder then
+                            for _, v in ipairs(TowersFolder:GetChildren()) do
+                                local owner = v:FindFirstChild("Owner")
+                                if owner and owner.Value == LocalPlayer.UserId then
+                                    RemoteFunc:InvokeServer("Troops", "Sell", {Troop = v})
+                                end
                             end
                         end
+                        Window:Notify({ Title = "ADS", Desc = "Attempted to sell all the towers!", Time = 3, Type = "normal" })
                     end
-                    Window:Notify({ Title = "ADS", Desc = "Attempted to sell all the towers!", Time = 3, Type = "normal" })
-                end
-            },
-            Button2 = { Title = "Cancel", Color = Color3.fromRGB(0, 188, 0) }
-        })
-    end})
+                },
+                Button2 = { Title = "Cancel", Color = Color3.fromRGB(0, 188, 0) }
+            })
+        end
+    })
 
     Main:Section({Title = "Equipper"})
     
-    Main:Textbox({Title = "Equip:", Placeholder = "E.g. Gatling Gun", Value = "", ClearTextOnFocus = false,
+    Main:Textbox({
+        Title = "Equip:", Placeholder = "E.g. Gatling Gun", Value = "", ClearTextOnFocus = false,
         Callback = function(text)
-            if text == "" or text == nil then return end
+            if not text or text == "" then return end
+            
+            local trimmed_text = text:match("^%s*(.-)%s*$") or ""
+            if trimmed_text == "" then return end
+            
             task.spawn(function()
-                local real_tower_name = ResolveTowerName(text)
+                local real_tower_name = ResolveTowerName(trimmed_text)
                 if not real_tower_name then
-                    Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(text), Time = 3, Type = "error" })
+                    Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(trimmed_text), Time = 3, Type = "error" })
                     return
                 end
-                local success = TDS:Equip(real_tower_name)
+                local success = TDS_Equip(real_tower_name)
                 if success then
                     Window:Notify({ Title = "ADS", Desc = "Successfully equipped: " .. real_tower_name, Time = 3, Type = "normal" })
                 else
@@ -1141,16 +1287,21 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         end
     })
 
-    Main:Textbox({Title = "Unequip:", Placeholder = "E.g. Farm", Value = "", ClearTextOnFocus = false,
+    Main:Textbox({
+        Title = "Unequip:", Placeholder = "E.g. Farm", Value = "", ClearTextOnFocus = false,
         Callback = function(text)
-            if text == "" or text == nil then return end
+            if not text or text == "" then return end
+            
+            local trimmed_text = text:match("^%s*(.-)%s*$") or ""
+            if trimmed_text == "" then return end
+            
             task.spawn(function()
-                local real_tower_name = ResolveTowerName(text)
+                local real_tower_name = ResolveTowerName(trimmed_text)
                 if not real_tower_name then
-                    Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(text), Time = 3, Type = "error" })
+                    Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(trimmed_text), Time = 3, Type = "error" })
                     return
                 end
-                local success = TDS:Unequip(real_tower_name)
+                local success = TDS_Unequip(real_tower_name)
                 if success then
                     Window:Notify({ Title = "ADS", Desc = "Successfully unequipped: " .. real_tower_name, Time = 3, Type = "normal" })
                 else
@@ -1199,18 +1350,21 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
         Callback = function(choice) selected_skin_name = choice end
     })
 
-    Main:Button({Title = "Apply Skin", Callback = function()
-        if selected_skin_tower and selected_skin_name then
-            local success = pcall(function()
-                return game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "Skin", selected_skin_tower, selected_skin_name)
-            end)
-            if success then
-                Window:Notify({ Title = "ADS", Desc = "Successfully equipped " .. selected_skin_name .. " skin for " .. selected_skin_tower .. "!", Time = 3, Type = "normal" })
-            else
-                Window:Notify({ Title = "ADS", Desc = "Failed to equip skin.", Time = 3, Type = "error" })
+    Main:Button({
+        Title = "Apply Skin",
+        Callback = function()
+            if selected_skin_tower and selected_skin_name then
+                local success = pcall(function()
+                    return game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer("Inventory", "Equip", "Skin", selected_skin_tower, selected_skin_name)
+                end)
+                if success then
+                    Window:Notify({ Title = "ADS", Desc = "Successfully equipped " .. selected_skin_name .. " skin for " .. selected_skin_tower .. "!", Time = 3, Type = "normal" })
+                else
+                    Window:Notify({ Title = "ADS", Desc = "Failed to equip skin.", Time = 3, Type = "error" })
+                end
             end
         end
-    end})
+    })
 
     Main:Section({Title = "Stats"})
     local CoinsLabel = Main:Label({Title = "Coins: 0", Desc = ""})
@@ -1349,20 +1503,42 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
     local function LoadStrat(url)
         task.spawn(function()
             local content = game:HttpGet(url)
-            while not (TDS and TDS.Loadout) do task.wait(0.5) end
+            while not (Globals.ActiveStrat) do task.wait(0.5) end -- Using Globals.ActiveStrat as a placeholder for strategy activation check
             local func = loadstring(content)
             if func then func() Window:Notify({ Title = "ADS", Desc = "Running Strategy...", Time = 3 }) end
         end)
     end
 
-    Strategies:Toggle({Title = "Frost Mode", Desc = "Skill tree: MAX\n\nTowers:\nGolden Scout, Firework Technician, Hacker, Brawler, DJ Booth, Commander, Engineer, Accelerator, Turret, Mercenary Base", Value = Globals.Frost, Callback = function(v) SetSetting("Frost", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Frost.lua") end end})
-    Strategies:Toggle({Title = "Fallen Mode", Desc = "Skill tree: Not needed\n\nTowers:\nGolden Scout, Brawler, Mercenary Base, Electroshocker, Engineer", Value = Globals.Fallen, Callback = function(v) SetSetting("Fallen", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Fallen.lua") end end})
-    Strategies:Toggle({Title = "Intermediate Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner, Crook Boss", Value = Globals.Intermediate, Callback = function(v) SetSetting("Intermediate", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Intermediate.lua") end end})
-    Strategies:Toggle({Title = "Casual Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner", Value = Globals.Casual, Callback = function(v) SetSetting("Casual", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Casual.lua") end end})
-    Strategies:Toggle({Title = "Easy Mode", Desc = "Skill tree: Not needed\n\nTowers:\nNormal Scout", Value = Globals.Easy, Callback = function(v) SetSetting("Easy", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Easy.lua") end end})
+    Strategies:Toggle({
+        Title = "Frost Mode", Desc = "Skill tree: MAX\n\nTowers:\nGolden Scout, Firework Technician, Hacker, Brawler, DJ Booth, Commander, Engineer, Accelerator, Turret, Mercenary Base",
+        Value = Globals.Frost, Callback = function(v) SetSetting("Frost", v) if v then Globals.ActiveStrat = true LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Frost.lua") else Globals.ActiveStrat = false end end
+    })
+
+    Strategies:Toggle({
+        Title = "Fallen Mode", Desc = "Skill tree: Not needed\n\nTowers:\nGolden Scout, Brawler, Mercenary Base, Electroshocker, Engineer",
+        Value = Globals.Fallen, Callback = function(v) SetSetting("Fallen", v) if v then Globals.ActiveStrat = true LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Fallen.lua") else Globals.ActiveStrat = false end end
+    })
+
+    Strategies:Toggle({
+        Title = "Intermediate Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner, Crook Boss",
+        Value = Globals.Intermediate, Callback = function(v) SetSetting("Intermediate", v) if v then Globals.ActiveStrat = true LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Intermediate.lua") else Globals.ActiveStrat = false end end
+    })
+
+    Strategies:Toggle({
+        Title = "Casual Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner",
+        Value = Globals.Casual, Callback = function(v) SetSetting("Casual", v) if v then Globals.ActiveStrat = true LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Casual.lua") else Globals.ActiveStrat = false end end
+    })
+
+    Strategies:Toggle({
+        Title = "Easy Mode", Desc = "Skill tree: Not needed\n\nTowers:\nNormal Scout",
+        Value = Globals.Easy, Callback = function(v) SetSetting("Easy", v) if v then Globals.ActiveStrat = true LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Easy.lua") else Globals.ActiveStrat = false end end
+    })
 
     Strategies:Section({Title = "Other Strategies"})
-    Strategies:Toggle({Title = "Hardcore Mode", Desc = "Towers:\nFarm, Golden Scout, DJ Booth, Commander, Electroshocker, Ranger, Freezer, Golden Minigunner", Value = Globals.Hardcore, Callback = function(v) SetSetting("Hardcore", v) if v then LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Hardcore.lua") end end})
+    Strategies:Toggle({
+        Title = "Hardcore Mode", Desc = "Towers:\nFarm, Golden Scout, DJ Booth, Commander, Electroshocker, Ranger, Freezer, Golden Minigunner",
+        Value = Globals.Hardcore, Callback = function(v) SetSetting("Hardcore", v) if v then Globals.ActiveStrat = true LoadStrat("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Hardcore.lua") else Globals.ActiveStrat = false end end
+    })
 end
 
 Window:Line()
@@ -1372,7 +1548,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Toggle({ Title = "Enable Anti-Lag", Desc = "Boosts your FPS", Value = Globals.AntiLag, Callback = function(v) SetSetting("AntiLag", v) end })
     Misc:Toggle({ Title = "Disable 3d rendering", Desc = "Turns off 3d rendering", Value = Globals.Disable3DRendering, Callback = function(v) SetSetting("Disable3DRendering", v) Apply3dRendering() end })
 
+    -- // ==========================================
     -- // ADVANCED RADAR: UPCOMING WAVE ONLY
+    -- // ==========================================
     local TrackerUI, TrackerConnection
     local CachedModeModule, CachedModeName
     local LastProcessedWave = -1
@@ -1441,7 +1619,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local function GetFastWave()
         local pg = LocalPlayer:FindFirstChild("PlayerGui")
         local container = pg and pg:FindFirstChild("ReactGameTopGameDisplay") 
-        local waveContainer = container and container.Frame and container.Frame:FindFirstChild("wave")
+        local waveContainer = container and container.Frame:FindFirstChild("wave")
         if waveContainer and waveContainer:FindFirstChild("container") then
             return tonumber(waveContainer.container.value.Text:match("^(%d+)")) or 0
         end
@@ -1683,46 +1861,94 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-    Misc:Toggle({Title = "Auto Collect Pickups", Desc = "Collects Logbooks + Snowballs", Value = Globals.AutoPickups, Callback = function(v) SetSetting("AutoPickups", v) end})
-    Misc:Dropdown({Title = "Pickup Method", List = {"Pathfinding", "Instant"}, Value = Globals.PickupMethod or "Pathfinding", Callback = function(choice)
-        local selected = type(choice) == "table" and choice[1] or choice
-        if not selected or selected == "" then selected = "Pathfinding" end
-        SetSetting("PickupMethod", selected)
-    end})
-    Misc:Toggle({Title = "Claim Rewards", Desc = "Claims your playtime and uses spin tickets in Lobby", Value = Globals.ClaimRewards, Callback = function(v) SetSetting("ClaimRewards", v) end})
+    Misc:Toggle({
+        Title = "Auto Collect Pickups",
+        Desc = "Collects Logbooks + Snowballs",
+        Value = Globals.AutoPickups,
+        Callback = function(v) SetSetting("AutoPickups", v) end
+    })
+
+    Misc:Dropdown({
+        Title = "Pickup Method",
+        List = {"Pathfinding", "Instant"},
+        Value = Globals.PickupMethod or "Pathfinding",
+        Callback = function(choice)
+            local selected = type(choice) == "table" and choice[1] or choice
+            if not selected or selected == "" then selected = "Pathfinding" end
+            SetSetting("PickupMethod", selected)
+        end
+    })
+
+    Misc:Toggle({
+        Title = "Claim Rewards",
+        Desc = "Claims your playtime and uses spin tickets in Lobby",
+        Value = Globals.ClaimRewards,
+        Callback = function(v) SetSetting("ClaimRewards", v) end
+    })
 
     Misc:Section({Title = "Target Visual"})
     
-    Misc:Dropdown({Title = "Target Visual Type", Desc = "Applies to both Auto Gatling & Silent Aim", List = {"Highlight", "Tracer", "Both"}, Value = Globals.TargetChamsType or "Highlight", Callback = function(choice)
-        local selected = type(choice) == "table" and choice[1] or choice
-        Globals.TargetChamsType = selected
-        SetSetting("TargetChamsType", selected)
-    end})
+    Misc:Dropdown({
+        Title = "Target Visual Type",
+        Desc = "Applies to both Auto Gatling & Silent Aim",
+        List = {"Highlight", "Tracer", "Both"},
+        Value = Globals.TargetChamsType or "Highlight",
+        Callback = function(choice)
+            local selected = type(choice) == "table" and choice[1] or choice
+            if not selected or selected == "" then selected = "Highlight" end
+            Globals.TargetChamsType = selected
+            SetSetting("TargetChamsType", selected)
+        end
+    })
 
-    Misc:Toggle({Title = "Enable Target Visual", Value = Globals.TargetChamsEnabled, Callback = function(state)
-        Globals.TargetChamsEnabled = state
-        SetSetting("TargetChamsEnabled", state) 
-        if not state then ClearESP() end
-    end})
+    Misc:Toggle({
+        Title = "Enable Target Visual",
+        Value = Globals.TargetChamsEnabled, 
+        Callback = function(state)
+            Globals.TargetChamsEnabled = state
+            SetSetting("TargetChamsEnabled", state) 
+            if not state then ClearESP() end
+        end
+    })
 
     Misc:Section({Title = "Auto Gatling Gun"})
     
-    Misc:Dropdown({Title = "Auto Gatling Priority", Desc = "Choose target priority for Auto Gatling", List = {"First", "Last", "Strongest", "Close"}, Value = Globals.AutoGatlingPriority or "First", Callback = function(choice)
-        local selected = type(choice) == "table" and choice[1] or choice
-        SetSetting("AutoGatlingPriority", selected)
-    end})
+    Misc:Dropdown({
+        Title = "Auto Gatling Priority",
+        Desc = "Choose target priority for Auto Gatling",
+        List = {"First", "Last", "Strongest", "Close"},
+        Value = Globals.AutoGatlingPriority or "First",
+        Callback = function(choice)
+            local selected = type(choice) == "table" and choice[1] or choice
+            SetSetting("AutoGatlingPriority", selected)
+        end
+    })
 
-    Misc:Textbox({Title = "Auto Cooldown:", Placeholder = "0.01", Value = tostring(Globals.AutoCooldown), ClearTextOnFocus = true, Callback = function(value)
-        local num = tonumber(value)
-        if num then Globals.AutoCooldown = num; SetSetting("AutoCooldown", num) end
-    end})
+    Misc:Textbox({
+        Title = "Auto Cooldown:", Placeholder = "0.01", Value = tostring(Globals.AutoCooldown), ClearTextOnFocus = true,
+        Callback = function(value)
+            local num = tonumber(value)
+            if num then
+                Globals.AutoCooldown = num
+                SetSetting("AutoCooldown", num) 
+            end
+        end
+    })
 
-    Misc:Textbox({Title = "Auto Multiply:", Placeholder = "1", Value = tostring(Globals.AutoMultiply), ClearTextOnFocus = true, Callback = function(value)
-        local num = tonumber(value)
-        if num then Globals.AutoMultiply = num; SetSetting("AutoMultiply", num) end
-    end})
+    Misc:Textbox({
+        Title = "Auto Multiply:", Placeholder = "1", Value = tostring(Globals.AutoMultiply), ClearTextOnFocus = true,
+        Callback = function(value)
+            local num = tonumber(value)
+            if num then
+                Globals.AutoMultiply = num
+                SetSetting("AutoMultiply", num) 
+            end
+        end
+    })
 
-    Misc:Toggle({Title = "Enable Auto Gatling", Value = Globals.AutoGatling, 
+    Misc:Toggle({
+        Title = "Enable Auto Gatling",
+        Value = Globals.AutoGatling, 
         Callback = function(state)
             Globals.AutoGatling = state
             SetSetting("AutoGatling", state) 
@@ -1777,7 +2003,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                 pcall(function() fireRemote:FireServer(Globals.LockedTargetPosition, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow()) end)
                             end
                         end
-                        task.wait(Globals.AutoCooldown or 0.05)
+                        task.wait(Globals.AutoCooldown or 0.01)
                     end
                 end)
             else
@@ -1791,7 +2017,9 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Globals.CustomGatlingApplied = false 
 
     local function EnsureGatlingHook()
-        local success, gganim = pcall(function() return require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator) end)
+        local success, gganim = pcall(function()
+            return require(game.ReplicatedStorage.Content.Tower["Gatling Gun"].Animator)
+        end)
         if not success or not gganim then return false end
 
         if not Globals.OriginalFireGun then Globals.OriginalFireGun = gganim._fireGun end
@@ -1831,12 +2059,21 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         return true
     end
 
-    Misc:Dropdown({Title = "Silent Aim Priority", Desc = "Choose target priority for Silent Aim", List = {"First", "Last", "Strongest", "Close"}, Value = Globals.TargetPriority, Callback = function(choice)
-        local selected = type(choice) == "table" and choice[1] or choice
-        SetSetting("TargetPriority", selected)
-    end})
+    Misc:Dropdown({
+        Title = "Silent Aim Priority",
+        Desc = "Choose target priority for Silent Aim",
+        List = {"First", "Last", "Strongest", "Close"},
+        Value = Globals.TargetPriority, 
+        Callback = function(choice)
+            local selected = type(choice) == "table" and choice[1] or choice
+            SetSetting("TargetPriority", selected)
+        end
+    })
 
-    Misc:Toggle({Title = "Enable Silent Aim", Desc = "Magic bullets auto-hit enemies.", Value = Globals.SilentAimEnabled, 
+    Misc:Toggle({
+        Title = "Enable Silent Aim",
+        Desc = "Magic bullets auto-hit enemies.",
+        Value = Globals.SilentAimEnabled, 
         Callback = function(state)
             Globals.SilentAimEnabled = state
             SetSetting("SilentAimEnabled", state)
@@ -1845,113 +2082,85 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             
             local hooked = EnsureGatlingHook()
             if not hooked and state then
-                Window:Notify({Title = "Error", Desc = "Equip Gatling Gun first! **Bhosdike**!", Time = 3, Type = "error"})
+                Window:Notify({Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error"})
                 SetSetting("SilentAimEnabled", false)
                 Globals.SilentAimEnabled = false
             elseif state then
-                Window:Notify({Title = "Silent Aim", Desc = "Activated, **madarchod**!", Time = 3, Type = "normal"})
+                Window:Notify({Title = "Silent Aim", Desc = "Activated!", Time = 3, Type = "normal"})
             end
         end
     })
 
-    Misc:Textbox({Title = "Cooldown:", Placeholder = "0.01", Value = tostring(Globals.Cooldown), ClearTextOnFocus = true, Callback = function(value)
-        local num = tonumber(value)
-        if num then SetSetting("Cooldown", num) end
-    end})
+    Misc:Textbox({
+        Title = "Cooldown:", Placeholder = "0.01", Value = tostring(Globals.Cooldown), ClearTextOnFocus = true,
+        Callback = function(value)
+            local num = tonumber(value)
+            if num then SetSetting("Cooldown", num) end
+        end
+    })
 
-    Misc:Textbox({Title = "Multiply:", Placeholder = "1", Value = tostring(Globals.Multiply), ClearTextOnFocus = true, Callback = function(value)
-        local num = tonumber(value)
-        if num then SetSetting("Multiply", num) end
-    end})
+    Misc:Textbox({
+        Title = "Multiply:", Placeholder = "1", Value = tostring(Globals.Multiply), ClearTextOnFocus = true,
+        Callback = function(value)
+            local num = tonumber(value)
+            if num then SetSetting("Multiply", num) end
+        end
+    })
 
-    Misc:Button({Title = "Apply Gatling", Callback = function()
-        Globals.CustomGatlingApplied = true
-        local hooked = EnsureGatlingHook()
-        if hooked then Window:Notify({ Title = "ADS", Desc = "Successfully applied Custom Cooldown & Multiply, **saale**!", Time = 3, Type = "normal" })
-        else Window:Notify({ Title = "Error", Desc = "Equip Gatling Gun first, **chutiya**!", Time = 3, Type = "error" }) end
-    end})
+    Misc:Button({
+        Title = "Apply Gatling",
+        Callback = function()
+            Globals.CustomGatlingApplied = true
+            local hooked = EnsureGatlingHook()
+            if hooked then Window:Notify({ Title = "ADS", Desc = "Successfully applied Custom Cooldown & Multiply!", Time = 3, Type = "normal" })
+            else Window:Notify({ Title = "Error", Desc = "Equip Gatling Gun first!", Time = 3, Type = "error" }) end
+        end
+    })
 
-    Misc:Button({Title = "Reset Gatling", Callback = function()
-        Globals.CustomGatlingApplied = false
-        Window:Notify({ Title = "ADS", Desc = "Gatling speed & multiply reset to normal!", Time = 3, Type = "normal" })
-    end})
+    Misc:Button({
+        Title = "Reset Gatling",
+        Callback = function()
+            Globals.CustomGatlingApplied = false
+            Window:Notify({ Title = "ADS", Desc = "Gatling speed & multiply reset to normal!", Time = 3, Type = "normal" })
+        end
+    })
 
     Misc:Section({Title = "Experimental"})
     
-    Misc:Toggle({Title = "Sticker Spam", Desc = "This will drop everyones FPS to like 5 (you will not be able to see this unless you have an alt)", Value = false, Callback = function(v)
-        StickerSpam = v
-        if StickerSpam then
-            task.spawn(function()
-                while StickerSpam do
-                    for i = 1, 9999 do
-                        if not StickerSpam then break end
-                        local args = {"Flex"}
-                        game:GetService("ReplicatedStorage"):WaitForChild("Network"):WaitForChild("Sticker"):WaitForChild("URE:Show"):FireServer(unpack(args))
-                    end
-                    task.wait()
-                end
-            end)
-        end
-    end})
-
-    Misc:Toggle({Title = "Party Invite Spam (Lobby)", Desc = "Spam invites to everyone in the lobby (Warning: annoying!)", Value = false, Callback = function(state)
-        Globals.PartySpamEnabled = state
-        if state then
-            if GameState ~= "LOBBY" then
-                Window:Notify({ Title = "Error", Desc = "You can only use this feature in the Lobby, **bhenchod**!", Time = 3, Type = "error" })
-                Globals.PartySpamEnabled = false
-                return
-            end
-            Window:Notify({Title = "ADS", Desc = "Party Spam Enabled, **madarchod**!", Time = 3, Type = "normal"})
-            task.spawn(function()
-                local plrs = game:GetService("Players")
-                local rfunc = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-                while Globals.PartySpamEnabled do
-                    pcall(function()
-                        rfunc:InvokeServer("Party", "CreateParty")
-                        for _, plr in ipairs(plrs:GetPlayers()) do
-                            if plr ~= plrs.LocalPlayer then rfunc:InvokeServer("Party", "InvitePlayer", plr) end
+    Misc:Toggle({
+        Title = "Sticker Spam",
+        Desc = "This will drop everyones FPS to like 5 (you will not be able to see this unless you have an alt)",
+        Value = false,
+        Callback = function(v)
+            StickerSpam = v
+            if StickerSpam then
+                task.spawn(function()
+                    while StickerSpam do
+                        for i = 1, 9999 do
+                            if not StickerSpam then break end
+                            local args = {"Flex"}
+                            game:GetService("ReplicatedStorage"):WaitForChild("Network"):WaitForChild("Sticker"):WaitForChild("URE:Show"):FireServer(unpack(args))
                         end
-                        rfunc:InvokeServer("Party", "LeaveParty")
-                    end)
-                    task.wait(0.2)
-                end
-            end)
-        end
-    end})
-
-    Misc:Button({Title = "Open Inventory", Desc = "Open Inventory", Callback = function()
-        local RS = game:GetService("ReplicatedStorage")
-        pcall(function()
-            local NewNetwork = require(RS.Shared.Modules.NewNetwork)
-            NewNetwork.Channel("Inventory"):fireUnreliableServer("OpenInventory")
-        end)
-
-        local foundStore = false
-        for _, module in ipairs(getloadedmodules()) do
-            if module.Name == "View" and module.Parent and module.Parent.Name == "Stores" then
-                local Store = require(module)
-                Store:commit("setView", "Inventory")
-                foundStore = true
-                print("Berhasil membuka UI Inventory secara paksa, **chutiya**!")
-                break
+                        task.wait()
+                    end
+                end)
             end
         end
+    })
 
-        if not foundStore then
-            warn("Gagal menemukan Module Store UI. Pastikan game sudah loading sepenuhnya, **bhosdike**.")
+    Misc:Button({
+        Title = "Unlock Admin+ (Sandbox)",
+        Desc = "Keep in mind that some features such as selecting maps, spawning in enemies and changing tower stats will not work!",
+        Callback = function()
+            if GameState == "GAME" then
+                local args = { game.Players.LocalPlayer.UserId, true }
+                game:GetService("ReplicatedStorage"):WaitForChild("Network"):WaitForChild("Sandbox"):WaitForChild("RE:SetAdmin"):FireServer(unpack(args))
+                Window:Notify({ Title = "ADS", Desc = "Successfully unlocked Admin+ Mode!", Time = 3, Type = "normal" })
+            else
+                Window:Notify({ Title = "ADS", Desc = "You must be in Sandbox mode for this to work!", Time = 3, Type = "normal" })
+            end
         end
-    end})
-
-    Misc:Button({Title = "Unlock Admin+ (Sandbox)", Desc = "Keep in mind that some features such as selecting maps, spawning in enemies and changing tower stats will not work!", Callback = function()
-        if GameState == "GAME" then
-            local args = { game.Players.LocalPlayer.UserId, true }
-            game:GetService("ReplicatedStorage"):WaitForChild("Network"):WaitForChild("Sandbox"):WaitForChild("RE:SetAdmin"):FireServer(unpack(args))
-            Window:Notify({ Title = "ADS", Desc = "Successfully unlocked Admin+ Mode, **madarchod**!", Time = 3, Type = "normal" })
-        else
-            Window:Notify({ Title = "ADS", Desc = "You must be in Sandbox mode for this to work, **saale**!", Time = 3, Type = "normal" })
-        end
-    end})
+    })
 end
 
 Window:Line()
@@ -1975,21 +2184,38 @@ Window:Line()
 local Settings = Window:Tab({Title = "Settings", Icon = "settings"}) do
     Settings:Section({Title = "Settings"})
     
-    Settings:Button({Title = "Save Settings", Callback = function()
-        Window:Notify({ Title = "ADS", Desc = "Settings Saved, **bhenchod**!", Time = 3, Type = "normal" })
-        LoadSettings()
-    end})
+    Settings:Button({
+        Title = "Save Settings",
+        Callback = function()
+            Window:Notify({ Title = "ADS", Desc = "Settings Saved!", Time = 3, Type = "normal" })
+            LoadSettings()
+        end
+    })
 
-    Settings:Button({Title = "Load Settings", Callback = function()
-        Window:Notify({ Title = "ADS", Desc = "Settings Loaded, **kaminey**!", Time = 3, Type = "normal" })
-        SaveSettings()
-    end})
+    Settings:Button({
+        Title = "Load Settings",
+        Callback = function()
+            Window:Notify({ Title = "ADS", Desc = "Settings Loaded!", Time = 3, Type = "normal" })
+            SaveSettings()
+        end
+    })
 
     Settings:Section({Title = "Privacy"})
     
-    Settings:Toggle({Title = "Hide Username", Value = Globals.HideUsername, Callback = function(v) SetSetting("HideUsername", v) UpdatePrivacyState() end})
-    Settings:Textbox({Title = "Streamer Name", Placeholder = "Spoof Name", Value = Globals.StreamerName or "", ClearTextOnFocus = false, Callback = function(value) SetSetting("StreamerName", value or "") UpdatePrivacyState() end})
-    Settings:Toggle({Title = "Streamer Mode", Value = Globals.StreamerMode, Callback = function(v) SetSetting("StreamerMode", v) UpdatePrivacyState() end})
+    Settings:Toggle({
+        Title = "Hide Username", Value = Globals.HideUsername,
+        Callback = function(v) SetSetting("HideUsername", v) UpdatePrivacyState() end
+    })
+
+    Settings:Textbox({
+        Title = "Streamer Name", Placeholder = "Spoof Name", Value = Globals.StreamerName or "", ClearTextOnFocus = false,
+        Callback = function(value) SetSetting("StreamerName", value or "") UpdatePrivacyState() end
+    })
+
+    Settings:Toggle({
+        Title = "Streamer Mode", Value = Globals.StreamerMode,
+        Callback = function(v) SetSetting("StreamerMode", v) UpdatePrivacyState() end
+    })
 
     Settings:Section({Title = "Tags"})
     
@@ -1997,49 +2223,56 @@ local Settings = Window:Tab({Title = "Settings", Icon = "settings"}) do
     local tagValue = Globals.tagName or "None"
     if not table.find(tagOptions, tagValue) then tagValue = "None" end
     
-    Settings:Dropdown({Title = "Tag Changer", List = tagOptions, Value = tagValue, Callback = function(choice)
-        local selected = choice
-        if type(choice) == "table" then selected = choice[1] end
-        if not selected or selected == "" then selected = "None" end
-        SetSetting("tagName", selected)
-        if selected == "None" then stopTagChanger() else startTagChanger() end
-    end})
+    Settings:Dropdown({
+        Title = "Tag Changer", List = tagOptions, Value = tagValue,
+        Callback = function(choice)
+            local selected = choice
+            if type(choice) == "table" then selected = choice[1] end
+            if not selected or selected == "" then selected = "None" end
+            SetSetting("tagName", selected)
+            if selected == "None" then stopTagChanger() else startTagChanger() end
+        end
+    })
 
     Settings:Section({Title = "Webhook"})
     
-    Settings:Toggle({Title = "Send Webhook", Value = Globals.SendWebhook, Callback = function(v) SetSetting("SendWebhook", v) end})
+    Settings:Toggle({ Title = "Send Webhook", Value = Globals.SendWebhook, Callback = function(v) SetSetting("SendWebhook", v) end })
 
-    Settings:Button({Title = "Test Webhook", Callback = function()
-        if not Globals.WebhookURL or Globals.WebhookURL == "" then
-            return Window:Notify({Title = "Error", Desc = "Webhook URL is empty, **madarchod**!", Time = 3, Type = "error"})
+    Settings:Button({
+        Title = "Test Webhook",
+        Callback = function()
+            if not Globals.WebhookURL or Globals.WebhookURL == "" then
+                return Window:Notify({Title = "Error", Desc = "Webhook URL is empty!", Time = 3, Type = "error"})
+            end
+            local success, response = pcall(function()
+                return SendRequest({
+                    Url = Globals.WebhookURL, Method = "POST",
+                    Headers = { ["Content-Type"] = "application/json" },
+                    Body = game:GetService("HttpService"):JSONEncode({["content"] = "Webhook Test"})
+                })
+            end)
+            if success and response.StatusCode >= 200 and response.StatusCode < 300 then
+                Window:Notify({ Title = "ADS", Desc = "Webhook sent successfully and is working!", Time = 3, Type = "normal" })
+            else
+                Window:Notify({ Title = "Error", Desc = "Invalid Webhook, Discord returned an error.", Time = 5, Type = "error" })
+            end
         end
-        local success, response = pcall(function()
-            return SendRequest({
-                Url = Globals.WebhookURL, Method = "POST",
-                Headers = { ["Content-Type"] = "application/json" },
-                Body = game:GetService("HttpService"):JSONEncode({["content"] = "Webhook Test"})
-            })
-        end)
-        if success and response.StatusCode >= 200 and response.StatusCode < 300 then
-            Window:Notify({ Title = "ADS", Desc = "Webhook sent successfully and is working!", Time = 3, Type = "normal" })
-        else
-            Window:Notify({ Title = "Error", Desc = "Invalid Webhook, Discord returned an error.", Time = 5, Type = "error" })
-        end
-    end})
+    })
 
-    Settings:Textbox({Title = "Webhook URL:", Placeholder = "https://discord.com/api/webhooks/...", Value = Globals.WebhookURL, ClearTextOnFocus = true,
+    Settings:Textbox({
+        Title = "Webhook URL:", Placeholder = "https://discord.com/api/webhooks/...", Value = Globals.WebhookURL, ClearTextOnFocus = true,
         Callback = function(value)
             if value ~= "" and value:find("https://discord.com/api/webhooks/") then
                 SetSetting("WebhookURL", value)
                 Window:Notify({ Title = "ADS", Desc = "Webhook is successfully set!", Time = 3, Type = "normal" })
             else
-                Window:Notify({ Title = "ADS", Desc = "Invalid Webhook URL, **bhosdike**!", Time = 3, Type = "normal" })
+                Window:Notify({ Title = "ADS", Desc = "Invalid Webhook URL!", Time = 3, Type = "normal" })
             end
         end
     })
 end
 
--- // Game Interaction Loops (Optimized)
+-- // Game Interaction Loops
 RunService.RenderStepped:Connect(function()
     if StackEnabled then
         if not StackSphere then
@@ -2072,7 +2305,7 @@ mouse.Button1Down:Connect(function()
     end
 end)
 
--- // Currency Tracking (Kept for stat updates)
+-- // currency tracking
 local StartCoins, CurrentTotalCoins, StartGems, CurrentTotalGems = 0, 0, 0, 0
 if GameState == "GAME" then
     pcall(function()
@@ -2093,9 +2326,13 @@ local function CheckResOk(data)
     return false
 end
 
--- // Automation Helpers (Simplified)
+-- // Automation Helpers
 local function GetAllRewards()
-    local results = { Coins = 0, Gems = 0, XP = 0, Wave = 0, Level = 0, Time = "00:00", Status = "UNKNOWN", Others = {} }
+    local results = {
+        Coins = 0, Gems = 0, XP = 0, Wave = 0, Level = 0,
+        Time = "00:00", Status = "UNKNOWN", Others = {} 
+    }
+
     local UiRoot = PlayerGui:FindFirstChild("ReactGameNewRewards")
     local MainFrame = UiRoot and UiRoot:FindFirstChild("Frame")
     local GameOver = MainFrame and MainFrame:FindFirstChild("gameOver")
@@ -2141,9 +2378,12 @@ local function GetAllRewards()
                         local text = child.Text
                         local amt = tonumber(text:match("(%d+)")) or 0
 
-                        if text:find("Coins") then results.Coins = amt
-                        elseif text:find("Gems") then results.Gems = amt
-                        elseif text:find("XP") then results.XP = amt
+                        if text:find("Coins") then
+                            results.Coins = amt
+                        elseif text:find("Gems") then
+                            results.Gems = amt
+                        elseif text:find("XP") then
+                            results.XP = amt
                         elseif text:lower():find("x%d+") then 
                             local displayName = ItemNames[IconId] or "Unknown Item (" .. IconId .. ")"
                             table.insert(results.Others, {Amount = text:match("x%d+"), Name = displayName})
@@ -2153,6 +2393,7 @@ local function GetAllRewards()
             end
         end
     end
+
     return results
 end
 
@@ -2388,7 +2629,7 @@ local function UnlockSpeedTickets()
             if Logger then Logger:Log("Unlocked timescale tickets") end
         end
     else
-        if Logger then Logger:Log("No timescale tickets left, **bhenchod**!") end
+        if Logger then Logger:Log("No timescale tickets left") end
     end
 end
 
@@ -2403,7 +2644,7 @@ ApplyTimeScaleOnce = function()
     if lock and lock.Visible then
         if LocalPlayer.TimescaleTickets.Value < 1 then
             if not TimeScaleNoTicketsWarned then
-                if Logger then Logger:Log("No timescale tickets left, **madarchod**!") end
+                if Logger then Logger:Log("No timescale tickets left") end
                 TimeScaleNoTicketsWarned = true
             end
             return
@@ -2456,7 +2697,7 @@ local function GetCurrentWave()
 end
 
 local function DoPlaceTower(TName, TPos)
-    if Logger then Logger:Log("Placing tower: " .. TName .. ", **bhenchod**!") end
+    if Logger then Logger:Log("Placing tower: " .. TName) end
     while true do
         local ok, res = pcall(function() return RemoteFunc:InvokeServer("Troops", "Pl\208\176ce", {Rotation = CFrame.new(), Position = TPos}, TName) end)
         if ok and CheckResOk(res) then return true end
@@ -2531,37 +2772,28 @@ local function DoActivateAbility(TObj, AbName, AbData, IsLooping)
     return attempt()
 end
 
--- // Public API (Optimized and Cleaned)
-local TDS = {
-    PlacedTowers = {},
-    ActiveStrat = true,
-    MatchmakingMap = {
-        ["Hardcore"] = "hardcore", ["Pizza Party"] = "halloween",
-        ["Badlands"] = "badlands", ["Polluted"] = "polluted"
-    }
-}
-TDS["placed_towers"] = TDS.PlacedTowers
-TDS["active_strat"] = TDS.ActiveStrat
-TDS["matchmaking_map"] = TDS.MatchmakingMap
-
--- Lobby Functions
+-- // public api
+-- lobby
 function TDS:Mode(difficulty)
     if GameState ~= "LOBBY" then return false end
+
+    local LobbyHud = PlayerGui:WaitForChild("ReactLobbyHud", 30)
+    local frame = LobbyHud and LobbyHud:WaitForChild("Frame", 30)
+    local MatchMaking = frame and frame:WaitForChild("matchmaking", 30)
+
+    if MatchMaking then
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
     local success = false
     local res
-    repeat
-        local StateFolder = ReplicatedStorage:FindFirstChild("State")
-        local CurrentMode = StateFolder and StateFolder.Difficulty.Value
-
-        if CurrentMode then
+        repeat
             local ok, result = pcall(function()
+                local mode = TDS.MatchmakingMap[difficulty]
                 local payload
-                if CurrentMode == "PizzaParty" then payload = { mode = "halloween", count = 1 }
-                elseif CurrentMode == "Hardcore" then payload = { mode = "hardcore", count = 1 }
-                elseif CurrentMode == "PollutedWasteland" then payload = { mode = "polluted", count = 1 }
-                elseif CurrentMode == "Badlands" then payload = { mode = "badlands", count = 1 }
-                else payload = { difficulty = CurrentMode, mode = "survival", count = 1 } end
+                if mode then
+                    payload = { mode = mode, count = 1 }
+                else
+                    payload = { difficulty = difficulty, mode = "survival", count = 1 }
+                end
                 return remote:InvokeServer("Multiplayer", "v2:start", payload)
             end)
 
@@ -2571,18 +2803,18 @@ function TDS:Mode(difficulty)
             else
                 task.wait(0.5) 
             end
-        else
-            task.wait(1)
-        end
-    until success
+        until success
+    end
     return true
 end
 
 function TDS:Loadout(...)
     if GameState ~= "GAME" then return end
+
     local towers = {...}
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
     local StateReplicators = ReplicatedStorage:FindFirstChild("StateReplicators")
+
     local CurrentlyEquipped = {}
 
     if StateReplicators then
@@ -2592,7 +2824,9 @@ function TDS:Loadout(...)
                 if type(EquippedAttr) == "string" then
                     local CleanedJson = EquippedAttr:match("%[.*%]") 
                     local DecodeSuccess, decoded = pcall(function() return HttpService:JSONDecode(CleanedJson) end)
-                    if DecodeSuccess and type(decoded) == "table" then CurrentlyEquipped = decoded end
+                    if DecodeSuccess and type(decoded) == "table" then
+                        CurrentlyEquipped = decoded
+                    end
                 end
             end
         end
@@ -2619,11 +2853,12 @@ function TDS:Loadout(...)
             until EquipSuccess
         end
     end
+
     task.wait(0.5)
     return true
 end
 
--- In-Game Functions
+-- ingame
 function TDS:VoteSkip(StartWave, EndWave)
     task.spawn(function()
         local CurrentWave = GetCurrentWave()
@@ -2631,12 +2866,17 @@ function TDS:VoteSkip(StartWave, EndWave)
         EndWave = EndWave or StartWave
 
         for wave = StartWave, EndWave do
-            while GetCurrentWave() < wave do task.wait(1) end
+            while GetCurrentWave() < wave do
+                task.wait(1)
+            end
 
             local SkipDone = false
             while not SkipDone do
                 local VoteUi = PlayerGui:FindFirstChild("ReactOverridesVote")
-                local VoteButton = VoteUi and VoteUi:FindFirstChild("Frame") and VoteUi.Frame:FindFirstChild("votes") and VoteUi.Frame.votes:FindFirstChild("vote")
+                local VoteButton = VoteUi 
+                    and VoteUi:FindFirstChild("Frame") 
+                    and VoteUi.Frame:FindFirstChild("votes") 
+                    and VoteUi.Frame.votes:FindFirstChild("vote", true)
 
                 if VoteButton and VoteButton.Position == UDim2.new(0.5, 0, 0.5, 0) then
                     RunVoteSkip()
@@ -2651,28 +2891,27 @@ function TDS:VoteSkip(StartWave, EndWave)
     end)
 end
 
-function TDS:GameInfo(MapId, ...)
+function TDS:GameInfo(name, list)
     if GameState ~= "GAME" then return false end
-    local args = {...}
-    local modifiers = (args[#args] == "vip" or args[#args] == "no_vip") and Globals.Modifiers or args[1]
-    local is_vip = args[#args] == "vip"
 
     local VoteGui = PlayerGui:WaitForChild("ReactGameIntermission", 30)
     if not (VoteGui and VoteGui.Enabled and VoteGui:WaitForChild("Frame", 5)) then return end
 
+    local modifiers = (list and #list > 0) and list or Globals.Modifiers
+
     CastModifierVote(modifiers)
 
-    if is_vip then
-        SelectMapOverride(MapId, "vip")
-        if Logger then Logger:Log("Selected map: " .. MapId .. " (VIP)") end
+    if MarketplaceService:UserOwnsGamePassAsync(LocalPlayer.UserId, 10518590) then
+        SelectMapOverride(name, "vip")
+        if Logger then Logger:Log("Selected map: " .. name) end
         repeat task.wait(1) until PlayerGui:FindFirstChild("ReactUniversalHotbar")
         return true 
-    elseif IsMapAvailable(MapId) then
-        SelectMapOverride(MapId, "no_vip")
+    elseif IsMapAvailable(name) then
+        SelectMapOverride(name)
         repeat task.wait(1) until PlayerGui:FindFirstChild("ReactUniversalHotbar")
         return true
     else
-        if Logger then Logger:Log("Map '" .. MapId .. "' not available, **chutiya**, rejoining...") end
+        if Logger then Logger:Log("Map '" .. name .. "' not available, rejoining...") end
         TeleportService:Teleport(3260590327, LocalPlayer)
         repeat task.wait(9999) until false
     end
@@ -2705,16 +2944,25 @@ end
 
 function TDS:Place(TName, px, py, pz, ...)
     local args = {...}
-    local stack = args[#args] == "stack" or args[#args] == true
-    if stack then py = py + 20 end
-    if GameState ~= "GAME" then return false end
+    local stack = false
+
+    if args[#args] == "stack" or args[#args] == true then
+        py = py+20
+    end
+    if GameState ~= "GAME" then
+        return false 
+    end
 
     local existing = {}
     local TowersFolder = workspace:FindFirstChild("Towers")
     if TowersFolder then
         for _, child in ipairs(TowersFolder:GetChildren()) do
-            local rep = child:FindFirstChild("TowerReplicator")
-            if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then existing[child] = true end
+            for _, SubChild in ipairs(child:GetChildren()) do
+                if SubChild.Name == "Owner" and SubChild.Value == LocalPlayer.UserId then
+                    existing[child] = true
+                    break
+                end
+            end
         end
     end
 
@@ -2725,23 +2973,25 @@ function TDS:Place(TName, px, py, pz, ...)
         if TowersFolder then
             for _, child in ipairs(TowersFolder:GetChildren()) do
                 if not existing[child] then
-                    local rep = child:FindFirstChild("TowerReplicator")
-                    if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId then
-                        NewT = child
-                        break
+                    for _, SubChild in ipairs(child:GetChildren()) do
+                        if SubChild.Name == "Owner" and SubChild.Value == LocalPlayer.UserId then
+                            NewT = child
+                            break
+                        end
                     end
                 end
+                if NewT then break end
             end
         end
         task.wait(0.05)
     until NewT
 
-    table.insert(self.PlacedTowers, NewT)
-    return #self.PlacedTowers
+    table.insert(TDS.PlacedTowers, NewT)
+    return #TDS.PlacedTowers
 end
 
 function TDS:Upgrade(idx, PId)
-    local t = self.PlacedTowers[idx]
+    local t = TDS.PlacedTowers[idx]
     if t then
         DoUpgradeTower(t, PId or 1)
         if Logger then Logger:Log("Upgrading tower index: " .. idx) end
@@ -2751,7 +3001,8 @@ end
 
 function TDS:SetTarget(idx, TargetType, ReqWave)
     if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end
-    local t = self.PlacedTowers[idx]
+
+    local t = TDS.PlacedTowers[idx]
     if not t then return end
 
     pcall(function()
@@ -2762,7 +3013,7 @@ end
 
 function TDS:Sell(idx, ReqWave)
     if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end
-    local t = self.PlacedTowers[idx]
+    local t = TDS.PlacedTowers[idx]
     if t and DoSellTower(t) then
         return true
     end
@@ -2771,32 +3022,25 @@ end
 
 function TDS:SellAll(ReqWave)
     task.spawn(function()
+        if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end
 
-        if ReqWave then
-            repeat
-                task.wait(0.5)
-            until GetCurrentWave() >= ReqWave
-        end
-
-        local TowersCopy = {unpack(self.PlacedTowers)}
-
+        local TowersCopy = {unpack(TDS.PlacedTowers)}
         for idx, t in ipairs(TowersCopy) do
             if DoSellTower(t) then
-                for i, OrigT in ipairs(self.PlacedTowers) do
+                for i, OrigT in ipairs(TDS.PlacedTowers) do
                     if OrigT == t then
-                        table.remove(self.PlacedTowers, i)
+                        table.remove(TDS.PlacedTowers, i)
                         break
                     end
                 end
             end
         end
-
         return true
     end)
 end
 
 function TDS:Ability(idx, name, data, loop)
-    local t = self.PlacedTowers[idx]
+    local t = TDS.PlacedTowers[idx]
     if not t then return false end
     if Logger then Logger:Log("Activating ability '" .. name .. "' for tower index: " .. idx) end
     return DoActivateAbility(t, name, data, loop)
@@ -2832,15 +3076,19 @@ function TDS:AutoChain(...)
             end
 
             i += 1
-            if i > #TowerIndices then i = 1 end
+            if i > #TowerIndices then
+                i = 1
+            end
         end
     end)
 
-    return function() running = false end
+    return function()
+        running = false
+    end
 end
 
 function TDS:SetOption(idx, name, val, ReqWave)
-    local t = self.PlacedTowers[idx]
+    local t = TDS.PlacedTowers[idx]
     if t then
         if Logger then Logger:Log("Setting option '" .. name .. "' for tower index: " .. idx) end
         return DoSetOption(t, name, val, ReqWave)
@@ -2848,9 +3096,14 @@ function TDS:SetOption(idx, name, val, ReqWave)
     return false
 end
 
--- // Misc Utility (Optimized)
+-- // misc utility
+local function IsVoidCharm(obj)
+    return math.abs(obj.Position.Y) > 999999
+end
+
 local function GetRoot()
-    return LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    local char = LocalPlayer.Character
+    return char and char:FindFirstChild("HumanoidRootPart")
 end
 
 local function StartAutoPickups()
@@ -2863,7 +3116,8 @@ local function StartAutoPickups()
             local hrp = GetRoot()
 
             if folder and hrp then
-                local humanoid = hrp.Parent and hrp.Parent:FindFirstChildOfClass("Humanoid")
+                local char = hrp.Parent
+                local humanoid = char and char:FindFirstChildOfClass("Humanoid")
                 local function MoveToPos(TargetPos)
                     if not humanoid then return false end
                     local function MoveDirect(pos)
@@ -2880,7 +3134,8 @@ local function StartAutoPickups()
                     local ok = pcall(function() path:ComputeAsync(hrp.Position, TargetPos) end)
                     if ok and path.Status == Enum.PathStatus.Success then
                         local waypoints = path:GetWaypoints()
-                        local BlockedConn = path.Blocked:Connect(function()
+                        local BlockedConn = nil
+                        BlockedConn = path.Blocked:Connect(function()
                             if BlockedConn then BlockedConn:Disconnect() end
                             if Globals.AutoPickups then task.spawn(function() MoveToPos(TargetPos) end) end
                         end)
@@ -2907,11 +3162,13 @@ local function StartAutoPickups()
                         if not IsVoidCharm(item) then
                             if Globals.PickupMethod == "Instant" then
                                 hrp.CFrame = item.CFrame * CFrame.new(0, 3, 0)
-                                task.wait(0.5)
+                                task.wait(0.2)
+                                task.wait(0.3)
                             else
                                 local TargetPos = item.Position + Vector3.new(0, 3, 0)
                                 MoveToPos(TargetPos)
-                                task.wait(0.5)
+                                task.wait(0.2)
+                                task.wait(0.3)
                             end
                         end
                     end
