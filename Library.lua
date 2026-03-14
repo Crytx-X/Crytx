@@ -1153,13 +1153,27 @@ local function UpdatePathVisuals()
 end
 
 -- === NATIVE EQUIP AND UNEQUIP ===
+local function SafeRecordEquip(tower_name)
+    if Globals.record_strat and Globals.__tds_record_equip and not Globals.__tds_recorder_hooked then
+        Globals.__tds_record_equip(tower_name)
+    end
+end
+
+local function SafeRecordUnequip(tower_name)
+    if Globals.record_strat and Globals.__tds_record_unequip and not Globals.__tds_recorder_hooked then
+        Globals.__tds_record_unequip(tower_name)
+    end
+end
+
 function TDS_Equip(tower_name)
     local success, err = pcall(function() return RemoteFunc:InvokeServer("Inventory", "Equip", "tower", tower_name) end)
+    if success then SafeRecordEquip(tower_name) end
     return success
 end
 
 function TDS_Unequip(tower_name)
     local success, err = pcall(function() return RemoteFunc:InvokeServer("Inventory", "Unequip", "tower", tower_name) end)
+    if success then SafeRecordUnequip(tower_name) end
     return success
 end
 
@@ -1538,6 +1552,9 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Textbox({
         Title = "Equip:", Placeholder = "E.g. Gatling Gun", Value = "", ClearTextOnFocus = false,
         Callback = function(text)
+            if not text or text == "" then return end
+            
+            -- Trim whitespace and check if empty
             local trimmed_text = text:match("^%s*(.-)%s*$") or ""
             if trimmed_text == "" then return end
             
@@ -1547,12 +1564,9 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
                     Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(trimmed_text), Time = 3, Type = "error" })
                     return
                 end
-                
                 local success = TDS_Equip(real_tower_name)
                 if success then
                     Window:Notify({ Title = "ADS", Desc = "Successfully equipped: " .. real_tower_name, Time = 3, Type = "normal" })
-                    -- Paksa trigger recorder
-                    if Globals.__tds_record_equip then Globals.__tds_record_equip(real_tower_name) end
                 else
                     Window:Notify({ Title = "ADS", Desc = "Failed to equip: " .. real_tower_name, Time = 3, Type = "error" })
                 end
@@ -1563,6 +1577,9 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Textbox({
         Title = "Unequip:", Placeholder = "E.g. Farm", Value = "", ClearTextOnFocus = false,
         Callback = function(text)
+            if not text or text == "" then return end
+            
+            -- Trim whitespace and check if empty
             local trimmed_text = text:match("^%s*(.-)%s*$") or ""
             if trimmed_text == "" then return end
             
@@ -1575,8 +1592,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
                 local success = TDS_Unequip(real_tower_name)
                 if success then
                     Window:Notify({ Title = "ADS", Desc = "Successfully unequipped: " .. real_tower_name, Time = 3, Type = "normal" })
-                    -- Paksa trigger recorder
-                    if Globals.__tds_record_unequip then Globals.__tds_record_unequip(real_tower_name) end
                 else
                     Window:Notify({ Title = "ADS", Desc = "Failed to unequip: " .. real_tower_name, Time = 3, Type = "error" })
                 end
@@ -2646,6 +2661,19 @@ mouse.Button1Down:Connect(function()
     end
 end)
 
+-- // public api
+function TDS:Equip(tower_name)
+    local real_name = ResolveTowerName(tower_name) or tower_name
+    if Logger and Logger.Log then Logger:Log("Equipping: " .. real_name) end
+    return TDS_Equip(real_name)
+end
+
+function TDS:Unequip(tower_name)
+    local real_name = ResolveTowerName(tower_name) or tower_name
+    if Logger and Logger.Log then Logger:Log("Unequipping: " .. real_name) end
+    return TDS_Unequip(real_name)
+end
+
 -- // currency tracking
 local StartCoins, CurrentTotalCoins, StartGems, CurrentTotalGems = 0, 0, 0, 0
 if GameState == "GAME" then
@@ -2866,9 +2894,9 @@ local function HandlePostMatch()
                 {
                     name = "✨ Rewards",
                     value = "```ansi\n" ..
-                            "[2;33mCoins:[0m +" .. match.Coins .. "\n" ..
-                            "[2;34mGems: [0m +" .. match.Gems .. "\n" ..
-                            "[2;32mXP:   [0m +" .. match.XP .. "```",
+                            " [2;33mCoins: [0m +" .. match.Coins .. "\n" ..
+                            " [2;34mGems:  [0m +" .. match.Gems .. "\n" ..
+                            " [2;32mXP:    [0m +" .. match.XP .. "```",
                     inline = false
                 },
                 {
@@ -3359,6 +3387,9 @@ function TDS:Loadout(...)
         return
     end
 
+    local was_recording = Globals.record_strat
+    Globals.record_strat = false
+
     local towers = {...}
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
     local StateReplicators = ReplicatedStorage:FindFirstChild("StateReplicators")
@@ -3413,6 +3444,7 @@ function TDS:Loadout(...)
     end
 
     task.wait(0.5)
+    Globals.record_strat = was_recording
     return true
 end
 
