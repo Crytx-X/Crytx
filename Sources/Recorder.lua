@@ -489,8 +489,19 @@ return function(ctx)
             end
         end
 
+        -- PERBAIKAN UNTUK VOTESKIP: MENANGKAP CURRENT WAVE
         if a1 == "Voting" and a2 == "Skip" then
-            record_line("TDS:VoteSkip()", "Voted to skip wave")
+            local current_wave = 1
+            pcall(function()
+                local wave_text = local_player.PlayerGui.ReactGameTopGameDisplay.Frame.wave.container.value.Text
+                local match = wave_text:match("^(%d+)")
+                if match then
+                    current_wave = tonumber(match)
+                end
+            end)
+            
+            local cmd = string.format("TDS:VoteSkip(%d)", current_wave)
+            record_line(cmd, "Voted to skip wave " .. current_wave)
             handled = true
             return
         end
