@@ -400,6 +400,7 @@ return function(ctx)
         end
     end
 
+    -- Trigger Eksplisit yang dipakai oleh Library.lua yang baru
     Globals.__tds_record_equip = function(tower_name)
         if type(tower_name) ~= "string" then
             return
@@ -495,6 +496,7 @@ return function(ctx)
             return
         end
 
+        -- Backup hook jikalau tidak via explicit function
         if a1 == "Inventory" and a2 == "Equip" and a3 == "tower" then
             if type(args[4]) == "string" then
                 local tower_name = args[4]

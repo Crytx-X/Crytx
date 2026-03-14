@@ -1538,9 +1538,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Textbox({
         Title = "Equip:", Placeholder = "E.g. Gatling Gun", Value = "", ClearTextOnFocus = false,
         Callback = function(text)
-            if not text or text == "" then return end
-            
-            -- *** FIX APPLIED HERE: Trim whitespace and check if empty ***
             local trimmed_text = text:match("^%s*(.-)%s*$") or ""
             if trimmed_text == "" then return end
             
@@ -1550,9 +1547,12 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
                     Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(trimmed_text), Time = 3, Type = "error" })
                     return
                 end
+                
                 local success = TDS_Equip(real_tower_name)
                 if success then
                     Window:Notify({ Title = "ADS", Desc = "Successfully equipped: " .. real_tower_name, Time = 3, Type = "normal" })
+                    -- Paksa trigger recorder
+                    if Globals.__tds_record_equip then Globals.__tds_record_equip(real_tower_name) end
                 else
                     Window:Notify({ Title = "ADS", Desc = "Failed to equip: " .. real_tower_name, Time = 3, Type = "error" })
                 end
@@ -1563,9 +1563,6 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Textbox({
         Title = "Unequip:", Placeholder = "E.g. Farm", Value = "", ClearTextOnFocus = false,
         Callback = function(text)
-            if not text or text == "" then return end
-            
-            -- *** FIX APPLIED HERE: Trim whitespace and check if empty ***
             local trimmed_text = text:match("^%s*(.-)%s*$") or ""
             if trimmed_text == "" then return end
             
@@ -1578,6 +1575,8 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
                 local success = TDS_Unequip(real_tower_name)
                 if success then
                     Window:Notify({ Title = "ADS", Desc = "Successfully unequipped: " .. real_tower_name, Time = 3, Type = "normal" })
+                    -- Paksa trigger recorder
+                    if Globals.__tds_record_unequip then Globals.__tds_record_unequip(real_tower_name) end
                 else
                     Window:Notify({ Title = "ADS", Desc = "Failed to unequip: " .. real_tower_name, Time = 3, Type = "error" })
                 end
