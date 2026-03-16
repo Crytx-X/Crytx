@@ -438,7 +438,6 @@ RunService.Heartbeat:Connect(function()
         elseif activePriority == "Close" then
             table.sort(enemyList, function(a, b) return a.mag < b.mag end)
         elseif activePriority == "Random" then
-            -- Acak musuh murni
             for i = #enemyList, 2, -1 do
                 local j = math.random(1, i)
                 enemyList[i], enemyList[j] = enemyList[j], enemyList[i]
@@ -448,8 +447,6 @@ RunService.Heartbeat:Connect(function()
         Globals.SortedTargetsList = enemyList
         local bestTarget
 
-        -- Update logika: Jangan dikunci pada target sampai ia mati (khusus mode Random)
-        -- Biarkan ESP pindah-pindah mengikuti tembakan peluru terbaru
         if activePriority == "Random" then
             local found = false
             if Globals.LastShotTarget then
@@ -462,7 +459,7 @@ RunService.Heartbeat:Connect(function()
                 end
             end
             if not found then 
-                bestTarget = enemyList[1] -- list sudah di shuffle, tidak akan nunggu sampai mati
+                bestTarget = enemyList[1]
                 Globals.LastShotTarget = bestTarget
             end
         else
@@ -960,7 +957,6 @@ local Window = Library:Window({
     DiscordLink = "https://discord.gg/autostrat",
     Icon = 126403638319957,
     Config = { Keybind = Enum.KeyCode.LeftControl, Size = UDim2.new(0, 500, 0, 400) },
-    -- [TAMBAHKAN ONCLOSE CALLBACK DISINI]
     OnClose = function()
         -- 1. Matikan semua toggle (Boolean) di Globals
         Globals.AutoRejoin = false
@@ -973,7 +969,6 @@ local Window = Library:Window({
         Globals.SellFarms = false
         Globals.AutoMercenary = false
         Globals.AutoMilitary = false
-        Globals.AntiLag = false
         Globals.AutoPickups = false
         Globals.ClaimRewards = false
         Globals.TargetChamsEnabled = false
@@ -981,6 +976,12 @@ local Window = Library:Window({
         Globals.SilentAimEnabled = false
         Globals.PathVisuals = false
         Globals.CustomGatlingApplied = false
+        
+        -- Kembalikan setting Anti-Lag ke normal
+        Globals.AntiLag = false
+        pcall(function()
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+        end)
         
         -- 2. Bersihkan Visual (ESP, Tracer, Marker, Stack Sphere)
         pcall(ClearESP)
@@ -1001,11 +1002,15 @@ local Window = Library:Window({
         -- 5. Matikan animasi manual Gatling jika sedang on
         pcall(function()
             local towersFolder = workspace:FindFirstChild("Towers")
-            local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
-            if defaultTroop then
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(
-                    "Troops", "Abilities", "Activate", { Troop = defaultTroop, Name = "FPS", Data = { enabled = false } }
-                )
+            if towersFolder then
+                for _, tower in pairs(towersFolder:GetChildren()) do
+                    local rep = tower:FindFirstChild("TowerReplicator")
+                    if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                        game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(
+                            "Troops", "Abilities", "Activate", { Troop = tower, Name = "FPS", Data = { enabled = false } }
+                        )
+                    end
+                end
             end
         end)
     end
@@ -1133,7 +1138,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Toggle({ Title = "Disable 3d rendering", Desc = "Turns off 3d rendering", Value = Globals.Disable3DRendering, Callback = function(v) SetSetting("Disable3DRendering", v); Apply3dRendering() end })
     Misc:Toggle({ Title = "Auto Collect Pickups", Desc = "Collects Logbooks + Snowballs", Value = Globals.AutoPickups, Callback = function(v) SetSetting("AutoPickups", v) end })
     Misc:Dropdown({ Title = "Pickup Method", Desc = "", List = {"Pathfinding", "Instant"}, Value = Globals.PickupMethod or "Pathfinding", Callback = function(choice) local selected = type(choice) == "table" and choice[1] or choice; if not selected or selected == "" then selected = "Pathfinding" end; SetSetting("PickupMethod", selected) end })
-    Misc:Toggle({ Title = "Claim Rewards", Desc = "Claims your playtime and uses spin tickets in Lobby", Value = Globals.ClaimRewards, Callback = function(v) SetSetting("ClaimRewards", v) end })
+    Misc:Toggle({ Title = "Claim Rewards", Desc = "Claims your playtime and uses spin tickets (Lobby & Game)", Value = Globals.ClaimRewards, Callback = function(v) SetSetting("ClaimRewards", v) end })
 
     Misc:Section({Title = "Target Visual"})
     Misc:Dropdown({
@@ -1179,13 +1184,19 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     local function FireFPSAbility(isEnabled)
         pcall(function()
             local towersFolder = workspace:FindFirstChild("Towers")
-            local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
-            if defaultTroop then
-                local args = { "Troops", "Abilities", "Activate", { Troop = defaultTroop, Name = "FPS", Data = { enabled = isEnabled } } }
-                game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
+            if towersFolder then
+                for _, tower in pairs(towersFolder:GetChildren()) do
+                    local rep = tower:FindFirstChild("TowerReplicator")
+                    if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                        local args = { "Troops", "Abilities", "Activate", { Troop = tower, Name = "FPS", Data = { enabled = isEnabled } } }
+                        game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
+                    end
+                end
             end
         end)
     end
+
+    local InitialAutoGatlingLoad = true
 
     Misc:Toggle({
         Title = "Enable Auto Gatling",
@@ -1195,19 +1206,30 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             SetSetting("AutoGatling", state) 
 
             if state then
+                InitialAutoGatlingLoad = false
                 Window:Notify({ Title = "ADS", Desc = "Auto Gatling Enabled. Waiting for Gatling deployment...", Time = 3 })
                 
-                -- Memulai monitor loop untuk mendeteksi `workspace.Towers.Default.Character`
+                -- Memulai monitor loop untuk mendeteksi Gatling Gun
                 task.spawn(function()
                     local GatlingShootingLoopRunning = false
 
                     while Globals.AutoGatling do
+                        local myGatling = nil
                         local towersFolder = workspace:FindFirstChild("Towers")
-                        local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
-                        local defaultCharacter = defaultTroop and defaultTroop:FindFirstChild("Character")
+                        if towersFolder then
+                            for _, tower in pairs(towersFolder:GetChildren()) do
+                                local rep = tower:FindFirstChild("TowerReplicator")
+                                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                                    myGatling = tower
+                                    break
+                                end
+                            end
+                        end
+
+                        local myGatlingCharacter = myGatling and myGatling:FindFirstChild("Character")
 
                         -- Jika karakter gatling muncul dan loop belum berjalan
-                        if defaultCharacter then
+                        if myGatlingCharacter then
                             if not GatlingShootingLoopRunning then
                                 GatlingShootingLoopRunning = true
                                 FireFPSAbility(true)
@@ -1220,17 +1242,7 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                                     local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
 
                                     while Globals.AutoGatling and GatlingShootingLoopRunning do
-                                        local myGatlingRep = nil
-                                        local tFolder = workspace:FindFirstChild("Towers")
-                                        if tFolder then
-                                            for _, tower in pairs(tFolder:GetChildren()) do
-                                                local rep = tower:FindFirstChild("TowerReplicator")
-                                                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
-                                                    myGatlingRep = rep
-                                                    break
-                                                end
-                                            end
-                                        end
+                                        local myGatlingRep = myGatling and myGatling:FindFirstChild("TowerReplicator")
 
                                         if myGatlingRep then
                                             local currentAmmo = myGatlingRep:GetAttribute("Ammo")
@@ -1304,8 +1316,11 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                     end
                 end)
             else
-                -- Jika tombol langsung di toggle off dari UI
-                FireFPSAbility(false)
+                -- Jika tombol langsung di toggle off dari UI, dan ini bukan startup awal dari file config (json)
+                if not InitialAutoGatlingLoad then
+                    FireFPSAbility(false)
+                end
+                InitialAutoGatlingLoad = false
             end
         end
     })
@@ -1830,14 +1845,50 @@ local function StartAutoSkip()
 end
 
 local function StartClaimRewards()
-    if AutoClaimRewards or not Globals.ClaimRewards or GameState ~= "LOBBY" then return end
+    if AutoClaimRewards then return end
     AutoClaimRewards = true
-    local player = game:GetService("Players").LocalPlayer; local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
-    local SpinTickets = player:WaitForChild("SpinTickets", 15)
-    if SpinTickets and SpinTickets.Value > 0 then local TicketCount = SpinTickets.Value; local DailySpin = network:WaitForChild("DailySpin", 5); local RedeemRemote = DailySpin and DailySpin:WaitForChild("RF:RedeemSpin", 5); if RedeemRemote then for i = 1, TicketCount do RedeemRemote:InvokeServer(); task.wait(0.5) end end end
-    for i = 1, 6 do local args = { i }; network:WaitForChild("PlaytimeRewards"):WaitForChild("RF:ClaimReward"):InvokeServer(unpack(args)); task.wait(0.5) end
-    game:GetService("ReplicatedStorage").Network.DailySpin["RF:RedeemReward"]:InvokeServer()
-    AutoClaimRewards = false
+    task.spawn(function()
+        while Globals.ClaimRewards do
+            local player = game:GetService("Players").LocalPlayer
+            local network = game:GetService("ReplicatedStorage"):WaitForChild("Network", 5)
+            
+            if network then
+                -- 1. Claim Spin Tickets
+                local SpinTickets = player:FindFirstChild("SpinTickets")
+                if SpinTickets and SpinTickets.Value > 0 then 
+                    local TicketCount = SpinTickets.Value
+                    local DailySpin = network:FindFirstChild("DailySpin")
+                    local RedeemRemote = DailySpin and DailySpin:FindFirstChild("RF:RedeemSpin")
+                    if RedeemRemote then 
+                        for i = 1, TicketCount do 
+                            pcall(function() RedeemRemote:InvokeServer() end)
+                            task.wait(0.5) 
+                        end 
+                    end 
+                end
+                
+                -- 2. Claim Playtime Rewards
+                local PlaytimeRewards = network:FindFirstChild("PlaytimeRewards")
+                local ClaimRewardRemote = PlaytimeRewards and PlaytimeRewards:FindFirstChild("RF:ClaimReward")
+                if ClaimRewardRemote then
+                    for i = 1, 6 do 
+                        pcall(function() ClaimRewardRemote:InvokeServer(i) end)
+                        task.wait(0.5) 
+                    end
+                end
+                
+                -- 3. Claim Daily Spin Reward
+                local DailySpin = network:FindFirstChild("DailySpin")
+                local RedeemRewardRemote = DailySpin and DailySpin:FindFirstChild("RF:RedeemReward")
+                if RedeemRewardRemote then
+                    pcall(function() RedeemRewardRemote:InvokeServer() end)
+                end
+            end
+            
+            task.wait(10)
+        end
+        AutoClaimRewards = false
+    end)
 end
 
 local function StartBackToLobby()
@@ -1846,11 +1897,60 @@ local function StartBackToLobby()
     task.spawn(function() while true do pcall(function() HandlePostMatch() end); task.wait(5) end; BackToLobbyRunning = false end)
 end
 
+local SavedQualityLevel = settings().Rendering.QualityLevel
+
 local function StartAntiLag()
     if AntiLagRunning then return end
     AntiLagRunning = true
-    local settings = settings().Rendering; local OriginalQuality = settings.QualityLevel; settings.QualityLevel = Enum.QualityLevel.Level01
-    task.spawn(function() while Globals.AntiLag do local TowersFolder = workspace:FindFirstChild("Towers"); local ClientUnits = workspace:FindFirstChild("ClientUnits"); local enemies = workspace:FindFirstChild("NPCs"); if TowersFolder then for _, tower in ipairs(TowersFolder:GetChildren()) do local anims = tower:FindFirstChild("Animations"); local weapon = tower:FindFirstChild("Weapon"); local projectiles = tower:FindFirstChild("Projectiles"); if anims then anims:Destroy() end; if projectiles then projectiles:Destroy() end; if weapon then weapon:Destroy() end end end; if ClientUnits then for _, unit in ipairs(ClientUnits:GetChildren()) do unit:Destroy() end end; if enemies then for _, npc in ipairs(enemies:GetChildren()) do npc:Destroy() end end; task.wait(0.5) end; AntiLagRunning = false end)
+    
+    -- Simpan kualitas render saat ini lalu ubah ke level paling rendah
+    SavedQualityLevel = settings().Rendering.QualityLevel
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    
+    task.spawn(function()
+        while Globals.AntiLag do
+            local TowersFolder = workspace:FindFirstChild("Towers"); 
+            local ClientUnits = workspace:FindFirstChild("ClientUnits"); 
+            local enemies = workspace:FindFirstChild("NPCs"); 
+            
+            if TowersFolder then 
+                for _, tower in ipairs(TowersFolder:GetChildren()) do 
+                    local anims = tower:FindFirstChild("Animations"); 
+                    local weapon = tower:FindFirstChild("Weapon"); 
+                    local projectiles = tower:FindFirstChild("Projectiles"); 
+                    if anims then anims:Destroy() end; 
+                    if projectiles then projectiles:Destroy() end; 
+                    if weapon then weapon:Destroy() end 
+                end 
+            end; 
+            
+            if ClientUnits then 
+                for _, unit in ipairs(ClientUnits:GetChildren()) do 
+                    unit:Destroy() 
+                end 
+            end; 
+            
+            if enemies then 
+                for _, npc in ipairs(enemies:GetChildren()) do 
+                    -- Kami TIDAK menghancurkan root/hitbox agar fitur AutoGatling / Tracer tetap berfungsi, 
+                    -- kami hanya menghancurkan visual luarnya.
+                    for _, part in ipairs(npc:GetChildren()) do
+                        if part.Name ~= "HumanoidRootPart" and part.Name ~= "RootPointer" then
+                            pcall(function() part:Destroy() end)
+                        end
+                    end
+                end 
+            end; 
+            
+            task.wait(0.5) 
+        end; 
+        
+        -- KEMBALIKAN GRAFIK KE NORMAL KETIKA DI MATIKAN
+        pcall(function()
+            settings().Rendering.QualityLevel = SavedQualityLevel
+        end)
+        AntiLagRunning = false 
+    end)
 end
 
 local function StartAutoChain()
@@ -1936,10 +2036,9 @@ task.spawn(function()
         if Globals.SellFarms and not SellFarmsRunning then StartSellFarm() end
         if Globals.AntiLag and not AntiLagRunning then StartAntiLag() end
         if Globals.AutoRejoin and not BackToLobbyRunning then StartBackToLobby() end
+        if Globals.ClaimRewards and not AutoClaimRewards then StartClaimRewards() end
         task.wait(1)
     end
 end)
-
-if Globals.ClaimRewards and not AutoClaimRewards then StartClaimRewards() end
 
 return TDS
