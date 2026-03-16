@@ -959,7 +959,7 @@ local Window = Library:Window({
     Theme = "Dark",
     DiscordLink = "https://discord.gg/autostrat",
     Icon = 126403638319957,
-    Config = { Keybind = Enum.KeyCode.LeftControl, Size = UDim2.new(0, 500, 0, 400) }
+    Config = { Keybind = Enum.KeyCode.LeftControl, Size = UDim2.new(0, 500, 0, 400) },
     -- [TAMBAHKAN ONCLOSE CALLBACK DISINI]
     OnClose = function()
         -- 1. Matikan semua toggle (Boolean) di Globals
