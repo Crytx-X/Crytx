@@ -1099,6 +1099,7 @@ function Library:Window(p)
 	local Size = p.Config.Size or UDim2.new(0, 530,0, 400)
 	local DiscordLink = p.DiscordLink or nil
 	local Version = p.Version or nil
+	local OnClose = p.OnClose or function() end
 	
 	local keybindConnection = nil
 
@@ -5112,6 +5113,7 @@ function Library:Window(p)
 					Title = 'Confirm',
 					Color = Color3.fromRGB(0, 188, 0),
 					Callback = function()
+						pcall(OnClose)
 						ScreenGui:Destroy()
 					end,
 				},

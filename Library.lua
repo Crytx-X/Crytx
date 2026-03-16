@@ -608,7 +608,6 @@ LoadSettings()
 Globals.TimeScaleValue = CoerceTimeScaleValue(Globals.TimeScaleValue, 2)
 Apply3dRendering()
 
--- (Tag Changer & Privacy Modes omitted for brevity, keeping existing code logic directly)
 local isTagChangerRunning = false
 local tagChangerConn = nil
 local tagChangerTag = nil
@@ -961,6 +960,55 @@ local Window = Library:Window({
     DiscordLink = "https://discord.gg/autostrat",
     Icon = 126403638319957,
     Config = { Keybind = Enum.KeyCode.LeftControl, Size = UDim2.new(0, 500, 0, 400) }
+    -- [TAMBAHKAN ONCLOSE CALLBACK DISINI]
+    OnClose = function()
+        -- 1. Matikan semua toggle (Boolean) di Globals
+        Globals.AutoRejoin = false
+        Globals.AutoSkip = false
+        Globals.AutoChain = false
+        Globals.SupportCaravan = false
+        Globals.AutoDJ = false
+        Globals.AutoNecro = false
+        Globals.TimeScaleEnabled = false
+        Globals.SellFarms = false
+        Globals.AutoMercenary = false
+        Globals.AutoMilitary = false
+        Globals.AntiLag = false
+        Globals.AutoPickups = false
+        Globals.ClaimRewards = false
+        Globals.TargetChamsEnabled = false
+        Globals.AutoGatling = false
+        Globals.SilentAimEnabled = false
+        Globals.PathVisuals = false
+        Globals.CustomGatlingApplied = false
+        
+        -- 2. Bersihkan Visual (ESP, Tracer, Marker, Stack Sphere)
+        pcall(ClearESP)
+        StackEnabled = false
+        if StackSphere then StackSphere:Destroy(); StackSphere = nil end
+        if MilMarker then MilMarker:Destroy(); MilMarker = nil end
+        if MercMarker then MercMarker:Destroy(); MercMarker = nil end
+        
+        -- 3. Kembalikan 3D Rendering jika Disable3DRendering sedang aktif
+        Globals.Disable3DRendering = false
+        pcall(Apply3dRendering)
+        
+        -- 4. Matikan mode penyamaran (Privacy / Tag Changer)
+        Globals.tagName = "None"
+        pcall(stopTagChanger)
+        if PrivacyRunning then pcall(StopPrivacyMode) end
+        
+        -- 5. Matikan animasi manual Gatling jika sedang on
+        pcall(function()
+            local towersFolder = workspace:FindFirstChild("Towers")
+            local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
+            if defaultTroop then
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(
+                    "Troops", "Abilities", "Activate", { Troop = defaultTroop, Name = "FPS", Data = { enabled = false } }
+                )
+            end
+        end)
+    end
 })
 
 local Autostrat = Window:Tab({Title = "Autostrat", Icon = "star"}) do
@@ -1128,6 +1176,17 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
     Misc:Textbox({ Title = "Auto Cooldown:", Placeholder = "0.01", Value = tostring(Globals.AutoCooldown), ClearTextOnFocus = true, Callback = function(value) if tonumber(value) then Globals.AutoCooldown = tonumber(value); SetSetting("AutoCooldown", tonumber(value)) end end })
     Misc:Textbox({ Title = "Auto Multiply:", Placeholder = "1", Value = tostring(Globals.AutoMultiply), ClearTextOnFocus = true, Callback = function(value) if tonumber(value) then Globals.AutoMultiply = tonumber(value); SetSetting("AutoMultiply", tonumber(value)) end end })
 
+    local function FireFPSAbility(isEnabled)
+        pcall(function()
+            local towersFolder = workspace:FindFirstChild("Towers")
+            local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
+            if defaultTroop then
+                local args = { "Troops", "Abilities", "Activate", { Troop = defaultTroop, Name = "FPS", Data = { enabled = isEnabled } } }
+                game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
+            end
+        end)
+    end
+
     Misc:Toggle({
         Title = "Enable Auto Gatling",
         Value = Globals.AutoGatling, 
@@ -1135,97 +1194,117 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
             Globals.AutoGatling = state
             SetSetting("AutoGatling", state) 
 
-            local function FireFPSAbility(isEnabled)
-                pcall(function()
-                    local towersFolder = workspace:FindFirstChild("Towers")
-                    local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
-                    if defaultTroop then
-                        local args = { "Troops", "Abilities", "Activate", { Troop = defaultTroop, Name = "FPS", Data = { enabled = isEnabled } } }
-                        game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"):InvokeServer(unpack(args))
-                    end
-                end)
-            end
-
             if state then
-                Window:Notify({ Title = "ADS", Desc = "Auto Gatling Enabled (Split Fire & Smart Reload Active)", Time = 3 })
-                FireFPSAbility(true)
-
+                Window:Notify({ Title = "ADS", Desc = "Auto Gatling Enabled. Waiting for Gatling deployment...", Time = 3 })
+                
+                -- Memulai monitor loop untuk mendeteksi `workspace.Towers.Default.Character`
                 task.spawn(function()
-                    local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
-                    local gatlingNetwork = network:WaitForChild("GatlingGun")
-                    local fireRemote = gatlingNetwork:WaitForChild("RE:Fire")
-                    local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
+                    local GatlingShootingLoopRunning = false
 
                     while Globals.AutoGatling do
-                        local myGatlingRep = nil
                         local towersFolder = workspace:FindFirstChild("Towers")
-                        if towersFolder then
-                            for _, tower in pairs(towersFolder:GetChildren()) do
-                                local rep = tower:FindFirstChild("TowerReplicator")
-                                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
-                                    myGatlingRep = rep
-                                    break
-                                end
-                            end
-                        end
+                        local defaultTroop = towersFolder and towersFolder:FindFirstChild("Default")
+                        local defaultCharacter = defaultTroop and defaultTroop:FindFirstChild("Character")
 
-                        if myGatlingRep then
-                            local currentAmmo = myGatlingRep:GetAttribute("Ammo")
-                            local maxAmmo = myGatlingRep:GetAttribute("MaxAmmo")
-                            local isReloading = myGatlingRep:GetAttribute("Reloading")
-
-                            if (currentAmmo ~= nil and currentAmmo <= 0) or isReloading then
-                                if not isReloading then pcall(function() reloadRemote:FireServer() end) end
-                                task.wait(0.01)
-                                continue 
-                            end
-                            
-                            local hasEnemies = Globals.SortedTargetsList and #Globals.SortedTargetsList > 0
-                            if not hasEnemies and currentAmmo and maxAmmo and currentAmmo < maxAmmo and not isReloading then
-                                pcall(function() reloadRemote:FireServer() end)
-                                task.wait(1.5)
-                                continue
-                            end
-                        end
-
-                        -- SMART SPLIT FIRE / RANDOM FIRE
-                        if Globals.SortedTargetsList and #Globals.SortedTargetsList > 0 then
-                            local myDamage = myGatlingRep:GetAttribute("Damage") or 5 
-                            local currentTargetIdx = 1
-
-                            for i = 1, Globals.AutoMultiply do
-                                local target
+                        -- Jika karakter gatling muncul dan loop belum berjalan
+                        if defaultCharacter then
+                            if not GatlingShootingLoopRunning then
+                                GatlingShootingLoopRunning = true
+                                FireFPSAbility(true)
                                 
-                                if Globals.AutoGatlingPriority == "Random" then
-                                    local alive = {}
-                                    for _, e in ipairs(Globals.SortedTargetsList) do
-                                        if e.health > 0 then table.insert(alive, e) end
+                                -- Memulai loop penembakan
+                                task.spawn(function()
+                                    local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
+                                    local gatlingNetwork = network:WaitForChild("GatlingGun")
+                                    local fireRemote = gatlingNetwork:WaitForChild("RE:Fire")
+                                    local reloadRemote = gatlingNetwork:WaitForChild("RE:Reload")
+
+                                    while Globals.AutoGatling and GatlingShootingLoopRunning do
+                                        local myGatlingRep = nil
+                                        local tFolder = workspace:FindFirstChild("Towers")
+                                        if tFolder then
+                                            for _, tower in pairs(tFolder:GetChildren()) do
+                                                local rep = tower:FindFirstChild("TowerReplicator")
+                                                if rep and rep:GetAttribute("OwnerId") == LocalPlayer.UserId and rep:GetAttribute("Name") == "Gatling Gun" then
+                                                    myGatlingRep = rep
+                                                    break
+                                                end
+                                            end
+                                        end
+
+                                        if myGatlingRep then
+                                            local currentAmmo = myGatlingRep:GetAttribute("Ammo")
+                                            local maxAmmo = myGatlingRep:GetAttribute("MaxAmmo")
+                                            local isReloading = myGatlingRep:GetAttribute("Reloading")
+
+                                            if (currentAmmo ~= nil and currentAmmo <= 0) or isReloading then
+                                                if not isReloading then pcall(function() reloadRemote:FireServer() end) end
+                                                task.wait(0.01)
+                                                continue 
+                                            end
+                                            
+                                            local hasEnemies = Globals.SortedTargetsList and #Globals.SortedTargetsList > 0
+                                            if not hasEnemies and currentAmmo and maxAmmo and currentAmmo < maxAmmo and not isReloading then
+                                                pcall(function() reloadRemote:FireServer() end)
+                                                task.wait(1.5)
+                                                continue
+                                            end
+                                        end
+
+                                        -- SMART SPLIT FIRE / RANDOM FIRE
+                                        if Globals.SortedTargetsList and #Globals.SortedTargetsList > 0 then
+                                            local myDamage = (myGatlingRep and myGatlingRep:GetAttribute("Damage")) or 5 
+                                            local currentTargetIdx = 1
+
+                                            for i = 1, Globals.AutoMultiply do
+                                                local target
+                                                
+                                                if Globals.AutoGatlingPriority == "Random" then
+                                                    local alive = {}
+                                                    for _, e in ipairs(Globals.SortedTargetsList) do
+                                                        if e.health > 0 then table.insert(alive, e) end
+                                                    end
+                                                    if #alive > 0 then
+                                                        target = alive[math.random(1, #alive)]
+                                                    end
+                                                else
+                                                    target = Globals.SortedTargetsList[currentTargetIdx]
+                                                end
+
+                                                if not target then break end 
+
+                                                pcall(function() fireRemote:FireServer(target.pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow()) end)
+                                                
+                                                Globals.LastShotTarget = target
+                                                target.health = target.health - myDamage
+                                                
+                                                if Globals.AutoGatlingPriority ~= "Random" and target.health <= 0 then
+                                                    currentTargetIdx = currentTargetIdx + 1
+                                                end
+                                            end
+                                        end
+                                        task.wait(Globals.AutoCooldown or 0.01)
                                     end
-                                    if #alive > 0 then
-                                        target = alive[math.random(1, #alive)]
-                                    end
-                                else
-                                    target = Globals.SortedTargetsList[currentTargetIdx]
-                                end
-
-                                if not target then break end 
-
-                                pcall(function() fireRemote:FireServer(target.pos, workspace:GetAttribute("Sync"), workspace:GetServerTimeNow()) end)
-                                
-                                -- Update last target so ESP moves dynamically
-                                Globals.LastShotTarget = target
-
-                                target.health = target.health - myDamage
-                                
-                                if Globals.AutoGatlingPriority ~= "Random" and target.health <= 0 then
-                                    currentTargetIdx = currentTargetIdx + 1
-                                end
+                                end)
+                            end
+                        else
+                            -- Jika karakter gatling hilang/dijual tapi loop tadinya jalan
+                            if GatlingShootingLoopRunning then
+                                GatlingShootingLoopRunning = false
+                                FireFPSAbility(false)
                             end
                         end
-                        task.wait(Globals.AutoCooldown or 0.01)
+                        task.wait(0.5) -- Cek setiap 0.5 detik
+                    end
+
+                    -- Pembersihan saat toggle dimatikan (Globals.AutoGatling = false)
+                    if GatlingShootingLoopRunning then
+                        GatlingShootingLoopRunning = false
+                        FireFPSAbility(false)
                     end
                 end)
             else
+                -- Jika tombol langsung di toggle off dari UI
                 FireFPSAbility(false)
             end
         end
