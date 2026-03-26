@@ -955,7 +955,7 @@ local Window = Library:Window({
     Desc = "your #1 hub",
     Theme = "Dark",
     DiscordLink = "https://discord.gg/autostrat",
-    Icon = 126403638319957,
+    Icon = 100189470230468,
     Config = { Keybind = Enum.KeyCode.LeftControl, Size = UDim2.new(0, 500, 0, 400) },
     OnClose = function()
         -- 1. Matikan semua toggle (Boolean) di Globals
@@ -1497,340 +1497,72 @@ local Settings = Window:Tab({Title = "Settings", Icon = "settings"}) do
     Settings:Textbox({ Title = "Webhook URL:", Desc = "", Placeholder = "https://discord.com/api/webhooks/...", Value = Globals.WebhookURL, ClearTextOnFocus = true, Callback = function(value) if value ~= "" and value:find("https://discord.com/api/webhooks/") then SetSetting("WebhookURL", value); Window:Notify({ Title = "ADS", Desc = "Webhook is successfully set!", Time = 3, Type = "normal" }) else Window:Notify({ Title = "ADS", Desc = "Invalid Webhook URL!", Time = 3, Type = "normal" }) end end })
 end
 
-RunService.RenderStepped:Connect(function()
-    if StackEnabled then
-        if not StackSphere then
-            StackSphere = Instance.new("Part")
-            StackSphere.Shape = Enum.PartType.Ball
-            StackSphere.Size = Vector3.new(1.5, 1.5, 1.5)
-            StackSphere.Color = Color3.fromRGB(0, 255, 0)
-            StackSphere.Transparency = 0.5
-            StackSphere.Anchored = true
-            StackSphere.CanCollide = false
-            StackSphere.Material = Enum.Material.Neon
-            StackSphere.Parent = workspace
-            mouse.TargetFilter = StackSphere
-        end
-        local hit = mouse.Hit
-        if hit then StackSphere.Position = hit.Position end
-    elseif StackSphere then
-        StackSphere:Destroy()
-        StackSphere = nil
-    end
-    UpdatePathVisuals()
-end)
-
-mouse.Button1Down:Connect(function()
-    if StackEnabled and StackSphere and SelectedTower then
-        local pos = StackSphere.Position
-        local newpos = Vector3.new(pos.X, pos.Y + 25, pos.Z)
-        RemoteFunc:InvokeServer("Troops", "Pl\208\176ce", {Rotation = CFrame.new(), Position = newpos}, SelectedTower)
-    end
-end)
-
--- // public api
-function TDS:Equip(tower_name) local real_name = ResolveTowerName(tower_name) or tower_name; if Logger and Logger.Log then Logger:Log("Equipping: " .. real_name) end; return TDS_Equip(real_name) end
-function TDS:Unequip(tower_name) local real_name = ResolveTowerName(tower_name) or tower_name; if Logger and Logger.Log then Logger:Log("Unequipping: " .. real_name) end; return TDS_Unequip(real_name) end
-
--- // currency tracking
-local StartCoins, CurrentTotalCoins, StartGems, CurrentTotalGems = 0, 0, 0, 0
-if GameState == "GAME" then
-    pcall(function() repeat task.wait(1) until LocalPlayer:FindFirstChild("Coins"); StartCoins = LocalPlayer.Coins.Value; CurrentTotalCoins = StartCoins; StartGems = LocalPlayer.Gems.Value; CurrentTotalGems = StartGems end)
-end
-
--- // check if remote returned valid
-local function CheckResOk(data)
-    if data == true then return true end
-    if type(data) == "table" and data.Success == true then return true end
-    local success, IsModel = pcall(function() return data and data:IsA("Model") end)
-    if success and IsModel then return true end
-    if type(data) == "userdata" then return true end
-    return false
-end
-
--- // scrap ui for match data
-local function GetAllRewards()
-    local results = { Coins = 0, Gems = 0, XP = 0, Wave = 0, Level = 0, Time = "00:00", Status = "UNKNOWN", Others = {} }
-    local UiRoot = PlayerGui:FindFirstChild("ReactGameNewRewards")
-    local MainFrame = UiRoot and UiRoot:FindFirstChild("Frame")
-    local GameOver = MainFrame and MainFrame:FindFirstChild("gameOver")
-    local RewardsScreen = GameOver and GameOver:FindFirstChild("RewardsScreen")
-    local GameStats = RewardsScreen and RewardsScreen:FindFirstChild("gameStats")
-    local StatsList = GameStats and GameStats:FindFirstChild("stats")
-
-    if StatsList then for _, frame in ipairs(StatsList:GetChildren()) do local l1 = frame:FindFirstChild("textLabel"); local l2 = frame:FindFirstChild("textLabel2"); if l1 and l2 and l1.Text:find("Time Completed:") then results.Time = l2.Text; break end end end
-    local TopBanner = RewardsScreen and RewardsScreen:FindFirstChild("RewardBanner")
-    if TopBanner and TopBanner:FindFirstChild("textLabel") then local txt = TopBanner.textLabel.Text:upper(); results.Status = txt:find("TRIUMPH") and "WIN" or (txt:find("LOST") and "UNKNOWN") end
-    local LevelValue = LocalPlayer.Level
-    if LevelValue then results.Level = LevelValue.Value or 0 end
-    local label = PlayerGui:WaitForChild("ReactGameTopGameDisplay").Frame.wave.container.value
-    local WaveNum = label.Text:match("^(%d+)")
-    if WaveNum then results.Wave = tonumber(WaveNum) or 0 end
-    local SectionRewards = RewardsScreen and RewardsScreen:FindFirstChild("RewardsSection")
-    if SectionRewards then
-        for _, item in ipairs(SectionRewards:GetChildren()) do
-            if tonumber(item.Name) then 
-                local IconId = "0"
-                local img = item:FindFirstChildWhichIsA("ImageLabel", true)
-                if img then IconId = img.Image:match("%d+") or "0" end
-                for _, child in ipairs(item:GetDescendants()) do
-                    if child:IsA("TextLabel") then
-                        local text = child.Text; local amt = tonumber(text:match("(%d+)")) or 0
-                        if text:find("Coins") then results.Coins = amt elseif text:find("Gems") then results.Gems = amt elseif text:find("XP") then results.XP = amt elseif text:lower():find("x%d+") then local displayName = ItemNames[IconId] or "Unknown Item (" .. IconId .. ")"; table.insert(results.Others, {Amount = text:match("x%d+"), Name = displayName}) end
-                    end
-                end
-            end
-        end
-    end
-    return results
-end
-
--- // rejoining
-local function RejoinMatch()
-    local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction")
-    local success = false; local res
-    repeat
-        local StateFolder = ReplicatedStorage:FindFirstChild("State")
-        local CurrentMode = StateFolder and StateFolder.Difficulty.Value
-        if CurrentMode then
-            local ok, result = pcall(function()
-                local payload
-                if CurrentMode == "PizzaParty" then payload = { mode = "halloween", count = 1 } elseif CurrentMode == "Hardcore" then payload = { mode = "hardcore", count = 1 } elseif CurrentMode == "PollutedWasteland" then payload = { mode = "polluted", count = 1 } elseif CurrentMode == "Badlands" then payload = { mode = "badlands", count = 1 } else payload = { difficulty = CurrentMode, mode = "survival", count = 1 } end
-                return remote:InvokeServer("Multiplayer", "v2:start", payload)
-            end)
-            if ok and CheckResOk(result) then success = true; res = result else task.wait(0.5) end
-        else task.wait(1) end
-    until success
-    return res
-end
-
-local function HandlePostMatch()
-    local UiRoot
-    repeat task.wait(1); local root = PlayerGui:FindFirstChild("ReactGameNewRewards"); local frame = root and root:FindFirstChild("Frame"); local gameOver = frame and frame:FindFirstChild("gameOver"); local RewardsScreen = gameOver and gameOver:FindFirstChild("RewardsScreen"); UiRoot = RewardsScreen and RewardsScreen:FindFirstChild("RewardsSection") until UiRoot
-    if not UiRoot then return RejoinMatch() end
-    if not Globals.AutoRejoin then return end
-    if not Globals.SendWebhook then RejoinMatch(); return end
-    task.wait(1)
-    local match = GetAllRewards()
-    CurrentTotalCoins += match.Coins; CurrentTotalGems += match.Gems
-    local BonusString = ""
-    if #match.Others > 0 then for _, res in ipairs(match.Others) do BonusString = BonusString .. "🎁 **" .. res.Amount .. " " .. res.Name .. "**\n" end else BonusString = "_No bonus rewards found._" end
-    local PostData = { username = "TDS AutoStrat", embeds = {{ title = (match.Status == "WIN" and "🏆 TRIUMPH" or "💀 DEFEAT"), color = (match.Status == "WIN" and 0x2ecc71 or 0xe74c3c), description = "### 📋 Match Overview\n> **Status:** `" .. match.Status .. "`\n> **Time:** `" .. match.Time .. "`\n> **Current Level:** `" .. match.Level .. "`\n> **Wave:** `" .. match.Wave .. "`\n", fields = { { name = "✨ Rewards", value = "```ansi\n [2;33mCoins: [0m +" .. match.Coins .. "\n [2;34mGems:  [0m +" .. match.Gems .. "\n [2;32mXP:    [0m +" .. match.XP .. "```", inline = false }, { name = "🎁 Bonus Items", value = BonusString, inline = true }, { name = "📊 Session Totals", value = "```py\n# Total Amount\nCoins: " .. CurrentTotalCoins .. "\nGems:  " .. CurrentTotalGems .. "```", inline = true } }, footer = { text = "Logged for " .. LocalPlayer.Name .. " • TDS AutoStrat" }, timestamp = DateTime.now():ToIsoDate() }} }
-    pcall(function() SendRequest({ Url = Globals.WebhookURL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = game:GetService("HttpService"):JSONEncode(PostData) }) end)
-    task.wait(1.5); RejoinMatch()
-end
-
--- // voting & map selection
-local function RunVoteSkip() while true do local success = pcall(function() RemoteFunc:InvokeServer("Voting", "Skip") end); if success then break end; task.wait(0.2) end end
-local function MatchReadyUp()
-    local PlayerGui = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-    local UiOverrides = PlayerGui:WaitForChild("ReactOverridesVote", 30)
-    local MainFrame = UiOverrides and UiOverrides:WaitForChild("Frame", 30)
-    if not MainFrame then return end
-    local VoteReady = nil
-    while not VoteReady do
-        local VoteNode = MainFrame:FindFirstChild("votes")
-        if VoteNode then local container = VoteNode:FindFirstChild("container"); if container then local ready = container:FindFirstChild("ready"); if ready then VoteReady = ready end end end
-        if not VoteReady then task.wait(0.5) end
-    end
-    repeat task.wait(0.1) until VoteReady.Visible == true
-    RunVoteSkip()
-end
-local function CastMapVote(MapId, PosVec) local TargetMap = MapId or "Simplicity"; local TargetPos = PosVec or Vector3.new(0,0,0); RemoteEvent:FireServer("LobbyVoting", "Vote", TargetMap, TargetPos); Logger:Log("Cast map vote: " .. TargetMap) end
-local function LobbyReadyUp() pcall(function() RemoteEvent:FireServer("LobbyVoting", "Ready"); Logger:Log("Lobby ready up sent") end) end
-local function SelectMapOverride(MapId, ...) local args = {...}; if args[#args] == "vip" then RemoteFunc:InvokeServer("LobbyVoting", "Override", MapId) end; task.wait(3); CastMapVote(MapId, Vector3.new(12.59, 10.64, 52.01)); task.wait(1); LobbyReadyUp(); MatchReadyUp() end
-local function CastModifierVote(ModsTable) local BulkModifiers = ReplicatedStorage:WaitForChild("Network"):WaitForChild("Modifiers"):WaitForChild("RF:BulkVoteModifiers"); local SelectedMods = {}; if ModsTable and #ModsTable > 0 then for _, modName in ipairs(ModsTable) do SelectedMods[modName] = true end end; pcall(function() BulkModifiers:InvokeServer(SelectedMods); Logger:Log("Successfully casted modifier votes.") end) end
-local function IsMapAvailable(name)
-    for _, g in ipairs(workspace:GetDescendants()) do if g:IsA("SurfaceGui") and g.Name == "MapDisplay" then local t = g:FindFirstChild("Title"); if t and t.Text == name then return true end end end
-    repeat
-        local IntermissionFrame = PlayerGui:WaitForChild("ReactGameIntermission"):WaitForChild("Frame")
-        local VetoText = IntermissionFrame:WaitForChild("buttons"):WaitForChild("veto"):WaitForChild("value").Text
-        if IntermissionFrame.Visible and VetoText:match("Veto %(0/") then RemoteEvent:FireServer("LobbyVoting", "Veto") end
-        wait(1)
-        local found = false
-        for _, g in ipairs(workspace:GetDescendants()) do if g:IsA("SurfaceGui") and g.Name == "MapDisplay" then local t = g:FindFirstChild("Title"); if t and t.Text == name then found = true; break end end end
-        local TotalPlayer = #PlayersService:GetChildren()
-    until found or VetoText == "Veto ("..TotalPlayer.."/"..TotalPlayer..")"
-    for _, g in ipairs(workspace:GetDescendants()) do if g:IsA("SurfaceGui") and g.Name == "MapDisplay" then local t = g:FindFirstChild("Title"); if t and t.Text == name then return true end end end
-    return false
-end
-
--- // timescale logic
-local function SetGameTimescale(TargetVal)
-    if GameState ~= "GAME" then return false end
-    local SpeedList = {0, 0.5, 1, 1.5, 2}; local TargetIdx
-    for i, v in ipairs(SpeedList) do if v == TargetVal then TargetIdx = i; break end end
-    if not TargetIdx then return end
-    local SpeedLabel = game.Players.LocalPlayer.PlayerGui.ReactUniversalHotbar.Frame.timescale.Speed
-    local CurrentVal = tonumber(SpeedLabel.Text:match("x([%d%.]+)"))
-    if not CurrentVal then return end
-    local CurrentIdx
-    for i, v in ipairs(SpeedList) do if v == CurrentVal then CurrentIdx = i; break end end
-    if not CurrentIdx then return end
-    local diff = TargetIdx - CurrentIdx; if diff < 0 then diff = #SpeedList + diff end
-    for _ = 1, diff do ReplicatedStorage.RemoteFunction:InvokeServer("TicketsManager", "CycleTimeScale"); task.wait(0.5) end
-end
-local function UnlockSpeedTickets()
-    if GameState ~= "GAME" then return false end
-    if LocalPlayer.TimescaleTickets.Value >= 1 then if game.Players.LocalPlayer.PlayerGui.ReactUniversalHotbar.Frame.timescale.Lock.Visible then ReplicatedStorage.RemoteFunction:InvokeServer('TicketsManager', 'UnlockTimeScale'); Logger:Log("Unlocked timescale tickets") end else Logger:Log("No timescale tickets left") end
-end
-ApplyTimeScaleOnce = function()
-    if not Globals.TimeScaleEnabled or GameState ~= "GAME" then return end
-    local frame = GetTimescaleFrame(); if not frame or not frame.Visible then return end
-    local desired = CoerceTimeScaleValue(Globals.TimeScaleValue, 2); if not desired then return end
-    local lock = frame:FindFirstChild("Lock")
-    if lock and lock.Visible then if LocalPlayer.TimescaleTickets.Value < 1 then if not TimeScaleNoTicketsWarned then Logger:Log("No timescale tickets left"); TimeScaleNoTicketsWarned = true end; return end; UnlockSpeedTickets(); task.wait(0.4) else TimeScaleNoTicketsWarned = false end
-    SetGameTimescale(desired)
-end
-StartTimeScale = function()
-    if TimeScaleRunning or not Globals.TimeScaleEnabled then return end
-    TimeScaleRunning = true
-    task.spawn(function() while Globals.TimeScaleEnabled do ApplyTimeScaleOnce(); task.wait(3) end; TimeScaleNoTicketsWarned = false; TimeScaleRunning = false end)
-end
-
--- // ingame control
-local function TriggerRestart()
-    local UiRoot = PlayerGui:WaitForChild("ReactGameNewRewards"); local FoundSection = false
-    repeat task.wait(0.3); local f = UiRoot:FindFirstChild("Frame"); local g = f and f:FindFirstChild("gameOver"); local s = g and g:FindFirstChild("RewardsScreen"); if s and s:FindFirstChild("RewardsSection") then FoundSection = true end until FoundSection
-    task.wait(3); RunVoteSkip()
-end
-
-local function GetCurrentWave()
-    local label
-    repeat task.wait(0.5); label = PlayerGui:FindFirstChild("ReactGameTopGameDisplay", true) and PlayerGui.ReactGameTopGameDisplay.Frame.wave.container:FindFirstChild("value") until label ~= nil
-    local text = label.Text; local WaveNum = text:match("(%d+)")
-    return tonumber(WaveNum) or 0
-end
-
-local function DoPlaceTower(TName, TPos)
-    Logger:Log("Placing tower: " .. TName)
-    while true do local ok, res = pcall(function() return RemoteFunc:InvokeServer("Troops", "Pl\208\176ce", { Rotation = CFrame.new(), Position = TPos }, TName) end); if ok and CheckResOk(res) then return true end; task.wait(0.25) end
-end
-local function DoUpgradeTower(TObj, PathId) while true do local ok, res = pcall(function() return RemoteFunc:InvokeServer("Troops", "Upgrade", "Set", { Troop = TObj, Path = PathId }) end); if ok and CheckResOk(res) then return true end; task.wait(0.25) end end
-local function DoSellTower(TObj) while true do local ok, res = pcall(function() return RemoteFunc:InvokeServer("Troops", "Sell", { Troop = TObj }) end); if ok and CheckResOk(res) then return true end; task.wait(0.25) end end
-local function DoSetOption(TObj, OptName, OptVal, ReqWave) if ReqWave then repeat task.wait(0.3) until GetCurrentWave() >= ReqWave end; while true do local ok, res = pcall(function() return RemoteFunc:InvokeServer("Troops", "Option", "Set", { Troop = TObj, Name = OptName, Value = OptVal }) end); if ok and CheckResOk(res) then return true end; task.wait(0.25) end end
-local function DoActivateAbility(TObj, AbName, AbData, IsLooping)
-    if type(AbData) == "boolean" then IsLooping = AbData; AbData = nil end
-    AbData = type(AbData) == "table" and AbData or nil
-    local positions; if AbData and type(AbData.towerPosition) == "table" then positions = AbData.towerPosition end
-    local CloneIdx = AbData and AbData.towerToClone; local TargetIdx = AbData and AbData.towerTarget
-    local function attempt() while true do local ok, res = pcall(function() local data; if AbData then data = table.clone(AbData); if positions and #positions > 0 then data.towerPosition = positions[math.random(#positions)] end; if type(CloneIdx) == "number" then data.towerToClone = TDS.PlacedTowers[CloneIdx] end; if type(TargetIdx) == "number" then data.towerTarget = TDS.PlacedTowers[TargetIdx] end end; return RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = TObj, Name = AbName, Data = data }) end); if ok and CheckResOk(res) then return true end; task.wait(0.25) end end
-    if IsLooping then local active = true; task.spawn(function() while active do attempt(); task.wait(1) end end); return function() active = false end end
-    return attempt()
-end
-
--- // public api
-function TDS:Mode(difficulty)
-    if GameState ~= "LOBBY" then return false end
-    local LobbyHud = PlayerGui:WaitForChild("ReactLobbyHud", 30)
-    local frame = LobbyHud and LobbyHud:WaitForChild("Frame", 30)
-    local MatchMaking = frame and frame:WaitForChild("matchmaking", 30)
-    if MatchMaking then
-        local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"); local success = false; local res
-        repeat
-            local ok, result = pcall(function() local mode = TDS.MatchmakingMap[difficulty]; local payload; if mode then payload = { mode = mode, count = 1 } else payload = { difficulty = difficulty, mode = "survival", count = 1 } end; return remote:InvokeServer("Multiplayer", "v2:start", payload) end)
-            if ok and CheckResOk(result) then success = true; res = result else task.wait(0.5) end
-        until success
-    end
-    return true
-end
-
-function TDS:Loadout(...)
-    if GameState ~= "GAME" then return end
-    local was_recording = Globals.record_strat; Globals.record_strat = false
-    local towers = {...}; local remote = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"); local StateReplicators = ReplicatedStorage:FindFirstChild("StateReplicators"); local CurrentlyEquipped = {}
-    if StateReplicators then for _, folder in ipairs(StateReplicators:GetChildren()) do if folder.Name == "PlayerReplicator" and folder:GetAttribute("UserId") == LocalPlayer.UserId then local EquippedAttr = folder:GetAttribute("EquippedTowers"); if type(EquippedAttr) == "string" then local CleanedJson = EquippedAttr:match("%[.*%]"); local DecodeSuccess, decoded = pcall(function() return HttpService:JSONDecode(CleanedJson) end); if DecodeSuccess and type(decoded) == "table" then CurrentlyEquipped = decoded end end end end end
-    for _, CurrentTower in ipairs(CurrentlyEquipped) do if CurrentTower ~= "None" then local UnequipDone = false; repeat local ok = pcall(function() remote:InvokeServer("Inventory", "Unequip", "tower", CurrentTower); task.wait(0.3) end); if ok then UnequipDone = true else task.wait(0.2) end until UnequipDone end end
-    task.wait(0.5)
-    for _, TowerName in ipairs(towers) do if TowerName and TowerName ~= "" then local EquipSuccess = false; repeat local ok = pcall(function() remote:InvokeServer("Inventory", "Equip", "tower", TowerName); Logger:Log("Equipped tower: " .. TowerName); task.wait(0.3) end); if ok then EquipSuccess = true else task.wait(0.2) end until EquipSuccess end end
-    task.wait(0.5); Globals.record_strat = was_recording; return true
-end
-
-function TDS:VoteSkip(StartWave, EndWave)
-    task.spawn(function()
-        local CurrentWave = GetCurrentWave()
-        StartWave = StartWave or (CurrentWave > 0 and CurrentWave or 1); EndWave = EndWave or StartWave
-        for wave = StartWave, EndWave do
-            while GetCurrentWave() < wave do task.wait(1) end
-            local SkipDone = false
-            while not SkipDone do
-                local VoteUi = PlayerGui:FindFirstChild("ReactOverridesVote")
-                local VoteButton = VoteUi and VoteUi:FindFirstChild("Frame") and VoteUi.Frame:FindFirstChild("votes") and VoteUi.Frame.votes:FindFirstChild("vote", true)
-                if VoteButton and VoteButton.Position == UDim2.new(0.5, 0, 0.5, 0) then RunVoteSkip(); SkipDone = true; Logger:Log("Voted to skip wave " .. wave) else if GetCurrentWave() > wave then break end; task.wait(0.5) end
-            end
-        end
-    end)
-end
-
-function TDS:GameInfo(name, list)
-    if GameState ~= "GAME" then return false end
-    local VoteGui = PlayerGui:WaitForChild("ReactGameIntermission", 30); if not (VoteGui and VoteGui.Enabled and VoteGui:WaitForChild("Frame", 5)) then return end
-    local modifiers = (list and #list > 0) and list or Globals.Modifiers
-    CastModifierVote(modifiers)
-    if MarketplaceService:UserOwnsGamePassAsync(LocalPlayer.UserId, 10518590) then SelectMapOverride(name, "vip"); Logger:Log("Selected map: " .. name); repeat task.wait(1) until PlayerGui:FindFirstChild("ReactUniversalHotbar"); return true 
-    elseif IsMapAvailable(name) then SelectMapOverride(name); repeat task.wait(1) until PlayerGui:FindFirstChild("ReactUniversalHotbar"); return true else Logger:Log("Map '" .. name .. "' not available, rejoining..."); TeleportService:Teleport(3260590327, LocalPlayer); repeat task.wait(9999) until false end
-end
-
-function TDS:UnlockTimeScale() UnlockSpeedTickets() end
-function TDS:TimeScale(val) SetGameTimescale(val) end
-function TDS:StartGame() LobbyReadyUp() end
-function TDS:Ready() if GameState ~= "GAME" then return false end; MatchReadyUp() end
-function TDS:GetWave() return GetCurrentWave() end
-function TDS:RestartGame() TriggerRestart() end
-function TDS:Place(TName, px, py, pz, ...)
-    local args = {...}; local stack = false
-    if args[#args] == "stack" or args[#args] == true then py = py+20 end
-    if GameState ~= "GAME" then return false end
-    local existing = {}
-    for _, child in ipairs(workspace.Towers:GetChildren()) do for _, SubChild in ipairs(child:GetChildren()) do if SubChild.Name == "Owner" and SubChild.Value == LocalPlayer.UserId then existing[child] = true; break end end end
-    DoPlaceTower(TName, Vector3.new(px, py, pz))
-    local NewT
-    repeat
-        for _, child in ipairs(workspace.Towers:GetChildren()) do if not existing[child] then for _, SubChild in ipairs(child:GetChildren()) do if SubChild.Name == "Owner" and SubChild.Value == LocalPlayer.UserId then NewT = child; break end end end; if NewT then break end end
-        task.wait(0.05)
-    until NewT
-    table.insert(self.PlacedTowers, NewT); return #self.PlacedTowers
-end
-
-function TDS:Upgrade(idx, PId) local t = self.PlacedTowers[idx]; if t then DoUpgradeTower(t, PId or 1); Logger:Log("Upgrading tower index: " .. idx); UpgradeHistory[idx] = (UpgradeHistory[idx] or 0) + 1 end end
-function TDS:SetTarget(idx, TargetType, ReqWave) if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end; local t = self.PlacedTowers[idx]; if not t then return end; pcall(function() RemoteFunc:InvokeServer("Troops", "Target", "Set", { Troop = t, Target = TargetType }); Logger:Log("Set target for tower index " .. idx .. " to " .. TargetType) end) end
-function TDS:Sell(idx, ReqWave) if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end; local t = self.PlacedTowers[idx]; if t and DoSellTower(t) then return true end; return false end
-function TDS:SellAll(ReqWave) task.spawn(function() if ReqWave then repeat task.wait(0.5) until GetCurrentWave() >= ReqWave end; local TowersCopy = {unpack(self.PlacedTowers)}; for idx, t in ipairs(TowersCopy) do if DoSellTower(t) then for i, OrigT in ipairs(self.PlacedTowers) do if OrigT == t then table.remove(self.PlacedTowers, i); break end end end end; return true end) end
-function TDS:Ability(idx, name, data, loop) local t = self.PlacedTowers[idx]; if not t then return false end; Logger:Log("Activating ability '" .. name .. "' for tower index: " .. idx); return DoActivateAbility(t, name, data, loop) end
-function TDS:AutoChain(...) local TowerIndices = {...}; if #TowerIndices == 0 then return end; local running = true; task.spawn(function() local i = 1; while running do local idx = TowerIndices[i]; local tower = TDS.PlacedTowers[idx]; if tower then DoActivateAbility(tower, "Call Of Arms") end; local hotbar = PlayerGui.ReactUniversalHotbar.Frame; local timescale = hotbar:FindFirstChild("timescale"); if timescale then if timescale:FindFirstChild("Lock") then task.wait(10.5) else task.wait(5.5) end else task.wait(10.5) end; i += 1; if i > #TowerIndices then i = 1 end end end); return function() running = false end end
-function TDS:SetOption(idx, name, val, ReqWave) local t = self.PlacedTowers[idx]; if t then Logger:Log("Setting option '" .. name .. "' for tower index: " .. idx); return DoSetOption(t, name, val, ReqWave) end; return false end
-
--- // misc utility
-local function IsVoidCharm(obj) return math.abs(obj.Position.Y) > 999999 end
-local function GetRoot() local char = LocalPlayer.Character; return char and char:FindFirstChild("HumanoidRootPart") end
 local function StartAutoPickups()
     if AutoPickupsRunning or not Globals.AutoPickups then return end
     AutoPickupsRunning = true
+
     task.spawn(function()
         while Globals.AutoPickups do
             local folder = workspace:FindFirstChild("Pickups")
             local hrp = GetRoot()
+
             if folder and hrp then
                 local char = hrp.Parent
                 local humanoid = char and char:FindFirstChildOfClass("Humanoid")
                 local function MoveToPos(TargetPos)
                     if not humanoid then return false end
-                    local function MoveDirect(pos) humanoid:MoveTo(pos); local StartT = os.clock(); while os.clock() - StartT < 2 do if not Globals.AutoPickups then return false end; if (hrp.Position - pos).Magnitude < 4 then return true end; task.wait(0.1) end; return (hrp.Position - pos).Magnitude < 4 end
+                    local function MoveDirect(pos)
+                        humanoid:MoveTo(pos)
+                        local StartT = os.clock()
+                        while os.clock() - StartT < 2 do
+                            if not Globals.AutoPickups then return false end
+                            if (hrp.Position - pos).Magnitude < 4 then return true end
+                            task.wait(0.1)
+                        end
+                        return (hrp.Position - pos).Magnitude < 4
+                    end
                     local path = PathfindingService:CreatePath({ AgentRadius = 2, AgentHeight = 6, AgentCanJump = true, AgentJumpHeight = 7, AgentMaxSlope = 45 })
                     local ok = pcall(function() path:ComputeAsync(hrp.Position, TargetPos) end)
                     if ok and path.Status == Enum.PathStatus.Success then
                         local waypoints = path:GetWaypoints()
                         local BlockedConn = nil
-                        BlockedConn = path.Blocked:Connect(function() if BlockedConn then BlockedConn:Disconnect() end; if Globals.AutoPickups then task.spawn(function() MoveToPos(TargetPos) end) end end)
-                        for _, wp in ipairs(waypoints) do if not Globals.AutoPickups then if BlockedConn then BlockedConn:Disconnect() end; return false end; if wp.Action == Enum.PathWaypointAction.Jump then humanoid.Jump = true end; if not MoveDirect(wp.Position) then if BlockedConn then BlockedConn:Disconnect() end; return false end end
+                        BlockedConn = path.Blocked:Connect(function()
+                            if BlockedConn then BlockedConn:Disconnect() end
+                            if Globals.AutoPickups then task.spawn(function() MoveToPos(TargetPos) end) end
+                        end)
+                        for _, wp in ipairs(waypoints) do
+                            if not Globals.AutoPickups then
+                                if BlockedConn then BlockedConn:Disconnect() end
+                                return false
+                            end
+                            if wp.Action == Enum.PathWaypointAction.Jump then humanoid.Jump = true end
+                            if not MoveDirect(wp.Position) then
+                                if BlockedConn then BlockedConn:Disconnect() end
+                                return false
+                            end
+                        end
                         if BlockedConn then BlockedConn:Disconnect() end
                         return true
                     end
                     return MoveDirect(TargetPos)
                 end
+
                 for _, item in ipairs(folder:GetChildren()) do
                     if not Globals.AutoPickups then break end
-                    if item:IsA("MeshPart") and (item.Name == "SnowCharm" or item.Name == "Lorebook") then if not IsVoidCharm(item) then if Globals.PickupMethod == "Instant" then hrp.CFrame = item.CFrame * CFrame.new(0, 3, 0); task.wait(0.2); task.wait(0.3) else local TargetPos = item.Position + Vector3.new(0, 3, 0); MoveToPos(TargetPos); task.wait(0.2); task.wait(0.3) end end end
+                    if item:IsA("MeshPart") and (item.Name == "SnowCharm" or item.Name == "Lorebook") then
+                        if not IsVoidCharm(item) then
+                            if Globals.PickupMethod == "Instant" then
+                                hrp.CFrame = item.CFrame * CFrame.new(0, 3, 0)
+                                task.wait(0.2)
+                                task.wait(0.3)
+                            else
+                                local TargetPos = item.Position + Vector3.new(0, 3, 0)
+                                MoveToPos(TargetPos)
+                                task.wait(0.2)
+                                task.wait(0.3)
+                            end
+                        end
+                    end
                 end
             end
             task.wait(1)
@@ -1842,133 +1574,155 @@ end
 local function StartAutoSkip()
     if AutoSkipRunning or not Globals.AutoSkip then return end
     AutoSkipRunning = true
-    task.spawn(function() while Globals.AutoSkip do local SkipVisible = PlayerGui:FindFirstChild("ReactOverridesVote") and PlayerGui.ReactOverridesVote:FindFirstChild("Frame") and PlayerGui.ReactOverridesVote.Frame:FindFirstChild("votes") and PlayerGui.ReactOverridesVote.Frame.votes:FindFirstChild("vote"); if SkipVisible and SkipVisible.Position == UDim2.new(0.5, 0, 0.5, 0) then RunVoteSkip() end; task.wait(1) end; AutoSkipRunning = false end)
+    task.spawn(function()
+        while Globals.AutoSkip do
+            local SkipVisible =
+                PlayerGui:FindFirstChild("ReactOverridesVote")
+                and PlayerGui.ReactOverridesVote:FindFirstChild("Frame")
+                and PlayerGui.ReactOverridesVote.Frame:FindFirstChild("votes")
+                and PlayerGui.ReactOverridesVote.Frame.votes:FindFirstChild("vote")
+
+            if SkipVisible and SkipVisible.Position == UDim2.new(0.5, 0, 0.5, 0) then
+                RunVoteSkip()
+            end
+            task.wait(1)
+        end
+        AutoSkipRunning = false
+    end)
 end
 
 local function StartClaimRewards()
-    if AutoClaimRewards then return end
+    if AutoClaimRewards or not Globals.ClaimRewards or GameState ~= "LOBBY" then return end
     AutoClaimRewards = true
-    task.spawn(function()
-        while Globals.ClaimRewards do
-            local player = game:GetService("Players").LocalPlayer
-            local network = game:GetService("ReplicatedStorage"):WaitForChild("Network", 5)
-            
-            if network then
-                -- 1. Claim Spin Tickets
-                local SpinTickets = player:FindFirstChild("SpinTickets")
-                if SpinTickets and SpinTickets.Value > 0 then 
-                    local TicketCount = SpinTickets.Value
-                    local DailySpin = network:FindFirstChild("DailySpin")
-                    local RedeemRemote = DailySpin and DailySpin:FindFirstChild("RF:RedeemSpin")
-                    if RedeemRemote then 
-                        for i = 1, TicketCount do 
-                            pcall(function() RedeemRemote:InvokeServer() end)
-                            task.wait(0.5) 
-                        end 
-                    end 
-                end
-                
-                -- 2. Claim Playtime Rewards
-                local PlaytimeRewards = network:FindFirstChild("PlaytimeRewards")
-                local ClaimRewardRemote = PlaytimeRewards and PlaytimeRewards:FindFirstChild("RF:ClaimReward")
-                if ClaimRewardRemote then
-                    for i = 1, 6 do 
-                        pcall(function() ClaimRewardRemote:InvokeServer(i) end)
-                        task.wait(0.5) 
-                    end
-                end
-                
-                -- 3. Claim Daily Spin Reward
-                local DailySpin = network:FindFirstChild("DailySpin")
-                local RedeemRewardRemote = DailySpin and DailySpin:FindFirstChild("RF:RedeemReward")
-                if RedeemRewardRemote then
-                    pcall(function() RedeemRewardRemote:InvokeServer() end)
-                end
+
+    local player = game:GetService("Players").LocalPlayer
+    local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
+
+    local SpinTickets = player:WaitForChild("SpinTickets", 15)
+    if SpinTickets and SpinTickets.Value > 0 then
+        local TicketCount = SpinTickets.Value
+        local DailySpin = network:WaitForChild("DailySpin", 5)
+        local RedeemRemote = DailySpin and DailySpin:WaitForChild("RF:RedeemSpin", 5)
+        if RedeemRemote then
+            for i = 1, TicketCount do
+                RedeemRemote:InvokeServer()
+                task.wait(0.5)
             end
-            
-            task.wait(10)
         end
-        AutoClaimRewards = false
-    end)
+    end
+
+    for i = 1, 6 do
+        local args = { i }
+        network:WaitForChild("PlaytimeRewards"):WaitForChild("RF:ClaimReward"):InvokeServer(unpack(args))
+        task.wait(0.5)
+    end
+
+    game:GetService("ReplicatedStorage").Network.DailySpin["RF:RedeemReward"]:InvokeServer()
+    AutoClaimRewards = false
 end
 
 local function StartBackToLobby()
     if BackToLobbyRunning then return end
     BackToLobbyRunning = true
-    task.spawn(function() while true do pcall(function() HandlePostMatch() end); task.wait(5) end; BackToLobbyRunning = false end)
+    task.spawn(function()
+        while true do
+            pcall(function() HandlePostMatch() end)
+            task.wait(5)
+        end
+        BackToLobbyRunning = false
+    end)
 end
-
-local SavedQualityLevel = settings().Rendering.QualityLevel
 
 local function StartAntiLag()
     if AntiLagRunning then return end
     AntiLagRunning = true
-    
-    -- Simpan kualitas render saat ini lalu ubah ke level paling rendah
-    SavedQualityLevel = settings().Rendering.QualityLevel
-    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-    
+    local settings = settings().Rendering
+    local OriginalQuality = settings.QualityLevel
+    settings.QualityLevel = Enum.QualityLevel.Level01
+
     task.spawn(function()
         while Globals.AntiLag do
-            local TowersFolder = workspace:FindFirstChild("Towers"); 
-            local ClientUnits = workspace:FindFirstChild("ClientUnits"); 
-            local enemies = workspace:FindFirstChild("NPCs"); 
-            
-            if TowersFolder then 
-                for _, tower in ipairs(TowersFolder:GetChildren()) do 
-                    local anims = tower:FindFirstChild("Animations"); 
-                    local weapon = tower:FindFirstChild("Weapon"); 
-                    local projectiles = tower:FindFirstChild("Projectiles"); 
-                    if anims then anims:Destroy() end; 
-                    if projectiles then projectiles:Destroy() end; 
-                    if weapon then weapon:Destroy() end 
-                end 
-            end; 
-            
-            if ClientUnits then 
-                for _, unit in ipairs(ClientUnits:GetChildren()) do 
-                    unit:Destroy() 
-                end 
-            end; 
-            
-            if enemies then 
-                for _, npc in ipairs(enemies:GetChildren()) do 
-                    -- Kami TIDAK menghancurkan root/hitbox agar fitur AutoGatling / Tracer tetap berfungsi, 
-                    -- kami hanya menghancurkan visual luarnya.
-                    for _, part in ipairs(npc:GetChildren()) do
-                        if part.Name ~= "HumanoidRootPart" and part.Name ~= "RootPointer" then
-                            pcall(function() part:Destroy() end)
-                        end
-                    end
-                end 
-            end; 
-            
-            task.wait(0.5) 
-        end; 
-        
-        -- KEMBALIKAN GRAFIK KE NORMAL KETIKA DI MATIKAN
-        pcall(function()
-            settings().Rendering.QualityLevel = SavedQualityLevel
-        end)
-        AntiLagRunning = false 
+            local TowersFolder = workspace:FindFirstChild("Towers")
+            local ClientUnits = workspace:FindFirstChild("ClientUnits")
+            local enemies = workspace:FindFirstChild("NPCs")
+
+            if TowersFolder then
+                for _, tower in ipairs(TowersFolder:GetChildren()) do
+                    local anims = tower:FindFirstChild("Animations")
+                    local weapon = tower:FindFirstChild("Weapon")
+                    local projectiles = tower:FindFirstChild("Projectiles")
+
+                    if anims then anims:Destroy() end
+                    if projectiles then projectiles:Destroy() end
+                    if weapon then weapon:Destroy() end
+                end
+            end
+            if ClientUnits then
+                for _, unit in ipairs(ClientUnits:GetChildren()) do unit:Destroy() end
+            end
+            if enemies then
+                for _, npc in ipairs(enemies:GetChildren()) do npc:Destroy() end
+            end
+            task.wait(0.5)
+        end
+        AntiLagRunning = false
     end)
 end
 
 local function StartAutoChain()
     if AutoChainRunning or not Globals.AutoChain then return end
     AutoChainRunning = true
+
     task.spawn(function()
         local idx = 1
         while Globals.AutoChain do
-            local commander = {}; local TowersFolder = workspace:FindFirstChild("Towers")
-            if TowersFolder then for _, towers in ipairs(TowersFolder:GetDescendants()) do if towers:IsA("Folder") and towers.Name == "TowerReplicator" and towers:GetAttribute("Name") == "Commander" and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId and (towers:GetAttribute("Upgrade") or 0) >= 2 then commander[#commander + 1] = towers.Parent end end end
+            local commander = {}
+            local TowersFolder = workspace:FindFirstChild("Towers")
+
+            if TowersFolder then
+                for _, towers in ipairs(TowersFolder:GetDescendants()) do
+                    if towers:IsA("Folder") and towers.Name == "TowerReplicator"
+                    and towers:GetAttribute("Name") == "Commander"
+                    and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
+                    and (towers:GetAttribute("Upgrade") or 0) >= 2 then
+                        commander[#commander + 1] = towers.Parent
+                    end
+                end
+            end
+
             if #commander >= 3 then
                 if idx > #commander then idx = 1 end
-                local CurrentCommander = commander[idx]; local replicator = CurrentCommander:FindFirstChild("TowerReplicator"); local UpgradeLevel = replicator and replicator:GetAttribute("Upgrade") or 0
-                if UpgradeLevel >= 4 and Globals.SupportCaravan then RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = CurrentCommander, Name = "Support Caravan", Data = {} }); task.wait(0.1) end
+
+                local CurrentCommander = commander[idx]
+                local replicator = CurrentCommander:FindFirstChild("TowerReplicator")
+                local UpgradeLevel = replicator and replicator:GetAttribute("Upgrade") or 0
+
+                if UpgradeLevel >= 4 and Globals.SupportCaravan then
+                    RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = CurrentCommander, Name = "Support Caravan", Data = {} })
+                    task.wait(0.1) 
+                end
+
                 local response = RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = CurrentCommander, Name = "Call Of Arms", Data = {} })
-                if response then idx += 1; local hotbar = PlayerGui:FindFirstChild("ReactUniversalHotbar"); local TimescaleFrame = hotbar and hotbar.Frame:FindFirstChild("timescale"); if TimescaleFrame and TimescaleFrame.Visible then if TimescaleFrame:FindFirstChild("Lock") then task.wait(10.3) else task.wait(5.25) end else task.wait(10.3) end else task.wait(0.5) end
-            else task.wait(1) end
+
+                if response then
+                    idx += 1
+                    local hotbar = PlayerGui:FindFirstChild("ReactUniversalHotbar")
+                    local TimescaleFrame = hotbar and hotbar.Frame:FindFirstChild("timescale")
+                    if TimescaleFrame and TimescaleFrame.Visible then
+                        if TimescaleFrame:FindFirstChild("Lock") then
+                            task.wait(10.3)
+                        else
+                            task.wait(5.25)
+                        end
+                    else
+                        task.wait(10.3)
+                    end
+                else
+                    task.wait(0.5)
+                end
+            else
+                task.wait(1)
+            end
         end
         AutoChainRunning = false
     end)
@@ -1977,27 +1731,129 @@ end
 local function StartAutoDjBooth()
     if AutoDjRunning or not Globals.AutoDJ then return end
     AutoDjRunning = true
-    task.spawn(function() while Globals.AutoDJ do local TowersFolder = workspace:FindFirstChild("Towers"); if TowersFolder then for _, towers in ipairs(TowersFolder:GetDescendants()) do if towers:IsA("Folder") and towers.Name == "TowerReplicator" and towers:GetAttribute("Name") == "DJ Booth" and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId and (towers:GetAttribute("Upgrade") or 0) >= 3 then DJ = towers.Parent end end end; if DJ then RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = DJ, Name = "Drop The Beat", Data = {} }) end; task.wait(1) end; AutoDjRunning = false end)
+
+    task.spawn(function()
+        while Globals.AutoDJ do
+            local DJ = nil
+            local TowersFolder = workspace:FindFirstChild("Towers")
+
+            if TowersFolder then
+                for _, towers in ipairs(TowersFolder:GetDescendants()) do
+                    if towers:IsA("Folder") and towers.Name == "TowerReplicator"
+                    and towers:GetAttribute("Name") == "DJ Booth"
+                    and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
+                    and (towers:GetAttribute("Upgrade") or 0) >= 3 then
+                        DJ = towers.Parent
+                    end
+                end
+            end
+
+            if DJ then
+                RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = DJ, Name = "Drop The Beat", Data = {} })
+            end
+            task.wait(1)
+        end
+        AutoDjRunning = false
+    end)
 end
 
 local function StartAutoNecro()
     if AutoNecroRunning or not Globals.AutoNecro then return end
     AutoNecroRunning = true
-    local lastActivation = 0; local ownerId = game.Players.LocalPlayer.UserId
-    local function getNecros(towersFolder) local list = {}; if not towersFolder then return list end; for _, rep in ipairs(towersFolder:GetDescendants()) do if rep:IsA("Folder") and rep.Name == "TowerReplicator" and rep:GetAttribute("Name") == "Necromancer" and rep:GetAttribute("OwnerId") == ownerId then list[#list + 1] = rep.Parent end end; return list end
-    local function pickMaxGraves(rep, graveStore, up) local maxGraves = rep and rep:GetAttribute("Max_Graves"); if graveStore then local gMax = graveStore:GetAttribute("Max_Graves"); if type(gMax) == "number" and gMax > 0 then maxGraves = gMax end end; if not maxGraves or maxGraves < 2 then if up >= 4 then maxGraves = 9 elseif up >= 2 then maxGraves = 6 else maxGraves = 3 end end; return maxGraves end
-    local function countGraves(graveStore) if not graveStore then return 0 end; local cnt = 0; for k, v in pairs(graveStore:GetAttributes()) do if type(k) == "string" and #k > 20 then local isDestroy = false; if type(v) == "table" then for _, elem in pairs(v) do if tostring(elem) == "Destroy" then isDestroy = true; break end end elseif tostring(v):find("Destroy") then isDestroy = true end; if isDestroy then graveStore:SetAttribute(k, nil) else cnt += 1 end end end; return cnt end
-    local function cleanAllGraves(list) for _, necro in ipairs(list) do local rep = necro and necro:FindFirstChild("TowerReplicator"); local store = rep and rep:FindFirstChild("GraveStone"); if store then countGraves(store) end end end
+
+    local lastActivation = 0
+    local ownerId = game.Players.LocalPlayer.UserId
+
+    local function getNecros(towersFolder)
+        local list = {}
+        if not towersFolder then return list end
+        for _, rep in ipairs(towersFolder:GetDescendants()) do
+            if rep:IsA("Folder") and rep.Name == "TowerReplicator"
+            and rep:GetAttribute("Name") == "Necromancer"
+            and rep:GetAttribute("OwnerId") == ownerId then
+                list[#list + 1] = rep.Parent
+            end
+        end
+        return list
+    end
+
+    local function pickMaxGraves(rep, graveStore, up)
+        local maxGraves = rep and rep:GetAttribute("Max_Graves")
+        if graveStore then
+            local gMax = graveStore:GetAttribute("Max_Graves")
+            if type(gMax) == "number" and gMax > 0 then maxGraves = gMax end
+        end
+        if not maxGraves or maxGraves < 2 then
+            if up >= 4 then maxGraves = 9 elseif up >= 2 then maxGraves = 6 else maxGraves = 3 end
+        end
+        return maxGraves
+    end
+
+    local function countGraves(graveStore)
+        if not graveStore then return 0 end
+        local cnt = 0
+        for k, v in pairs(graveStore:GetAttributes()) do
+            if type(k) == "string" and #k > 20 then
+                local isDestroy = false
+                if type(v) == "table" then
+                    for _, elem in pairs(v) do
+                        if tostring(elem) == "Destroy" then isDestroy = true; break end
+                    end
+                elseif tostring(v):find("Destroy") then
+                    isDestroy = true
+                end
+                if isDestroy then
+                    graveStore:SetAttribute(k, nil)
+                else
+                    cnt += 1
+                end
+            end
+        end
+        return cnt
+    end
+
+    local function cleanAllGraves(list)
+        for _, necro in ipairs(list) do
+            local rep = necro and necro:FindFirstChild("TowerReplicator")
+            local store = rep and rep:FindFirstChild("GraveStone")
+            if store then countGraves(store) end
+        end
+    end
+
     task.spawn(function()
         local idx = 1
         while Globals.AutoNecro do
-            local TowersFolder = workspace:FindFirstChild("Towers"); local necromancer = getNecros(TowersFolder); cleanAllGraves(necromancer)
+            local TowersFolder = workspace:FindFirstChild("Towers")
+            local necromancer = getNecros(TowersFolder)
+            cleanAllGraves(necromancer)
+
             if #necromancer >= 1 then
                 if idx > #necromancer then idx = 1 end
-                local CurrentNecromancer = necromancer[idx]; local replicator = CurrentNecromancer:FindFirstChild("TowerReplicator")
-                local up = replicator and (replicator:GetAttribute("Upgrade") or 0) or 0; local graveStore = replicator and replicator:FindFirstChild("GraveStone"); local maxGraves = pickMaxGraves(replicator, graveStore, up); local graveCount = countGraves(graveStore); local debounce = (replicator and replicator:GetAttribute("AbilityDebounce")) or 5; local now = os.clock()
-                if maxGraves and graveCount >= maxGraves and (now - lastActivation >= debounce) then local response = RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = CurrentNecromancer, Name = "Raise The Dead", Data = {} }); if response then lastActivation = now; idx += 1; task.wait(1) else task.wait(0.5) end else task.wait(0.1) end
-            else task.wait(1) end
+                local CurrentNecromancer = necromancer[idx]
+                local replicator = CurrentNecromancer:FindFirstChild("TowerReplicator")
+
+                local up = replicator and (replicator:GetAttribute("Upgrade") or 0) or 0
+                local graveStore = replicator and replicator:FindFirstChild("GraveStone")
+                local maxGraves = pickMaxGraves(replicator, graveStore, up)
+                local graveCount = countGraves(graveStore)
+                local debounce = (replicator and replicator:GetAttribute("AbilityDebounce")) or 5
+                local now = os.clock()
+
+                if maxGraves and graveCount >= maxGraves and (now - lastActivation >= debounce) then
+                    local response = RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = CurrentNecromancer, Name = "Raise The Dead", Data = {} })
+                    if response then 
+                        lastActivation = now
+                        idx += 1
+                        task.wait(1)
+                    else
+                        task.wait(0.5)
+                    end
+                else
+                    task.wait(0.1)
+                end
+            else
+                task.wait(1)
+            end
         end
         AutoNecroRunning = false
     end)
@@ -2007,21 +1863,97 @@ local function StartAutoMercenary()
     if not Globals.AutoMercenary and not Globals.AutoMilitary then return end
     if AutoMercenaryBaseRunning then return end
     AutoMercenaryBaseRunning = true
-    task.spawn(function() while Globals.AutoMercenary do local TowersFolder = workspace:FindFirstChild("Towers"); if TowersFolder then for _, towers in ipairs(TowersFolder:GetDescendants()) do if towers:IsA("Folder") and towers.Name == "TowerReplicator" and towers:GetAttribute("Name") == "Mercenary Base" and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId and (towers:GetAttribute("Upgrade") or 0) >= 5 then RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = towers.Parent, Name = "Air-Drop", Data = { pathName = 1, directionCFrame = CFrame.new(), dist = Globals.MercenaryPath or 195 } }); task.wait(0.5); if not Globals.AutoMercenary then break end end end end; task.wait(0.5) end; AutoMercenaryBaseRunning = false end)
+
+    task.spawn(function()
+        while Globals.AutoMercenary do
+            local TowersFolder = workspace:FindFirstChild("Towers")
+            if TowersFolder then
+                for _, towers in ipairs(TowersFolder:GetDescendants()) do
+                    if towers:IsA("Folder") and towers.Name == "TowerReplicator"
+                    and towers:GetAttribute("Name") == "Mercenary Base"
+                    and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
+                    and (towers:GetAttribute("Upgrade") or 0) >= 5 then
+
+                        RemoteFunc:InvokeServer(
+                            "Troops", "Abilities", "Activate",
+                            { Troop = towers.Parent, Name = "Air-Drop", Data = { pathName = 1, directionCFrame = CFrame.new(), dist = Globals.MercenaryPath or 195 } }
+                        )
+
+                        task.wait(0.5)
+                        if not Globals.AutoMercenary then break end
+                    end
+                end
+            end
+            task.wait(0.5)
+        end
+        AutoMercenaryBaseRunning = false
+    end)
 end
 
 local function StartAutoMilitary()
     if not Globals.AutoMilitary then return end
     if AutoMilitaryBaseRunning then return end
     AutoMilitaryBaseRunning = true
-    task.spawn(function() while Globals.AutoMilitary do local TowersFolder = workspace:FindFirstChild("Towers"); if TowersFolder then for _, towers in ipairs(TowersFolder:GetDescendants()) do if towers:IsA("Folder") and towers.Name == "TowerReplicator" and towers:GetAttribute("Name") == "Military Base" and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId and (towers:GetAttribute("Upgrade") or 0) >= 4 then RemoteFunc:InvokeServer("Troops", "Abilities", "Activate", { Troop = towers.Parent, Name = "Airstrike", Data = { pathName = 1, pointToEnd = CFrame.new(), dist = Globals.MilitaryPath or 195 } }); task.wait(0.5); if not Globals.AutoMilitary then break end end end end; task.wait(0.5) end; AutoMilitaryBaseRunning = false end)
+
+    task.spawn(function()
+        while Globals.AutoMilitary do
+            local TowersFolder = workspace:FindFirstChild("Towers")
+            if TowersFolder then
+                for _, towers in ipairs(TowersFolder:GetDescendants()) do
+                    if towers:IsA("Folder") and towers.Name == "TowerReplicator"
+                    and towers:GetAttribute("Name") == "Military Base"
+                    and towers:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
+                    and (towers:GetAttribute("Upgrade") or 0) >= 4 then
+
+                        RemoteFunc:InvokeServer(
+                            "Troops", "Abilities", "Activate",
+                            { Troop = towers.Parent, Name = "Airstrike", Data = { pathName = 1, pointToEnd = CFrame.new(), dist = Globals.MilitaryPath or 195 } }
+                        )
+
+                        task.wait(0.5)
+                        if not Globals.AutoMilitary then break end
+                    end
+                end
+            end
+            task.wait(0.5)
+        end
+        AutoMilitaryBaseRunning = false
+    end)
 end
 
 local function StartSellFarm()
     if SellFarmsRunning or not Globals.SellFarms then return end
     SellFarmsRunning = true
+
     if GameState ~= "GAME" then return false end
-    task.spawn(function() while Globals.SellFarms do local CurrentWave = GetCurrentWave(); if Globals.SellFarmsWave and CurrentWave < Globals.SellFarmsWave then task.wait(1); continue end; local TowersFolder = workspace:FindFirstChild("Towers"); if TowersFolder then for _, replicator in ipairs(TowersFolder:GetDescendants()) do if replicator:IsA("Folder") and replicator.Name == "TowerReplicator" then local IsFarm = replicator:GetAttribute("Name") == "Farm"; local IsMine = replicator:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId; if IsFarm and IsMine then local TowerModel = replicator.Parent; RemoteFunc:InvokeServer("Troops", "Sell", { Troop = TowerModel }); task.wait(0.2) end end end end; task.wait(1) end; SellFarmsRunning = false end)
+
+    task.spawn(function()
+        while Globals.SellFarms do
+            local CurrentWave = GetCurrentWave()
+            if Globals.SellFarmsWave and CurrentWave < Globals.SellFarmsWave then
+                task.wait(1)
+                continue
+            end
+
+            local TowersFolder = workspace:FindFirstChild("Towers")
+            if TowersFolder then
+                for _, replicator in ipairs(TowersFolder:GetDescendants()) do
+                    if replicator:IsA("Folder") and replicator.Name == "TowerReplicator" then
+                        local IsFarm = replicator:GetAttribute("Name") == "Farm"
+                        local IsMine = replicator:GetAttribute("OwnerId") == game.Players.LocalPlayer.UserId
+
+                        if IsFarm and IsMine then
+                            local TowerModel = replicator.Parent
+                            RemoteFunc:InvokeServer("Troops", "Sell", { Troop = TowerModel })
+                            task.wait(0.2)
+                        end
+                    end
+                end
+            end
+            task.wait(1)
+        end
+        SellFarmsRunning = false
+    end)
 end
 
 task.spawn(function()
@@ -2038,8 +1970,48 @@ task.spawn(function()
         if Globals.AntiLag and not AntiLagRunning then StartAntiLag() end
         if Globals.AutoRejoin and not BackToLobbyRunning then StartBackToLobby() end
         if Globals.ClaimRewards and not AutoClaimRewards then StartClaimRewards() end
+
         task.wait(1)
     end
 end)
+
+local function MissionsUIFix()
+    task.spawn(function()
+        while task.wait(1) do
+            pcall(function()
+                local MissionsScrollingFrame = game:GetService("Players").LocalPlayer.PlayerGui.ReactLobbyQuests.quests.missions.scrollingFrame
+                local MissionsListLayout = MissionsScrollingFrame.listLayout
+                local MissionFrame = MissionsScrollingFrame["1"]
+                if MissionFrame.AbsoluteSize.Y > 0 then
+                    local UIScaleRatio = MissionFrame.AbsoluteSize.Y / MissionFrame.Size.Y.Offset
+                    local CurrentCanvasSize = MissionsScrollingFrame.CanvasSize
+                    local CanvasHeight = (MissionsListLayout.AbsoluteContentSize.Y / UIScaleRatio) + 25
+                    MissionsScrollingFrame.CanvasSize = UDim2.new(CurrentCanvasSize.X.Scale, CurrentCanvasSize.X.Offset, CurrentCanvasSize.Y.Scale, CanvasHeight)
+                end
+            end)
+        end
+    end)
+end
+
+function TDS:WaitForWave(targetWave)
+    if GameState ~= "GAME" then return false end
+    while self:GetWave() < targetWave do
+        task.wait(0.5)
+    end
+    return true
+end
+
+function TDS:MedicSelect(idx, val)
+    local t = self.PlacedTowers[idx]
+    local target = self.PlacedTowers[val]
+    if t and target then
+        Logger:Log("Medic: " .. idx .. " -> " .. val)
+        RemoteFunc:InvokeServer("Troops", "TowerServerEvent", "ToggleSelectedTower", t, target)
+        return true
+    end
+    return false
+end
+
+MissionsUIFix()
 
 return TDS
