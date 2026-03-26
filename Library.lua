@@ -1247,7 +1247,7 @@ end
 CurrentEquippedTowers = GetEquippedTowers()
 
 -- // ui
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Sources/UI.lua"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Sources/UI.lua"))()
 
 local Window = Library:Window({
     Title = "Aether Hub",
@@ -2196,7 +2196,7 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
 
             if v then
                  task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Strategies/Frost.lua"
+                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Frost.lua"
                     local content = game:HttpGet(url)
 
                     while not (TDS and TDS.Loadout) do
@@ -2222,7 +2222,7 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
 
             if v then
                 task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Strategies/Fallen.lua"
+                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Fallen.lua"
                     local content = game:HttpGet(url)
 
                     while not (TDS and TDS.Loadout) do
@@ -2248,7 +2248,7 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
 
             if v then
                 task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Strategies/Intermediate.lua"
+                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Intermediate.lua"
                     local content = game:HttpGet(url)
 
                     while not (TDS and TDS.Loadout) do
@@ -2274,7 +2274,7 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
 
             if v then
                 task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Strategies/Casual.lua"
+                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Casual.lua"
                     local content = game:HttpGet(url)
 
                     while not (TDS and TDS.Loadout) do
@@ -2300,7 +2300,7 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
 
             if v then
                 task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Strategies/Easy.lua"
+                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Easy.lua"
                     local content = game:HttpGet(url)
 
                     while not (TDS and TDS.Loadout) do
@@ -2327,7 +2327,7 @@ local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
 
             if v then
                 task.spawn(function()
-                    local url = "https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Strategies/Hardcore.lua"
+                    local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Hardcore.lua"
                     local content = game:HttpGet(url)
 
                     while not (TDS and TDS.Loadout) do
@@ -2413,7 +2413,7 @@ end
 
 Window:Line()
 
-local RecorderInit = loadstring(game:HttpGet("https://raw.githubusercontent.com/DuxiiT/auto-strat/refs/heads/main/Sources/Recorder.lua"))()
+local RecorderInit = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Sources/Recorder.lua"))()
 RecorderInit({
     Window = Window,
     ReplicatedStorage = ReplicatedStorage,
