@@ -20,6 +20,15 @@ return function(ctx)
     local tower_count = 0
     local Recorder
     local has_hook = type(hookmetamethod) == "function"
+    
+    local function get_wave_prefix()
+        local success, current_wave = pcall(function() return replicated_storage.StateReplicators.GameStateReplicator:GetAttribute("Wave") end)
+        if success and current_wave and current_wave > last_wave then
+            last_wave = current_wave
+            return "\n-- [ Wave " .. current_wave .. " ] --\n"
+        end
+        return ""
+    end
 
     local function record_action(command_str)
         if not Globals.record_strat then return end
@@ -431,69 +440,34 @@ return function(ctx)
         local a2 = args[2]
         local a3 = args[3]
         local a4 = args[4]
+        local a5 = args[5]
 
+        -- Panggilan yang diabaikan (Ability Loop, Medics, dll)
         if a1 == "Troops" and a2 == "Abilities" and a3 == "Activate" then
             if type(a4) == "table" then
-                local idx = resolve_tower_index(a4.Troop)
-                local name = a4.Name
-                if idx and type(name) == "string" then
-                    local data = a4.Data
-                    local cmd
-                    if data == nil or (type(data) == "table" and next(data) == nil) then
-                        cmd = string.format("TDS:Ability(%d, %s)", idx, string.format("%q", name))
-                    else
-                        cmd = string.format(
-                            "TDS:Ability(%d, %s, %s)",
-                            idx,
-                            string.format("%q", name),
-                            serialize_value(data)
-                        )
-                    end
-
-                    record_line(cmd, "Ability: " .. name .. " (Index: " .. idx .. ")")
-                    handled = true
+                local abilityName = a4.Name
+                if abilityName == "Call Of Arms" or abilityName == "Support Caravan" or abilityName == "Drop The Beat" or abilityName == "Raise The Dead" then
                     return
                 end
             end
         end
 
-        if a1 == "Troops" and a2 == "Target" and a3 == "Set" then
-            if type(a4) == "table" then
-                local idx = resolve_tower_index(a4.Troop)
-                local target_type = a4.Target
-                if idx and type(target_type) == "string" then
-                    local cmd = string.format("TDS:SetTarget(%d, %s)", idx, string.format("%q", target_type))
-                    record_line(cmd, "Target: " .. idx .. " -> " .. target_type)
-                    handled = true
-                    return
-                end
+        -- Panggilan Level Up (TowerServerEvent)
+        if a1 == "Troops" and a2 == "TowerServerEvent" and a3 == "ToggleSelectedTower" then
+            local idx = resolve_tower_index(a4)
+            local target_idx = resolve_tower_index(a5)
+            if idx and target_idx then
+                local cmd = string.format("TDS:MedicSelect(%d, %d)", idx, target_idx)
+                record_line(cmd, "Medic: " .. idx .. " -> " .. target_idx)
+                handled = true
+                return
             end
         end
-
-        if a1 == "Troops" and a2 == "Option" and a3 == "Set" then
-            if type(a4) == "table" then
-                local idx = resolve_tower_index(a4.Troop)
-                local opt_name = a4.Name or a4.Option or a4.Key or a4.Track
-                local opt_val = a4.Value or a4.Val
-                if idx and type(opt_name) == "string" then
-                    local cmd = string.format(
-                        "TDS:SetOption(%d, %s, %s)",
-                        idx,
-                        string.format("%q", opt_name),
-                        serialize_value(opt_val)
-                    )
-                    record_line(cmd, "Option: " .. idx .. " " .. opt_name .. " = " .. tostring(opt_val))
-                    handled = true
-                    return
-                end
-            end
-        end
-
-        -- PERBAIKAN UNTUK VOTESKIP: MENANGKAP CURRENT WAVE
+        
         if a1 == "Voting" and a2 == "Skip" then
             local current_wave = 1
             pcall(function()
-                local wave_text = local_player.PlayerGui.ReactGameTopGameDisplay.Frame.wave.container.value.Text
+                local wave_text = local_player.PlayerGui:FindFirstChild("ReactGameTopGameDisplay").Frame.wave.container.value.Text
                 local match = wave_text:match("^(%d+)")
                 if match then
                     current_wave = tonumber(match)
@@ -716,14 +690,26 @@ return function(ctx)
                 end
 
                 if writefile then 
+                    local game_info_str = ""
+                    local mode_val = current_mode
+                    if current_map ~= "Unknown" and current_mode ~= "Unknown" then
+                         local map_keys = {Hardcore="hardcore", PizzaParty="halloween", Badlands="badlands", PollutedWasteland="polluted"}
+                         if map_keys[current_mode] and map_keys[current_mode] ~= current_map then
+                            mode_val = current_map
+                         end
+                    end
+
+                    if current_map ~= "Unknown" and current_mode ~= "Unknown" then
+                        game_info_str = string.format('TDS:GameInfo("%s", {%s})', current_map, current_modifiers)
+                    end
+
                     local config_header = string.format([[
 local TDS = loadstring(game:HttpGet("https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Library.lua"))()
 
 TDS:Loadout("%s", "%s", "%s", "%s", "%s")
 TDS:Mode("%s")
-TDS:GameInfo("%s", {%s})
-
-]], tower1, tower2, tower3, tower4, tower5, current_mode, current_map, current_modifiers)
+%s
+]], tower1, tower2, tower3, tower4, tower5, mode_val, game_info_str)
 
                     writefile("Strat.txt", config_header)
                 end
@@ -764,6 +750,8 @@ TDS:GameInfo("%s", {%s})
 
                 local owner_id = replicator:GetAttribute("OwnerId")
                 if owner_id and owner_id ~= local_player.UserId then return end
+
+                if replicator:GetAttribute("Hologram") == true then return end
 
                 tower_count = tower_count + 1
                 local my_index = tower_count
