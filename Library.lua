@@ -123,24 +123,6 @@ local function ResolveTowerName(input)
     return nil
 end
 
-local function MissionsUIFix()
-    task.spawn(function()
-        while task.wait(1) do
-            pcall(function()
-                local MissionsScrollingFrame = game:GetService("Players").LocalPlayer.PlayerGui.ReactLobbyQuests.quests.missions.scrollingFrame
-                local MissionsListLayout = MissionsScrollingFrame.listLayout
-                local MissionFrame = MissionsScrollingFrame["1"]
-                if MissionFrame and MissionFrame.AbsoluteSize.Y > 0 then
-                    local UIScaleRatio = MissionFrame.AbsoluteSize.Y / MissionFrame.Size.Y.Offset
-                    local CurrentCanvasSize = MissionsScrollingFrame.CanvasSize
-                    local CanvasHeight = (MissionsListLayout.AbsoluteContentSize.Y / UIScaleRatio) + 25
-                    MissionsScrollingFrame.CanvasSize = UDim2.new(CurrentCanvasSize.X.Scale, CurrentCanvasSize.X.Offset, CurrentCanvasSize.Y.Scale, CanvasHeight)
-                end
-            end)
-        end
-    end)
-end
-
 task.spawn(function()
     local function DisableIdled()
         local success, connections = pcall(getconnections, LocalPlayer.Idled)
@@ -572,10 +554,11 @@ if hookmetamethod then
             if args[1] == "Troops" and args[2] == "Abilities" and args[3] == "Activate" then
                 local payload = args[4]
                 if type(payload) == "table" and payload.Name == "FPS" then
-                    if payload.Data and payload.Data.enabled == false and Globals.AutoGatling then
-                        -- Override FPS disable when AutoGatling is active
-                        args[4] = { Troop = payload.Troop, Name = payload.Name, Data = { enabled = true } }
-                        return oldNamecall(self, unpack(args))
+                    if payload.Data and payload.Data.enabled == false then
+                        if Globals.AutoGatling then
+                            args[4] = { Troop = payload.Troop, Name = payload.Name, Data = { enabled = true } }
+                            return oldNamecall(self, unpack(args))
+                        end
                     end
                 end
             end
@@ -993,7 +976,6 @@ local Window = Library:Window({
         Globals.SilentAimEnabled = false
         Globals.PathVisuals = false
         Globals.CustomGatlingApplied = false
-        Globals.PartySpamEnabled = false
         
         -- Kembalikan setting Anti-Lag ke normal
         Globals.AntiLag = false
@@ -1087,7 +1069,7 @@ local Main = Window:Tab({Title = "Main", Icon = "stamp"}) do
     Main:Section({Title = "Equipper"})
     Main:Textbox({ Title = "Equip:", Placeholder = "E.g. Gatling Gun", Value = "", ClearTextOnFocus = false, Callback = function(text) if not text or text == "" then return end; local trimmed_text = text:match("^%s*(.-)%s*$") or ""; if trimmed_text == "" then return end; task.spawn(function() local real_tower_name = ResolveTowerName(trimmed_text); if not real_tower_name then Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(trimmed_text), Time = 3, Type = "error" }); return end; local success = TDS_Equip(real_tower_name); if success then Window:Notify({ Title = "ADS", Desc = "Successfully equipped: " .. real_tower_name, Time = 3, Type = "normal" }) else Window:Notify({ Title = "ADS", Desc = "Failed to equip: " .. real_tower_name, Time = 3, Type = "error" }) end end) end })
     Main:Textbox({ Title = "Unequip:", Placeholder = "E.g. Farm", Value = "", ClearTextOnFocus = false, Callback = function(text) if not text or text == "" then return end; local trimmed_text = text:match("^%s*(.-)%s*$") or ""; if trimmed_text == "" then return end; task.spawn(function() local real_tower_name = ResolveTowerName(trimmed_text); if not real_tower_name then Window:Notify({ Title = "ADS", Desc = "Tower not found: " .. tostring(trimmed_text), Time = 3, Type = "error" }); return end; local success = TDS_Unequip(real_tower_name); if success then Window:Notify({ Title = "ADS", Desc = "Successfully unequipped: " .. real_tower_name, Time = 3, Type = "normal" }) else Window:Notify({ Title = "ADS", Desc = "Failed to unequip: " .. real_tower_name, Time = 3, Type = "error" }) end end) end })
-    
+
     Main:Section({Title = "Skins"})
     local tower_skin_list = {}
     for t_name, _ in pairs(TowerSkins) do table.insert(tower_skin_list, t_name) end
@@ -1138,14 +1120,14 @@ Window:Line()
 
 local Strategies = Window:Tab({Title = "Strategies", Icon = "newspaper"}) do
     Strategies:Section({Title = "Survival Strategies"})
-    Strategies:Toggle({ Title = "Frost Mode", Desc = "Skill tree: MAX\n\nTowers:\nGolden Scout,\nFirework Technician,\nHacker,\nBrawler,\nDJ Booth,\nCommander,\nEngineer,\nAccelerator,\nTurret,\nMercenary Base", Value = Globals.Frost, Callback = function(v) SetSetting("Frost", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Frost.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
-    Strategies:Toggle({ Title = "Fallen Mode", Desc = "Skill tree: Not needed\n\nTowers:\nGolden Scout,\nBrawler,\nMercenary Base,\nElectroshocker,\nEngineer", Value = Globals.Fallen, Callback = function(v) SetSetting("Fallen", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Fallen.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
-    Strategies:Toggle({ Title = "Intermediate Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner,\nCrook Boss", Value = Globals.Intermediate, Callback = function(v) SetSetting("Intermediate", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Intermediate.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
-    Strategies:Toggle({ Title = "Casual Mode", Desc = "Skill tree: Not needed\n\nTowers:\nShotgunner", Value = Globals.Casual, Callback = function(v) SetSetting("Casual", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Casual.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
-    Strategies:Toggle({ Title = "Easy Mode", Desc = "Skill tree: Not needed\n\nTowers:\nNormal Scout", Value = Globals.Easy, Callback = function(v) SetSetting("Easy", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Easy.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
+    Strategies:Toggle({ Title = "Frost Mode", Desc = "...", Value = Globals.Frost, Callback = function(v) SetSetting("Frost", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Frost.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
+    Strategies:Toggle({ Title = "Fallen Mode", Desc = "...", Value = Globals.Fallen, Callback = function(v) SetSetting("Fallen", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Fallen.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
+    Strategies:Toggle({ Title = "Intermediate Mode", Desc = "...", Value = Globals.Intermediate, Callback = function(v) SetSetting("Intermediate", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Intermediate.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
+    Strategies:Toggle({ Title = "Casual Mode", Desc = "...", Value = Globals.Casual, Callback = function(v) SetSetting("Casual", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Casual.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
+    Strategies:Toggle({ Title = "Easy Mode", Desc = "...", Value = Globals.Easy, Callback = function(v) SetSetting("Easy", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Easy.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
 
     Strategies:Section({Title = "Other Strategies"})
-    Strategies:Toggle({ Title = "Hardcore Mode", Desc = "Towers:\nFarm,\nGolden Scout,\nDJ Booth,\nCommander,\nElectroshocker,\nRanger,\nFreezer,\nGolden Minigunner", Value = Globals.Hardcore, Callback = function(v) SetSetting("Hardcore", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Hardcore.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
+    Strategies:Toggle({ Title = "Hardcore Mode", Desc = "...", Value = Globals.Hardcore, Callback = function(v) SetSetting("Hardcore", v); if v then task.spawn(function() local url = "https://raw.githubusercontent.com/Crytx-X/Crytx/refs/heads/main/Strategies/Hardcore.lua"; local content = game:HttpGet(url); while not (TDS and TDS.Loadout) do task.wait(0.5) end; local func, err = loadstring(content); if func then func(); Window:Notify({ Title = "ADS", Desc = "Running...", Time = 3 }) end end) end end })
 end
 
 Window:Line()
@@ -1196,8 +1178,8 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-    Misc:Textbox({ Title = "Auto Cooldown:", Placeholder = "0.01", Value = tostring(Globals.AutoCooldown), ClearTextOnFocus = true, Callback = function(value) local num = tonumber(value); if num then Globals.AutoCooldown = num; SetSetting("AutoCooldown", num) end end })
-    Misc:Textbox({ Title = "Auto Multiply:", Placeholder = "1", Value = tostring(Globals.AutoMultiply), ClearTextOnFocus = true, Callback = function(value) local num = tonumber(value); if num then Globals.AutoMultiply = num; SetSetting("AutoMultiply", num) end end })
+    Misc:Textbox({ Title = "Auto Cooldown:", Placeholder = "0.01", Value = tostring(Globals.AutoCooldown), ClearTextOnFocus = true, Callback = function(value) if tonumber(value) then Globals.AutoCooldown = tonumber(value); SetSetting("AutoCooldown", tonumber(value)) end end })
+    Misc:Textbox({ Title = "Auto Multiply:", Placeholder = "1", Value = tostring(Globals.AutoMultiply), ClearTextOnFocus = true, Callback = function(value) if tonumber(value) then Globals.AutoMultiply = tonumber(value); SetSetting("AutoMultiply", tonumber(value)) end end })
 
     local function FireFPSAbility(isEnabled)
         pcall(function()
@@ -1384,14 +1366,16 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
                         end
                         
                         if not target then break end 
-
+                        
+                        local targetPos = target.pos
+                        
                         Globals.LastShotTarget = target
                         
                         if not isMinigun and true or canFire then
-                            pcall(function() self:_fire(target.pos) end)
+                            pcall(function() self:_fire(targetPos) end)
                         end
                         
-                        GatlingChannel:fireServer("Fire", target.pos, sync, serverTime)
+                        GatlingChannel:fireServer("Fire", targetPos, sync, serverTime)
                         
                         target.health = target.health - towerDamage
                         
@@ -1815,16 +1799,6 @@ function TDS:SellAll(ReqWave) task.spawn(function() if ReqWave then repeat task.
 function TDS:Ability(idx, name, data, loop) local t = self.PlacedTowers[idx]; if not t then return false end; Logger:Log("Activating ability '" .. name .. "' for tower index: " .. idx); return DoActivateAbility(t, name, data, loop) end
 function TDS:AutoChain(...) local TowerIndices = {...}; if #TowerIndices == 0 then return end; local running = true; task.spawn(function() local i = 1; while running do local idx = TowerIndices[i]; local tower = TDS.PlacedTowers[idx]; if tower then DoActivateAbility(tower, "Call Of Arms") end; local hotbar = PlayerGui.ReactUniversalHotbar.Frame; local timescale = hotbar:FindFirstChild("timescale"); if timescale then if timescale:FindFirstChild("Lock") then task.wait(10.5) else task.wait(5.5) end else task.wait(10.5) end; i += 1; if i > #TowerIndices then i = 1 end end end); return function() running = false end end
 function TDS:SetOption(idx, name, val, ReqWave) local t = self.PlacedTowers[idx]; if t then Logger:Log("Setting option '" .. name .. "' for tower index: " .. idx); return DoSetOption(t, name, val, ReqWave) end; return false end
-function TDS:MedicSelect(idx, val)
-    local t = self.PlacedTowers[idx]
-    local target = self.PlacedTowers[val]
-    if t and target then
-        Logger:Log("Medic: " .. idx .. " -> " .. val)
-        RemoteFunc:InvokeServer("Troops", "TowerServerEvent", "ToggleSelectedTower", t, target)
-        return true
-    end
-    return false
-end
 
 -- // misc utility
 local function IsVoidCharm(obj) return math.abs(obj.Position.Y) > 999999 end
@@ -2067,9 +2041,5 @@ task.spawn(function()
         task.wait(1)
     end
 end)
-
-if Globals.ClaimRewards and not AutoClaimRewards then StartClaimRewards() end
-
-MissionsUIFix()
 
 return TDS
