@@ -2383,21 +2383,14 @@ local Misc = Window:Tab({Title = "Misc", Icon = "box"}) do
         end
     })
 
-    Misc:Toggle({
-        Title = "Claim Rewards",
-        Desc = "Claims your playtime and uses spin tickets in Lobby",
-        Value = Globals.ClaimRewards,
-        Callback = function(v)
-            SetSetting("ClaimRewards", v)
-        end
-    })
+    Misc:Toggle({ Title = "Claim Rewards", Desc = "Claims your playtime and uses spin tickets (Lobby & Game)", Value = Globals.ClaimRewards, Callback = function(v) SetSetting("ClaimRewards", v) end })
 
     Misc:Section({Title = "Experimental"})
     Misc:Toggle({ Title = "Sticker Spam", Desc = "This will drop everyones FPS to like 5", Value = false, Callback = function(v) StickerSpam = v; if StickerSpam then task.spawn(function() while StickerSpam do for i = 1, 9999 do if not StickerSpam then break end; local args = {"Flex"}; game:GetService("ReplicatedStorage"):WaitForChild("Network"):WaitForChild("Sticker"):WaitForChild("URE:Show"):FireServer(unpack(args)) end; task.wait() end end) end end })
     Misc:Toggle({ Title = "Party Invite Spam (Lobby)", Desc = "Spam invites to everyone in the lobby", Value = false, Callback = function(state) Globals.PartySpamEnabled = state; if state then if GameState ~= "LOBBY" then Window:Notify({ Title = "Error", Desc = "You can only use this feature in the Lobby!", Time = 3, Type = "error" }); Globals.PartySpamEnabled = false; return end; Window:Notify({Title = "ADS", Desc = "Party Spam Enabled!", Time = 3, Type = "normal"}); task.spawn(function() local plrs = game:GetService("Players"); local rfunc = game:GetService("ReplicatedStorage"):WaitForChild("RemoteFunction"); while Globals.PartySpamEnabled do pcall(function() rfunc:InvokeServer("Party", "CreateParty"); for _, plr in ipairs(plrs:GetPlayers()) do if plr ~= plrs.LocalPlayer then rfunc:InvokeServer("Party", "InvitePlayer", plr) end end; rfunc:InvokeServer("Party", "LeaveParty") end); task.wait(0.2) end end) end end })
     Misc:Button({ Title = "Open Inventory", Desc = "Open Inventory", Callback = function() local RS = game:GetService("ReplicatedStorage"); pcall(function() local NewNetwork = require(RS.Shared.Modules.NewNetwork); NewNetwork.Channel("Inventory"):fireUnreliableServer("OpenInventory") end); local foundStore = false; for _, module in ipairs(getloadedmodules()) do if module.Name == "View" and module.Parent and module.Parent.Name == "Stores" then local Store = require(module); Store:commit("setView", "Inventory"); foundStore = true; break end end; if not foundStore then warn("Gagal menemukan Module Store UI.") end end })
     Misc:Button({ Title = "Unlock Admin+ (Sandbox)", Desc = "Keep in mind that some features will not work!", Callback = function() if GameState == "GAME" then local args = { game.Players.LocalPlayer.UserId, true }; game:GetService("ReplicatedStorage"):WaitForChild("Network"):WaitForChild("Sandbox"):WaitForChild("RE:SetAdmin"):FireServer(unpack(args)); Window:Notify({ Title = "ADS", Desc = "Successfully unlocked Admin+ Mode!", Time = 3, Type = "normal" }) else Window:Notify({ Title = "Error", Desc = "You must be in Sandbox mode for this to work!", Time = 3, Type = "error" }) end end })
-    Misc:Button({ Title = "Visual Unlock All Skins", Desc = "Buka semua skins (Visual Client-sided)", Callback = function() local c = game:GetService("ReplicatedStorage"):WaitForChild("Client"):WaitForChild("Interfaces"):WaitForChild("LegacyInterface"):WaitForChild("Controllers"); local ic = require(c:WaitForChild("InventoryController")); local sc = require(c:WaitForChild("StoreController")); ic.owns = function() return true end; sc.isSkinLocked = function() return false end; sc.isSkinPurchaseable = function() return false, nil, nil end; Window:Notify({ Title = "ADS", Desc = "Visual Unlock All Skins berhasil diaktifkan! Cek inventory.", Time = 3, Type = "normal" }) end })
+    Misc:Button({ Title = "Visual Unlock All", Desc = "Unlock All (Visual Client-sided)", Callback = function() local c = game:GetService("ReplicatedStorage"):WaitForChild("Client"):WaitForChild("Interfaces"):WaitForChild("LegacyInterface"):WaitForChild("Controllers"); local ic = require(c:WaitForChild("InventoryController")); local sc = require(c:WaitForChild("StoreController")); ic.owns = function() return true end; sc.isSkinLocked = function() return false end; sc.isSkinPurchaseable = function() return false, nil, nil end; Window:Notify({ Title = "ADS", Desc = "Unlock All (Visual Client-sided) Active! Check inventory.", Time = 3, Type = "normal" }) end })
 end
 
 Window:Line()
@@ -3830,39 +3823,60 @@ local function StartAutoSkip()
 end
 
 local function StartClaimRewards()
-    if AutoClaimRewards or not Globals.ClaimRewards or GameState ~= "LOBBY" then 
-        return 
-    end
-
+    if AutoClaimRewards then return end
     AutoClaimRewards = true
+    task.spawn(function()
+        while Globals.ClaimRewards do
+            local player = game:GetService("Players").LocalPlayer
+            local network = game:GetService("ReplicatedStorage"):WaitForChild("Network", 5)
+            
+            if network then
+                -- 1. Claim Spin Tickets
+                local SpinTickets = player:FindFirstChild("SpinTickets")
+                if SpinTickets and SpinTickets.Value > 0 then 
+                    local TicketCount = SpinTickets.Value
+                    local DailySpin = network:FindFirstChild("DailySpin")
+                    local RedeemRemote = DailySpin and DailySpin:FindFirstChild("RF:RedeemSpin")
+                    if RedeemRemote then 
+                        for i = 1, TicketCount do 
+                            -- [FIX] Hentikan loop seketika jika toggle dimatikan
+                            if not Globals.ClaimRewards then break end 
+                            pcall(function() RedeemRemote:InvokeServer() end)
+                            task.wait(0.5) 
+                        end 
+                    end 
+                end
+                
+                -- [FIX] Mencegah script lanjut ke Playtime Rewards jika toggle sudah off
+                if not Globals.ClaimRewards then break end
+                
+                -- 2. Claim Playtime Rewards
+                local PlaytimeRewards = network:FindFirstChild("PlaytimeRewards")
+                local ClaimRewardRemote = PlaytimeRewards and PlaytimeRewards:FindFirstChild("RF:ClaimReward")
+                if ClaimRewardRemote then
+                    for i = 1, 6 do 
+                        -- [FIX] Hentikan loop seketika jika toggle dimatikan
+                        if not Globals.ClaimRewards then break end
+                        pcall(function() ClaimRewardRemote:InvokeServer(i) end)
+                        task.wait(0.5) 
+                    end
+                end
+                
+                -- [FIX] Mencegah script lanjut ke Daily Spin Reward jika toggle sudah off
+                if not Globals.ClaimRewards then break end
 
-    local player = game:GetService("Players").LocalPlayer
-    local network = game:GetService("ReplicatedStorage"):WaitForChild("Network")
-
-    local SpinTickets = player:WaitForChild("SpinTickets", 15)
-
-    if SpinTickets and SpinTickets.Value > 0 then
-        local TicketCount = SpinTickets.Value
-
-        local DailySpin = network:WaitForChild("DailySpin", 5)
-        local RedeemRemote = DailySpin and DailySpin:WaitForChild("RF:RedeemSpin", 5)
-
-        if RedeemRemote then
-            for i = 1, TicketCount do
-                RedeemRemote:InvokeServer()
-                task.wait(0.5)
+                -- 3. Claim Daily Spin Reward
+                local DailySpin = network:FindFirstChild("DailySpin")
+                local RedeemRewardRemote = DailySpin and DailySpin:FindFirstChild("RF:RedeemReward")
+                if RedeemRewardRemote then
+                    pcall(function() RedeemRewardRemote:InvokeServer() end)
+                end
             end
+            
+            task.wait(10)
         end
-    end
-
-    for i = 1, 6 do
-        local args = { i }
-        network:WaitForChild("PlaytimeRewards"):WaitForChild("RF:ClaimReward"):InvokeServer(unpack(args))
-        task.wait(0.5)
-    end
-
-    game:GetService("ReplicatedStorage").Network.DailySpin["RF:RedeemReward"]:InvokeServer()
-    AutoClaimRewards = false
+        AutoClaimRewards = false
+    end)
 end
 
 local function StartBackToLobby()
@@ -4287,13 +4301,13 @@ task.spawn(function()
             StartBackToLobby()
         end
 
+        if Globals.ClaimRewards and not AutoClaimRewards then
+            StartClaimRewards()
+        end
+
         task.wait(1)
     end
 end)
-
-if Globals.ClaimRewards and not AutoClaimRewards then
-    StartClaimRewards()
-end
 
 MissionsUIFix()
 
